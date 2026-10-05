@@ -1,7 +1,9 @@
 name: Deploy
 
-# Builds the Docker images after CI passes on main, pushes them to GHCR
-# and, when the DEPLOY_* secrets exist, rolls them out on the VPS over SSH.
+# Builds the Docker images after CI passes on main and pushes them to GHCR, then rolls them out:
+# - on a VPS over SSH when the DEPLOY_* secrets exist, or
+# - on a home PC through a self-hosted runner labelled "wow-roster-home" when the repository
+#   variable DEPLOY_TARGET is "home" (see README, "Self-hosting on a home PC").
 on:
   workflow_run:
     workflows: [CI]
@@ -15,7 +17,13 @@ concurrency:
 
 jobs:
   images:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # workflow_run's branch filter matches branch names, so a fork PR from a branch called "main"
+    # would pass it: only CI runs from pushes to this repository may publish and deploy.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -52,6 +60,7 @@ jobs:
 
   deploy:
     needs: images
+    if: vars.DEPLOY_TARGET != 'home'
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -89,3 +98,43 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
+
+  deploy-home:
+    needs: images
+    if: vars.DEPLOY_TARGET == 'home'
+    runs-on: [self-hosted, wow-roster-home]
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    defaults:
+      run:
+        shell: powershell
+    env:
+      DEPLOY_PATH: ${{ vars.HOME_DEPLOY_PATH || 'C:\wow-roster-prod' }}
+      IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Copy compose files
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path "$env:DEPLOY_PATH\.env")) { throw "Missing $env:DEPLOY_PATH\.env (see deploy/home.env.example)" }
+          New-Item -ItemType Directory -Force "$env:DEPLOY_PATH\deploy" | Out-Null
+          Copy-Item docker-compose.prod.yml, docker-compose.home.yml $env:DEPLOY_PATH -Force
+          Copy-Item deploy\Caddyfile, deploy\tailscale-serve.json "$env:DEPLOY_PATH\deploy" -Force
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: $env:GHCR_TOKEN | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Roll out
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-Location $env:DEPLOY_PATH
+          docker compose -f docker-compose.prod.yml -f docker-compose.home.yml pull
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d --remove-orphans
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          docker image prune -f

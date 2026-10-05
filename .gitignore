@@ -11,3 +11,4 @@ packages/db/src/generated/
 .DS_Store
 Thumbs.db
 apps/web/next-env.d.ts
+dump.rdb
