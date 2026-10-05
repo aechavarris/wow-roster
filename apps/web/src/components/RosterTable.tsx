@@ -6,9 +6,9 @@ import { Fragment, useMemo, useState } from "react";
 import { Link, useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
 import { characterPath, classColor, classText, className, roleOf, specName, statusOf } from "@/lib/game";
-import type { PublicConfig, RosterCharacter, RosterPlayer, ViewerRole } from "@/lib/types";
+import type { GameVersion, RosterCharacter, RosterPlayer, ViewerRole } from "@/lib/types";
 
-type Profile = PublicConfig["profile"];
+type Profile = GameVersion;
 type SortKey = "name" | "class" | "role" | "status" | "itemLevel" | "level" | "rank";
 
 interface Props {
@@ -17,14 +17,14 @@ interface Props {
   profile: Profile;
   viewerRole: ViewerRole;
   viewerUserId: string | null;
-  hasRealms: boolean;
   /** Guild ranks only exist in guild-linked rosters. */
   showRank: boolean;
 }
 
 const AUTO = "__auto__";
 
-export function RosterTable({ guildId, players, profile, viewerRole, viewerUserId, hasRealms, showRank }: Props) {
+export function RosterTable({ guildId, players, profile, viewerRole, viewerUserId, showRank }: Props) {
+  const hasRealms = profile.hasRealms;
   const t = useTranslations("roster");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -108,6 +108,8 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
     showRank,
     isOfficer,
     // Members edit their own planned entries; officers edit everything.
+    // Planned entries can only become real characters in versions with a Blizzard API.
+    canLink: profile.apiAvailable,
     canEditPlanning: isOfficer || (c.planned && c.userId !== null && c.userId === viewerUserId),
     canRemove: isOfficer || ((c.source === "manual" || c.source === "planned") && c.userId !== null && c.userId === viewerUserId),
     mainOptions: player.claimed ? [] : mainOptions.filter((m) => m.entryId !== c.entryId),
@@ -218,6 +220,7 @@ interface RowProps {
   profile: Profile;
   hasRealms: boolean;
   showRank: boolean;
+  canLink: boolean;
   isOfficer: boolean;
   canEditPlanning: boolean;
   canRemove: boolean;
@@ -228,7 +231,7 @@ interface RowProps {
   actions: RowActions;
 }
 
-function Row({ character: c, profile, hasRealms, showRank, isOfficer, canEditPlanning, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
+function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, canEditPlanning, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
   const t = useTranslations("roster");
   const locale = useLocale();
   const format = useFormatter();
@@ -249,10 +252,10 @@ function Row({ character: c, profile, hasRealms, showRank, isOfficer, canEditPla
               ?
             </span>
           ) : null}
-          {c.planned || !c.region || !c.realm ? (
+          {c.planned || !c.gameVersion || !c.region || !c.realm ? (
             <span className="text-class font-medium italic" style={classText(color)}>{c.name}</span>
           ) : (
-            <Link href={characterPath({ region: c.region, realm: c.realm, name: c.name })} className="text-class font-medium hover:underline" style={classText(color)}>
+            <Link href={characterPath({ gameVersion: c.gameVersion, region: c.region, realm: c.realm, name: c.name })} className="text-class font-medium hover:underline" style={classText(color)}>
               {c.name}
             </Link>
           )}
@@ -353,7 +356,7 @@ function Row({ character: c, profile, hasRealms, showRank, isOfficer, canEditPla
       {showActions && (
         <td className="px-2 py-1.5">
           <div className="flex items-center gap-1">
-            {c.planned && canEditPlanning && <LinkForm hasRealms={hasRealms} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
+            {c.planned && canEditPlanning && canLink && <LinkForm hasRealms={hasRealms} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
             {isOfficer && mainOptions.length > 0 && !c.claimed && (
               <select
                 aria-label={t("linkMain")}

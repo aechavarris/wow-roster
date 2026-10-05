@@ -15,6 +15,7 @@ export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
       orderBy: [{ level: "desc" }, { name: "asc" }],
       select: {
         id: true,
+        gameVersion: true,
         region: true,
         realm: true,
         name: true,
@@ -41,6 +42,7 @@ export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
       guilds.map(async (g) => ({
         id: g.id,
         kind: g.kind,
+        gameVersion: g.gameVersion,
         name: g.name,
         realm: g.realm,
         region: g.region,
@@ -62,7 +64,7 @@ export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
     return { user: { id: user.id, battletag: user.battletag, locale: user.locale } };
   });
 
-  /** Marks one owned character as the user's main within its guild (or among guildless characters). */
+  /** Marks one owned character as the user's main within its guild (or among its game version's guildless characters). */
   app.post("/me/characters/:id/main", async (request) => {
     if (!request.user) throw unauthorized();
     const { id } = z.object({ id: z.string() }).parse(request.params);
@@ -70,7 +72,7 @@ export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
     if (!character) throw notFound("character_not_found");
     await prisma.$transaction([
       prisma.character.updateMany({
-        where: { ownerId: request.user.id, guildId: character.guildId },
+        where: { ownerId: request.user.id, gameVersion: character.gameVersion, guildId: character.guildId },
         data: { isMain: false },
       }),
       prisma.character.update({ where: { id }, data: { isMain: true } }),

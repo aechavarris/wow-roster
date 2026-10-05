@@ -1,5 +1,5 @@
 import type { BattleNetUser } from "@wow/blizzard";
-import type { GameProfile } from "@wow/config";
+import type { GameVersions } from "@wow/config";
 import type { CoreContext } from "@wow/core";
 import type { PrismaClient } from "@wow/db";
 import type { Env } from "./env";
@@ -21,7 +21,8 @@ export interface OAuthService {
 export interface AppDeps {
   env: Env & { ALLOW_UNVERIFIED_GUILDS?: boolean };
   prisma: PrismaClient;
-  profile: GameProfile;
+  /** Every game version; rosters and characters each belong to one. */
+  versions: GameVersions;
   core: CoreContext;
   queue: SyncQueue;
   oauth: OAuthService;

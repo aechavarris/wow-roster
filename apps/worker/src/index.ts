@@ -1,5 +1,5 @@
 import { Queue, Worker } from "bullmq";
-import { loadGameProfile } from "@wow/config/node";
+import { loadServerGameVersions } from "@wow/config/node";
 import {
   QUEUES,
   blizzardFactory,
@@ -16,7 +16,7 @@ import { createPrismaClient } from "@wow/db";
 
 const env = process.env;
 const redisUrl = env.REDIS_URL ?? "redis://localhost:6379";
-const profile = loadGameProfile();
+const versions = loadServerGameVersions();
 const prisma = createPrismaClient();
 
 if (!env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) {
@@ -25,8 +25,8 @@ if (!env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) {
 
 const ctx: CoreContext = {
   prisma,
-  profile,
-  blizzard: blizzardFactory(profile, {
+  versions,
+  blizzard: blizzardFactory(versions, {
     clientId: env.BLIZZARD_CLIENT_ID ?? "",
     clientSecret: env.BLIZZARD_CLIENT_SECRET ?? "",
   }),
@@ -73,7 +73,7 @@ async function reconcileSchedules() {
       { name: "guild", data: { guildId: guild.id } },
     );
   }
-  console.log(`[worker] profile=${profile.id} schedules=${guilds.length} characterJobsPerSecond=${jobsPerSecond}`);
+  console.log(`[worker] versions=${versions.list.map((v) => v.id).join(",")} default=${versions.defaultId} schedules=${guilds.length} characterJobsPerSecond=${jobsPerSecond}`);
 }
 
 await reconcileSchedules();

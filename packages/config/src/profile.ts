@@ -1,5 +1,8 @@
+import anniversaryProfile from "../profiles/anniversary.json" with { type: "json" };
+import classicEraProfile from "../profiles/classic-era.json" with { type: "json" };
 import foreverProfile from "../profiles/forever.json" with { type: "json" };
-import retailDevProfile from "../profiles/retail-dev.json" with { type: "json" };
+import progressionProfile from "../profiles/progression.json" with { type: "json" };
+import retailProfile from "../profiles/retail.json" with { type: "json" };
 import {
   gameProfileSchema,
   profileFileSchema,
@@ -7,10 +10,17 @@ import {
   type ProfileFile,
 } from "./schema";
 
+/** Built-in game versions, in the order they are offered. Each roster and character belongs to one. */
 export const BUILTIN_PROFILES: Record<string, unknown> = {
   forever: foreverProfile,
-  "retail-dev": retailDevProfile,
+  "classic-era": classicEraProfile,
+  anniversary: anniversaryProfile,
+  progression: progressionProfile,
+  retail: retailProfile,
 };
+
+/** Old profile ids still accepted in configuration. */
+const ALIASES: Record<string, string> = { "retail-dev": "retail" };
 
 /** Array keys merged entry-by-entry when a profile extends another, keyed by the given field. */
 const MERGE_KEYS: Record<string, string> = {
@@ -53,6 +63,7 @@ function mergeProfiles(base: Record<string, unknown>, override: ProfileFile): Re
  */
 export function resolveProfile(id: string, extra: Record<string, unknown> = {}): GameProfile {
   const sources = { ...BUILTIN_PROFILES, ...extra };
+  id = ALIASES[id] ?? id;
   const seen = new Set<string>();
 
   const resolveRaw = (profileId: string): Record<string, unknown> => {
@@ -70,4 +81,30 @@ export function resolveProfile(id: string, extra: Record<string, unknown> = {}):
 
 export function namespaceFor(template: string, region: string): string {
   return template.replaceAll("{region}", region.toLowerCase());
+}
+
+export interface GameVersions {
+  /** Every version, in display order. */
+  list: GameProfile[];
+  byId: Map<string, GameProfile>;
+  /** Version used for new rosters, searches and data without one. */
+  defaultId: string;
+}
+
+/**
+ * Loads every built-in version plus custom ones (e.g. a profile file that extends a built-in
+ * version under a new id). `defaultId` accepts the old profile aliases.
+ */
+export function loadGameVersions(defaultId: string, extra: Record<string, unknown> = {}): GameVersions {
+  const ids = [...new Set([...Object.keys(BUILTIN_PROFILES), ...Object.keys(extra)])];
+  const list = ids.map((id) => resolveProfile(id, extra));
+  const byId = new Map(list.map((p) => [p.id, p]));
+  const resolvedDefault = ALIASES[defaultId] ?? defaultId;
+  if (!byId.has(resolvedDefault)) throw new Error(`Unknown default game version "${defaultId}"`);
+  return { list, byId, defaultId: resolvedDefault };
+}
+
+/** The version with that id, or the default one for unknown or missing ids (older data). */
+export function versionOf(versions: GameVersions, id?: string | null): GameProfile {
+  return (id ? versions.byId.get(id) : undefined) ?? versions.byId.get(versions.defaultId)!;
 }

@@ -39,10 +39,14 @@ const demoProfile = {
   reputations: [{ factionId: 1, name: "Cenarion Circle", standing: "Revered", tier: 6 }],
 };
 
+/** The demo data is vanilla-like (level 60, Combat rogues), so it lives in Classic Era. */
+const gameVersion = "classic-era";
+
 async function main() {
   const guild = await prisma.guild.upsert({
-    where: { region_realm_slug: { region: "eu", realm: "demo-realm", slug: "demo-guild" } },
+    where: { gameVersion_region_realm_slug: { gameVersion, region: "eu", realm: "demo-realm", slug: "demo-guild" } },
     create: {
+      gameVersion,
       region: "eu",
       realm: "demo-realm",
       slug: "demo-guild",
@@ -76,8 +80,9 @@ async function main() {
 
   for (const c of characters) {
     const character = await prisma.character.upsert({
-      where: { region_realm_nameKey: { region: "eu", realm: "demo-realm", nameKey: c.name.toLowerCase() } },
+      where: { gameVersion_region_realm_nameKey: { gameVersion, region: "eu", realm: "demo-realm", nameKey: c.name.toLowerCase() } },
       create: {
+        gameVersion,
         region: "eu",
         realm: "demo-realm",
         name: c.name,

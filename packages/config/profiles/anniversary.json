@@ -1,17 +1,17 @@
 {
-  "id": "forever",
-  "label": "World of Warcraft: Forever",
-  "name": {"en": "Forever", "es": "Forever"},
-  "maxLevel": 60,
+  "id": "anniversary",
+  "label": "WoW Classic Anniversary (The Burning Crusade)",
+  "name": {"en": "Anniversary (TBC)", "es": "Anniversary (TBC)"},
+  "maxLevel": 70,
   "api": {
-    "profileNamespace": "profile-forever-{region}",
-    "staticNamespace": "static-forever-{region}",
-    "dynamicNamespace": "dynamic-forever-{region}",
-    "hasRealms": false,
-    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations"],
-    "available": false
+    "available": true,
+    "profileNamespace": "profile-classicann-{region}",
+    "staticNamespace": "static-classicann-{region}",
+    "dynamicNamespace": "dynamic-classicann-{region}",
+    "hasRealms": true,
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"]
   },
-  "wowheadDomain": "forever",
+  "wowheadDomain": "tbc",
   "roles": [
     {"key": "tank", "name": {"en": "Tank", "es": "Tanque"}, "color": "#4f86c6"},
     {"key": "healer", "name": {"en": "Healer", "es": "Sanador"}, "color": "#4caf50"},
@@ -149,20 +149,28 @@
       ]
     }
   ],
-  "raidSizes": [
-    {"size": 10, "groupSize": 5, "enabled": true},
-    {"size": 20, "groupSize": 5, "enabled": true},
-    {"size": 40, "groupSize": 5, "enabled": false, "note": "Paused: no official text confirms 40-player raids yet."}
-  ],
+  "raidSizes": [{"size": 10, "groupSize": 5, "enabled": true}, {"size": 25, "groupSize": 5, "enabled": true}],
   "raids": [
-    {"key": "barrow-deeps", "name": {"en": "Barrow Deeps", "es": "Barrow Deeps"}, "size": 10, "enabled": true},
-    {"key": "hyjal-summit", "name": {"en": "Hyjal Summit", "es": "Hyjal Summit"}, "size": 20, "enabled": true},
+    {"key": "karazhan", "name": {"en": "Karazhan", "es": "Karazhan"}, "size": 10, "enabled": true},
+    {"key": "gruuls-lair", "name": {"en": "Gruul's Lair", "es": "Guarida de Gruul"}, "size": 25, "enabled": true},
+    {"key": "magtheridons-lair", "name": {"en": "Magtheridon's Lair", "es": "Guarida de Magtheridon"}, "size": 25, "enabled": true},
+    {"key": "serpentshrine-cavern", "name": {"en": "Serpentshrine Cavern", "es": "Caverna Santuario Serpiente"}, "size": 25, "enabled": true},
+    {"key": "tempest-keep", "name": {"en": "Tempest Keep: The Eye", "es": "El Castillo de la Tempestad: El Ojo"}, "size": 25, "enabled": true},
+    {"key": "mount-hyjal", "name": {"en": "Battle for Mount Hyjal", "es": "Batalla por el Monte Hyjal"}, "size": 25, "enabled": true},
+    {"key": "black-temple", "name": {"en": "Black Temple", "es": "El Templo Oscuro"}, "size": 25, "enabled": true},
     {
-      "key": "onyxias-lair",
-      "name": {"en": "Onyxia's Lair", "es": "Guarida de Onyxia"},
-      "size": 40,
+      "key": "zul-aman",
+      "name": {"en": "Zul'Aman", "es": "Zul'Aman"},
+      "size": 10,
       "enabled": false,
-      "note": "Only reported by fan sites citing a roadmap image."
+      "note": "Phase 3.5: not released on Anniversary realms yet."
+    },
+    {
+      "key": "sunwell-plateau",
+      "name": {"en": "Sunwell Plateau", "es": "Meseta de La Fuente del Sol"},
+      "size": 25,
+      "enabled": false,
+      "note": "Phase 4: not released on Anniversary realms yet."
     }
   ],
   "rosterStatuses": [
@@ -192,7 +200,9 @@
       "entries": [
         {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["attack_power"]},
         {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["melee_hit"], "format": "percent"},
-        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["melee_crit"], "format": "percent"}
+        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["melee_crit"], "format": "percent"},
+        {"key": "expertise", "label": {"en": "Expertise", "es": "Pericia"}, "stats": ["expertise"], "format": "number", "hideIfZero": true},
+        {"key": "melee-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["melee_haste"], "format": "percent", "hideIfZero": true}
       ]
     },
     {
@@ -201,7 +211,8 @@
       "entries": [
         {"key": "ranged-attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["ranged_attack_power"]},
         {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["ranged_hit"], "format": "percent"},
-        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["ranged_crit"], "format": "percent"}
+        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["ranged_crit"], "format": "percent"},
+        {"key": "ranged-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["ranged_haste"], "format": "percent", "hideIfZero": true}
       ]
     },
     {
@@ -212,7 +223,8 @@
         {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "stats": ["bonus_healing"]},
         {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["spell_hit"], "format": "percent"},
         {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["spell_crit"], "format": "percent"},
-        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "stats": ["mana_regen"]}
+        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "stats": ["mana_regen"]},
+        {"key": "spell-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["spell_haste"], "format": "percent", "hideIfZero": true}
       ]
     },
     {
@@ -223,7 +235,8 @@
         {"key": "defense", "label": {"en": "Defense", "es": "Defensa"}, "stats": ["defense"]},
         {"key": "dodge", "label": {"en": "Dodge", "es": "Esquivar"}, "stats": ["dodge"], "format": "percent"},
         {"key": "parry", "label": {"en": "Parry", "es": "Parada"}, "stats": ["parry"], "format": "percent", "hideIfZero": true},
-        {"key": "block", "label": {"en": "Block", "es": "Bloqueo"}, "stats": ["block"], "format": "percent", "hideIfZero": true}
+        {"key": "block", "label": {"en": "Block", "es": "Bloqueo"}, "stats": ["block"], "format": "percent", "hideIfZero": true},
+        {"key": "resilience", "label": {"en": "Resilience", "es": "Temple"}, "stats": ["resilience"], "format": "number", "hideIfZero": true}
       ]
     },
     {
@@ -240,189 +253,270 @@
   ],
   "buffs": [
     {
-      "key": "mark-of-the-wild",
-      "category": "buff",
-      "name": {"en": "Mark of the Wild", "es": "Marca de lo Salvaje"},
-      "providers": [{"classKey": "druid"}]
-    },
-    {
       "key": "fortitude",
-      "category": "buff",
       "name": {"en": "Power Word: Fortitude", "es": "Palabra de poder: entereza"},
+      "category": "buff",
       "providers": [{"classKey": "priest"}]
     },
     {
       "key": "divine-spirit",
-      "category": "buff",
       "name": {"en": "Divine Spirit", "es": "Espíritu divino"},
-      "providers": [{"classKey": "priest"}],
-      "note": "Baseline in Forever (official priest deep dive)."
+      "category": "buff",
+      "providers": [{"classKey": "priest", "specs": ["discipline"]}],
+      "note": "Discipline talent."
     },
-    {"key": "arcane-intellect", "category": "buff", "name": {"en": "Arcane Intellect", "es": "Intelecto Arcano"}, "providers": [{"classKey": "mage"}]},
+    {
+      "key": "mark-of-the-wild",
+      "name": {"en": "Mark of the Wild", "es": "Marca de lo Salvaje"},
+      "category": "buff",
+      "providers": [{"classKey": "druid"}]
+    },
+    {"key": "arcane-intellect", "name": {"en": "Arcane Intellect", "es": "Intelecto Arcano"}, "category": "buff", "providers": [{"classKey": "mage"}]},
     {
       "key": "blessing-of-kings",
-      "category": "buff",
       "name": {"en": "Blessing of Kings", "es": "Bendición de reyes"},
-      "providers": [{"classKey": "paladin"}]
+      "category": "buff",
+      "providers": [{"classKey": "paladin", "specs": ["protection"]}],
+      "note": "Protection talent."
     },
     {
       "key": "blessing-of-might",
-      "category": "buff",
       "name": {"en": "Blessing of Might", "es": "Bendición de poderío"},
+      "category": "buff",
       "providers": [{"classKey": "paladin"}]
     },
     {
       "key": "blessing-of-wisdom",
-      "category": "buff",
       "name": {"en": "Blessing of Wisdom", "es": "Bendición de sabiduría"},
+      "category": "buff",
       "providers": [{"classKey": "paladin"}]
     },
     {
       "key": "blessing-of-salvation",
-      "category": "buff",
       "name": {"en": "Blessing of Salvation", "es": "Bendición de salvación"},
+      "category": "buff",
       "providers": [{"classKey": "paladin"}]
     },
-    {"key": "battle-shout", "category": "buff", "name": {"en": "Battle Shout", "es": "Grito de batalla"}, "providers": [{"classKey": "warrior"}]},
+    {
+      "key": "blessing-of-light",
+      "name": {"en": "Blessing of Light", "es": "Bendición de Luz"},
+      "category": "buff",
+      "providers": [{"classKey": "paladin"}]
+    },
+    {
+      "key": "improved-sanctity-aura",
+      "name": {"en": "Improved Sanctity Aura", "es": "Aura de santidad mejorada"},
+      "category": "buff",
+      "providers": [{"classKey": "paladin", "specs": ["retribution"]}]
+    },
+    {"key": "battle-shout", "name": {"en": "Battle Shout", "es": "Grito de batalla"}, "category": "buff", "providers": [{"classKey": "warrior"}]},
+    {
+      "key": "commanding-shout",
+      "name": {"en": "Commanding Shout", "es": "Grito de orden"},
+      "category": "buff",
+      "providers": [{"classKey": "warrior"}]
+    },
     {
       "key": "trueshot-aura",
-      "category": "buff",
       "name": {"en": "Trueshot Aura", "es": "Aura de disparo certero"},
+      "category": "buff",
       "providers": [{"classKey": "hunter", "specs": ["marksmanship"]}]
     },
     {
-      "key": "leader-of-the-pack",
+      "key": "ferocious-inspiration",
+      "name": {"en": "Ferocious Inspiration", "es": "Inspiración feroz"},
       "category": "buff",
+      "providers": [{"classKey": "hunter", "specs": ["beast-mastery"]}]
+    },
+    {
+      "key": "leader-of-the-pack",
       "name": {"en": "Leader of the Pack", "es": "Líder de la manada"},
+      "category": "buff",
       "providers": [{"classKey": "druid", "specs": ["feral"]}]
     },
     {
       "key": "moonkin-aura",
-      "category": "buff",
       "name": {"en": "Moonkin Aura", "es": "Aura de lechúcico lunar"},
+      "category": "buff",
       "providers": [{"classKey": "druid", "specs": ["balance"]}]
     },
     {
-      "key": "windfury-totem",
+      "key": "tree-of-life",
+      "name": {"en": "Tree of Life", "es": "Árbol de vida"},
       "category": "buff",
-      "name": {"en": "Windfury Totem", "es": "Tótem Viento Furioso"},
-      "providers": [{"classKey": "shaman"}]
+      "providers": [{"classKey": "druid", "specs": ["restoration"]}]
     },
     {
-      "key": "strength-of-earth",
+      "key": "windfury-totem",
+      "name": {"en": "Windfury Totem", "es": "Tótem Viento Furioso"},
       "category": "buff",
-      "name": {"en": "Strength of Earth Totem", "es": "Tótem Fuerza de la tierra"},
       "providers": [{"classKey": "shaman"}]
     },
     {
       "key": "grace-of-air",
-      "category": "buff",
       "name": {"en": "Grace of Air Totem", "es": "Tótem Gracia del aire"},
+      "category": "buff",
+      "providers": [{"classKey": "shaman"}]
+    },
+    {
+      "key": "strength-of-earth",
+      "name": {"en": "Strength of Earth Totem", "es": "Tótem Fuerza de la tierra"},
+      "category": "buff",
       "providers": [{"classKey": "shaman"}]
     },
     {
       "key": "mana-spring",
-      "category": "buff",
       "name": {"en": "Mana Spring Totem", "es": "Tótem Fuente de maná"},
+      "category": "buff",
       "providers": [{"classKey": "shaman"}]
     },
-    {"key": "blood-pact", "category": "buff", "name": {"en": "Blood Pact", "es": "Pacto de sangre"}, "providers": [{"classKey": "warlock"}]},
-    {"key": "sunder-armor", "category": "debuff", "name": {"en": "Sunder Armor", "es": "Hender armadura"}, "providers": [{"classKey": "warrior"}]},
     {
-      "key": "demoralizing-shout",
-      "category": "debuff",
-      "name": {"en": "Demoralizing Shout", "es": "Grito desmoralizador"},
-      "providers": [{"classKey": "warrior"}]
+      "key": "wrath-of-air",
+      "name": {"en": "Wrath of Air Totem", "es": "Tótem Cólera del aire"},
+      "category": "buff",
+      "providers": [{"classKey": "shaman"}]
     },
-    {"key": "faerie-fire", "category": "debuff", "name": {"en": "Faerie Fire", "es": "Fuego feérico"}, "providers": [{"classKey": "druid"}]},
+    {
+      "key": "totem-of-wrath",
+      "name": {"en": "Totem of Wrath", "es": "Tótem de cólera"},
+      "category": "buff",
+      "providers": [{"classKey": "shaman", "specs": ["elemental"]}]
+    },
+    {
+      "key": "unleashed-rage",
+      "name": {"en": "Unleashed Rage", "es": "Ira desatada"},
+      "category": "buff",
+      "providers": [{"classKey": "shaman", "specs": ["enhancement"]}]
+    },
+    {"key": "blood-pact", "name": {"en": "Blood Pact", "es": "Pacto de sangre"}, "category": "buff", "providers": [{"classKey": "warlock"}]},
+    {
+      "key": "vampiric-touch",
+      "name": {"en": "Vampiric Touch", "es": "Toque vampírico"},
+      "category": "buff",
+      "providers": [{"classKey": "priest", "specs": ["shadow"]}],
+      "note": "Party mana regeneration."
+    },
+    {"key": "sunder-armor", "name": {"en": "Sunder Armor", "es": "Hender armadura"}, "category": "debuff", "providers": [{"classKey": "warrior"}]},
+    {"key": "expose-armor", "name": {"en": "Expose Armor", "es": "Exponer armadura"}, "category": "debuff", "providers": [{"classKey": "rogue"}]},
+    {"key": "faerie-fire", "name": {"en": "Faerie Fire", "es": "Fuego feérico"}, "category": "debuff", "providers": [{"classKey": "druid"}]},
     {
       "key": "curse-of-recklessness",
-      "category": "debuff",
       "name": {"en": "Curse of Recklessness", "es": "Maldición de temeridad"},
+      "category": "debuff",
       "providers": [{"classKey": "warlock"}]
     },
     {
       "key": "curse-of-the-elements",
-      "category": "debuff",
       "name": {"en": "Curse of the Elements", "es": "Maldición de los elementos"},
+      "category": "debuff",
       "providers": [{"classKey": "warlock"}]
     },
     {
-      "key": "curse-of-shadow",
+      "key": "improved-shadow-bolt",
+      "name": {"en": "Improved Shadow Bolt", "es": "Descarga de las Sombras mejorada"},
       "category": "debuff",
-      "name": {"en": "Curse of Shadow", "es": "Maldición de las Sombras"},
-      "providers": [{"classKey": "warlock"}]
+      "providers": [{"classKey": "warlock", "specs": ["destruction"]}]
     },
+    {
+      "key": "shadow-weaving",
+      "name": {"en": "Shadow Weaving", "es": "Tejido de las Sombras"},
+      "category": "debuff",
+      "providers": [{"classKey": "priest", "specs": ["shadow"]}]
+    },
+    {"key": "misery", "name": {"en": "Misery", "es": "Miseria"}, "category": "debuff", "providers": [{"classKey": "priest", "specs": ["shadow"]}]},
     {
       "key": "improved-scorch",
-      "category": "debuff",
       "name": {"en": "Improved Scorch", "es": "Agostar mejorado"},
+      "category": "debuff",
       "providers": [{"classKey": "mage", "specs": ["fire"]}]
     },
     {
       "key": "winters-chill",
-      "category": "debuff",
       "name": {"en": "Winter's Chill", "es": "Escalofrío invernal"},
+      "category": "debuff",
       "providers": [{"classKey": "mage", "specs": ["frost"]}]
     },
     {
-      "key": "shadow-weaving",
-      "category": "debuff",
-      "name": {"en": "Shadow Weaving", "es": "Tejido de las Sombras"},
-      "providers": [{"classKey": "priest", "specs": ["shadow"]}]
-    },
-    {
       "key": "judgement-of-wisdom",
-      "category": "debuff",
       "name": {"en": "Judgement of Wisdom", "es": "Sentencia de sabiduría"},
+      "category": "debuff",
       "providers": [{"classKey": "paladin"}]
     },
     {
       "key": "judgement-of-light",
-      "category": "debuff",
       "name": {"en": "Judgement of Light", "es": "Sentencia de luz"},
+      "category": "debuff",
       "providers": [{"classKey": "paladin"}]
     },
-    {"key": "expose-armor", "category": "debuff", "name": {"en": "Expose Armor", "es": "Exponer armadura"}, "providers": [{"classKey": "rogue"}]},
-    {"key": "hunters-mark", "category": "debuff", "name": {"en": "Hunter's Mark", "es": "Marca del cazador"}, "providers": [{"classKey": "hunter"}]},
+    {
+      "key": "judgement-of-the-crusader",
+      "name": {"en": "Judgement of the Crusader", "es": "Sentencia del cruzado"},
+      "category": "debuff",
+      "providers": [{"classKey": "paladin"}]
+    },
+    {
+      "key": "improved-hunters-mark",
+      "name": {"en": "Improved Hunter's Mark", "es": "Marca del cazador mejorada"},
+      "category": "debuff",
+      "providers": [{"classKey": "hunter", "specs": ["marksmanship"]}]
+    },
+    {
+      "key": "blood-frenzy",
+      "name": {"en": "Blood Frenzy", "es": "Frenesí sangriento"},
+      "category": "debuff",
+      "providers": [{"classKey": "warrior", "specs": ["arms"]}]
+    },
+    {
+      "key": "demoralizing-shout",
+      "name": {"en": "Demoralizing Shout", "es": "Grito desmoralizador"},
+      "category": "debuff",
+      "providers": [{"classKey": "warrior"}]
+    },
+    {"key": "thunder-clap", "name": {"en": "Thunder Clap", "es": "Atronar"}, "category": "debuff", "providers": [{"classKey": "warrior"}]},
+    {
+      "key": "bloodlust",
+      "name": {"en": "Bloodlust / Heroism", "es": "Ansia de sangre / Heroísmo"},
+      "category": "utility",
+      "providers": [{"classKey": "shaman"}]
+    },
     {
       "key": "rebirth",
-      "category": "utility",
       "name": {"en": "Rebirth (combat res)", "es": "Renacer (resurrección en combate)"},
+      "category": "utility",
       "providers": [{"classKey": "druid"}]
     },
-    {"key": "innervate", "category": "utility", "name": {"en": "Innervate", "es": "Estimular"}, "providers": [{"classKey": "druid"}]},
+    {"key": "innervate", "name": {"en": "Innervate", "es": "Estimular"}, "category": "utility", "providers": [{"classKey": "druid"}]},
     {
       "key": "power-infusion",
-      "category": "utility",
       "name": {"en": "Power Infusion", "es": "Infusión de poder"},
+      "category": "utility",
       "providers": [{"classKey": "priest", "specs": ["discipline"]}]
     },
     {
-      "key": "fear-ward",
+      "key": "pain-suppression",
+      "name": {"en": "Pain Suppression", "es": "Supresión de dolor"},
       "category": "utility",
-      "name": {"en": "Fear Ward", "es": "Resguardo contra el miedo"},
-      "providers": [{"classKey": "priest"}],
-      "note": "Available to every priest race in Forever (official priest deep dive)."
+      "providers": [{"classKey": "priest", "specs": ["discipline"]}]
     },
     {
       "key": "mana-tide",
-      "category": "utility",
       "name": {"en": "Mana Tide Totem", "es": "Tótem de marea de maná"},
+      "category": "utility",
       "providers": [{"classKey": "shaman", "specs": ["restoration"]}]
     },
-    {"key": "tremor-totem", "category": "utility", "name": {"en": "Tremor Totem", "es": "Tótem de tremor"}, "providers": [{"classKey": "shaman"}]},
-    {"key": "soulstone", "category": "utility", "name": {"en": "Soulstone", "es": "Piedra de alma"}, "providers": [{"classKey": "warlock"}]},
+    {"key": "misdirection", "name": {"en": "Misdirection", "es": "Redirección"}, "category": "utility", "providers": [{"classKey": "hunter"}]},
+    {"key": "fear-ward", "name": {"en": "Fear Ward", "es": "Resguardo contra el miedo"}, "category": "utility", "providers": [{"classKey": "priest"}]},
+    {"key": "soulstone", "name": {"en": "Soulstone", "es": "Piedra de alma"}, "category": "utility", "providers": [{"classKey": "warlock"}]},
     {
       "key": "summoning",
-      "category": "utility",
       "name": {"en": "Ritual of Summoning", "es": "Ritual de invocación"},
+      "category": "utility",
       "providers": [{"classKey": "warlock"}]
     },
     {
       "key": "tranquilizing-shot",
-      "category": "utility",
       "name": {"en": "Tranquilizing Shot", "es": "Disparo tranquilizante"},
+      "category": "utility",
       "providers": [{"classKey": "hunter"}]
     }
   ],

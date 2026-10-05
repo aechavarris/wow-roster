@@ -39,6 +39,8 @@ model Session {
 model Guild {
   id                  String            @id @default(cuid())
   kind                String            @default("guild")
+  /// Game version (config profile id) the roster belongs to: its rules and, for real characters, its API.
+  gameVersion         String
   region              String
   realm               String?
   slug                String?
@@ -60,7 +62,7 @@ model Guild {
   characters          Character[]
   invites             RosterInvite[]
 
-  @@unique([region, realm, slug])
+  @@unique([gameVersion, region, realm, slug])
 }
 
 /// Link that grants a role in a roster. The id is a SHA-256 hash of the token in the URL.
@@ -108,6 +110,8 @@ model GuildMembership {
 /// A game character, shared by every app guild that tracks it.
 model Character {
   id                String        @id @default(cuid())
+  /// Game version (config profile id) whose API the character is read from; names are unique per version.
+  gameVersion       String
   region            String
   realm             String
   name              String
@@ -141,13 +145,13 @@ model Character {
   updatedAt         DateTime      @updatedAt
   rosterEntries     RosterEntry[]
 
-  @@unique([region, realm, nameKey])
+  @@unique([gameVersion, region, realm, nameKey])
   @@index([guildId])
   @@index([ownerId])
 }
 
 /// Static game data (icons, talent trees) fetched once from the Blizzard API.
-/// The key includes the game profile and region, e.g. "retail-dev:eu:icon:item:249961".
+/// The key includes the game version and region, e.g. "retail:eu:icon:item:249961".
 model StaticCache {
   key       String   @id
   /// JSON value; null records a lookup that had no data so it is not retried until it expires.

@@ -34,7 +34,7 @@ describe("computeComposition", () => {
   });
 
   it("only references class and spec keys that exist in the profile", () => {
-    for (const profile of [forever, resolveProfile("retail-dev")]) {
+    for (const profile of ["forever", "classic-era", "anniversary", "progression", "retail"].map((id) => resolveProfile(id))) {
       for (const buff of profile.buffs) {
         for (const provider of buff.providers) {
           const gameClass = profile.classes.find((c) => c.key === provider.classKey);

@@ -1,4 +1,4 @@
-import { namespaceFor, type GameProfile } from "@wow/config";
+import { namespaceFor, type ApiConfig } from "@wow/config";
 import {
   normalizeAccountCharacters,
   normalizeEquipment,
@@ -45,7 +45,7 @@ export interface BlizzardClientOptions {
   clientId: string;
   clientSecret: string;
   region: string;
-  api: GameProfile["api"];
+  api: ApiConfig;
   /** Locale for names in responses; English keeps spec matching stable. */
   locale?: string;
   fetch?: typeof fetch;

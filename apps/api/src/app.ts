@@ -1,5 +1,6 @@
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
+import { ApiUnavailableError } from "@wow/core";
 import type { User } from "@wow/db";
 import Fastify from "fastify";
 import { ZodError } from "zod";
@@ -33,6 +34,9 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean } = {}
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof HttpError) {
       return reply.status(error.statusCode).send({ error: error.code, message: error.message });
+    }
+    if (error instanceof ApiUnavailableError) {
+      return reply.status(409).send({ error: "game_version_without_api", message: error.message });
     }
     if (error instanceof ZodError) {
       return reply.status(400).send({ error: "invalid_request", issues: error.issues });

@@ -7,25 +7,30 @@ It syncs guilds and characters from the Blizzard API and groups mains and alts p
 > **Status: phase 1 of 5.** Done: base, Docker, CI/CD, login, guilds, roster and character pages.
 > Next: the audit sheet (with an optional Google Sheet), raid calendar and Discord, raid composition and loot, then Warcraft Logs, professions and the guild bank.
 
-## Everything is configurable
+## Game versions
 
-Game rules live in **game profiles** ([packages/config/profiles](packages/config/profiles)), not in code. A profile defines:
+Every roster belongs to a **game version**, and so does every character. A version is a full set of rules plus the Blizzard API it reads from, defined in [packages/config/profiles](packages/config/profiles), not in code:
 
 - classes, specs and roles
 - raid sizes and raids
-- roster statuses
-- Blizzard API namespaces
-- Wowhead domain
+- raid buffs, debuffs and utilities (composition)
+- roster statuses and the stats panel layout
+- Blizzard API namespaces and which character endpoints exist
 - sync limits
 
-| Profile | Use |
-|---|---|
-| `forever` | Forever rules. Raids of 10 and 20 players are enabled; 40 is defined but paused. The API namespaces are placeholders until Blizzard publishes them. |
-| `retail-dev` (default) | Extends `forever` but points at the **retail API** with the retail classes, so you can develop against real characters today. |
+| Version | Rules | API |
+|---|---|---|
+| `forever` | World of Warcraft: Forever. Raids of 10 and 20 players are enabled; 40 is defined but paused. | None yet: rosters only hold planned characters until Blizzard publishes the namespace. |
+| `classic-era` | Vanilla 1.15: 9 classes, talent trees, vanilla buffs, raids of 20 and 40. | `classic1x` |
+| `anniversary` | The Burning Crusade (Anniversary realms, phase 3): level 70, TBC buffs and raids. | `classicann` |
+| `progression` | Mists of Pandaria Classic: 11 classes, MoP buff categories and raids. | `classic` |
+| `retail` | Modern retail: 13 classes, current raid buffs and stats. | retail |
 
-Choose a profile with `GAME_PROFILE`. You can also mount your own JSON with `GAME_PROFILE_PATH`; it can `extends` a built-in profile and override entries by key.
+Rules are never translated between versions: a Classic roster has Combat rogues, a retail one Outlaw rogues. The version is picked when a roster is created; the owner can change it in the roster settings while the roster only holds planned characters (a roster linked to an in-game guild keeps its guild's version). The same character name can exist in several versions.
 
-Forever has no realms (it uses rulesets), so the code treats `realm` as an opaque key: a realm slug in retail and the ruleset in Forever.
+`DEFAULT_GAME_VERSION` sets the version preselected in forms (the older `GAME_PROFILE` still works). `GAME_PROFILE_PATH` can add a custom version from a JSON file that `extends` a built-in one and overrides entries by key.
+
+Forever has no realms (it uses rulesets), so the code treats `realm` as an opaque key: a realm slug in the other versions and the ruleset in Forever.
 
 ## Architecture
 
@@ -33,7 +38,7 @@ Forever has no realms (it uses rulesets), so the code treats `realm` as an opaqu
 apps/web       Next.js 16 + next-intl (ES/EN) + Tailwind 4
 apps/api       Fastify: Battle.net OAuth, guilds, roster, characters
 apps/worker    BullMQ: scheduled guild sync, rate-limited character sync
-packages/config    Game profiles (zod-validated JSON)
+packages/config    Game versions (zod-validated JSON profiles)
 packages/blizzard  Blizzard API client + normalizers (retail and Classic payloads)
 packages/core      Sync logic, queues, roster grouping (shared by api and worker)
 packages/db        Prisma 7 schema and migrations (PostgreSQL)

@@ -5,12 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
-import type { Guild, GuildRank, PublicConfig } from "@/lib/types";
+import type { GameVersion, Guild, GuildRank } from "@/lib/types";
 
 interface Props {
   guild: Guild;
   ranks: GuildRank[];
-  profile: PublicConfig["profile"];
+  profile: GameVersion;
 }
 
 export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props) {

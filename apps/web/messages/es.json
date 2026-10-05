@@ -141,7 +141,8 @@
     "myAdded": "Personajes añadidos; se sincronizarán en unos segundos.",
     "realAdded": "Personaje añadido.",
     "addHelp": "Cualquier personaje existente en {region}, de esta hermandad o de otra.",
-    "roleFromSpec": "Según la especialización"
+    "roleFromSpec": "Según la especialización",
+    "noApiYet": "Esta versión todavía no tiene API pública de Blizzard: de momento el roster solo admite personajes planificados. Cuando se publique, podrás vincularlos con los reales."
   },
   "settings": {
     "title": "Ajustes de la hermandad",
@@ -276,7 +277,12 @@
     "invite_expired": "La invitación ha caducado o no tiene más usos.",
     "member_not_found": "Ese usuario no es miembro.",
     "cannot_change_owner": "No se puede cambiar el rol del propietario.",
-    "cannot_remove_owner": "El propietario no puede salir ni ser quitado."
+    "cannot_remove_owner": "El propietario no puede salir ni ser quitado.",
+    "game_version_without_api": "Esta versión del juego aún no tiene API de Blizzard: solo admite personajes planificados.",
+    "game_version_from_guild": "Un roster vinculado usa la versión de su hermandad y no se puede cambiar.",
+    "game_version_has_characters": "El roster tiene personajes reales: quítalos antes de cambiar la versión.",
+    "unknown_role": "Rol desconocido.",
+    "unknown_status": "Estado desconocido."
   },
   "createRoster": {
     "title": "Crear roster libre",
@@ -330,5 +336,18 @@
     "loginFirst": "Inicia sesión con Battle.net para unirte.",
     "accept": "Unirme al roster",
     "joining": "Uniéndote…"
+  },
+  "versions": {
+    "label": "Versión del juego",
+    "plannedOnly": "solo planificados",
+    "title": "Versión del juego",
+    "help": "Define las clases, especializaciones, bufos y la API de la que se leen los personajes reales.",
+    "changeHelp": "Las especializaciones planificadas que no existan en la nueva versión se borrarán; las clases se mantienen para que puedas reelegirlas.",
+    "lockedGuild": "Un roster vinculado a una hermandad usa la versión en la que existe la hermandad.",
+    "lockedCharacters": "Este roster tiene personajes reales, que pertenecen a su versión. Para cambiarla, quítalos antes.",
+    "confirm": "¿Cambiar la versión del juego de este roster?",
+    "changed": "Versión cambiada.",
+    "save": "Cambiar versión",
+    "saving": "Guardando…"
   }
 }

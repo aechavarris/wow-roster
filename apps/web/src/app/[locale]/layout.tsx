@@ -27,7 +27,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
     <html lang={locale} className={`${inter.variable} ${cinzel.variable}`}>
       <body className="min-h-screen antialiased">
         <NextIntlClientProvider>
-          <Header user={me.user} loginEnabled={config.loginEnabled} profileLabel={config.profile.label} />
+          <Header user={me.user} loginEnabled={config.loginEnabled} />
           <main className="mx-auto w-full max-w-7xl px-4 py-6">{children}</main>
         </NextIntlClientProvider>
       </body>

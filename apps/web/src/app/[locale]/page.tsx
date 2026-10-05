@@ -4,14 +4,20 @@ import { CharacterSearch } from "@/components/CharacterSearch";
 import { CreateRosterForm } from "@/components/CreateRosterForm";
 import { GuildRegisterForm } from "@/components/GuildRegisterForm";
 import { MyCharacters } from "@/components/MyCharacters";
+import { VersionBadge } from "@/components/VersionSelect";
 import { Link } from "@/i18n/routing";
 import { getConfig, getMe } from "@/lib/api";
+import { versionOf } from "@/lib/game";
 
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
   const [config, me] = await Promise.all([getConfig(), getMe()]);
+  // Linking a guild or searching needs the version's API; the default version goes first.
+  const withApi = config.versions
+    .filter((v) => v.apiAvailable)
+    .sort((a, b) => Number(b.id === config.defaultVersion) - Number(a.id === config.defaultVersion));
 
   if (!me.user) {
     return (
@@ -47,6 +53,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                       {g.name}
                     </Link>
                     <span className="badge bg-surface-2 text-muted">{t(g.kind === "custom" ? "kindCustom" : "kindGuild")}</span>
+                    <VersionBadge version={versionOf(config, g.gameVersion)} />
                   </span>
                   <span className="text-xs text-muted">
                     {g.realm ? `${g.realm} · ` : ""}
@@ -59,12 +66,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             <p className="text-sm text-muted">{t("noGuilds")}</p>
           )}
         </div>
-        <MyCharacters characters={me.characters ?? []} profile={config.profile} />
+        <MyCharacters characters={me.characters ?? []} config={config} />
       </section>
       <aside className="space-y-6">
-        <CreateRosterForm regions={config.regions} defaultRegion={config.defaultRegion} />
-        <GuildRegisterForm regions={config.regions} defaultRegion={config.defaultRegion} hasRealms={config.profile.hasRealms} />
-        <CharacterSearch regions={config.regions} defaultRegion={config.defaultRegion} hasRealms={config.profile.hasRealms} />
+        <CreateRosterForm regions={config.regions} defaultRegion={config.defaultRegion} versions={config.versions} defaultVersion={config.defaultVersion} />
+        <GuildRegisterForm regions={config.regions} defaultRegion={config.defaultRegion} versions={withApi} />
+        <CharacterSearch regions={config.regions} defaultRegion={config.defaultRegion} versions={withApi} />
       </aside>
     </div>
   );

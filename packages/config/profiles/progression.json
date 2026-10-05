@@ -1,0 +1,470 @@
+{
+  "id": "progression",
+  "label": "WoW Classic progression (Mists of Pandaria)",
+  "name": {"en": "Progression (MoP)", "es": "Progresión (MoP)"},
+  "maxLevel": 90,
+  "api": {
+    "available": true,
+    "profileNamespace": "profile-classic-{region}",
+    "staticNamespace": "static-classic-{region}",
+    "dynamicNamespace": "dynamic-classic-{region}",
+    "hasRealms": true,
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"]
+  },
+  "wowheadDomain": "mop-classic",
+  "roles": [
+    {"key": "tank", "name": {"en": "Tank", "es": "Tanque"}, "color": "#4f86c6"},
+    {"key": "healer", "name": {"en": "Healer", "es": "Sanador"}, "color": "#4caf50"},
+    {"key": "mdps", "name": {"en": "Melee DPS", "es": "DPS cuerpo a cuerpo"}, "color": "#e05252"},
+    {"key": "rdps", "name": {"en": "Ranged DPS", "es": "DPS a distancia"}, "color": "#c77dff"}
+  ],
+  "classes": [
+    {
+      "id": 1,
+      "key": "warrior",
+      "color": "#C69B6D",
+      "name": {"en": "Warrior", "es": "Guerrero"},
+      "specs": [
+        {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [71], "apiNames": ["Arms"]},
+        {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [72], "apiNames": ["Fury"]},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [73], "apiNames": ["Protection"]}
+      ]
+    },
+    {
+      "id": 2,
+      "key": "paladin",
+      "color": "#F48CBA",
+      "name": {"en": "Paladin", "es": "Paladín"},
+      "specs": [
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [65], "apiNames": ["Holy"]},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [66], "apiNames": ["Protection"]},
+        {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [70], "apiNames": ["Retribution"]}
+      ]
+    },
+    {
+      "id": 3,
+      "key": "hunter",
+      "color": "#AAD372",
+      "name": {"en": "Hunter", "es": "Cazador"},
+      "specs": [
+        {
+          "key": "beast-mastery",
+          "name": {"en": "Beast Mastery", "es": "Dominio de bestias"},
+          "roles": ["rdps"],
+          "blizzardIds": [253],
+          "apiNames": ["Beast Mastery"]
+        },
+        {
+          "key": "marksmanship",
+          "name": {"en": "Marksmanship", "es": "Puntería"},
+          "roles": ["rdps"],
+          "blizzardIds": [254],
+          "apiNames": ["Marksmanship"]
+        },
+        {"key": "survival", "name": {"en": "Survival", "es": "Supervivencia"}, "roles": ["rdps"], "blizzardIds": [255], "apiNames": ["Survival"]}
+      ]
+    },
+    {
+      "id": 4,
+      "key": "rogue",
+      "color": "#FFF468",
+      "name": {"en": "Rogue", "es": "Pícaro"},
+      "specs": [
+        {
+          "key": "assassination",
+          "name": {"en": "Assassination", "es": "Asesinato"},
+          "roles": ["mdps"],
+          "blizzardIds": [259],
+          "apiNames": ["Assassination"]
+        },
+        {"key": "combat", "name": {"en": "Combat", "es": "Combate"}, "roles": ["mdps"], "blizzardIds": [260], "apiNames": ["Combat"]},
+        {"key": "subtlety", "name": {"en": "Subtlety", "es": "Sutileza"}, "roles": ["mdps"], "blizzardIds": [261], "apiNames": ["Subtlety"]}
+      ]
+    },
+    {
+      "id": 5,
+      "key": "priest",
+      "color": "#FFFFFF",
+      "name": {"en": "Priest", "es": "Sacerdote"},
+      "specs": [
+        {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [256], "apiNames": ["Discipline"]},
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [257], "apiNames": ["Holy"]},
+        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [258], "apiNames": ["Shadow"]}
+      ]
+    },
+    {
+      "id": 6,
+      "key": "death-knight",
+      "color": "#C41E3A",
+      "name": {"en": "Death Knight", "es": "Caballero de la Muerte"},
+      "specs": [
+        {"key": "blood", "name": {"en": "Blood", "es": "Sangre"}, "roles": ["tank"], "blizzardIds": [250], "apiNames": ["Blood"]},
+        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["mdps"], "blizzardIds": [251], "apiNames": ["Frost"]},
+        {"key": "unholy", "name": {"en": "Unholy", "es": "Profano"}, "roles": ["mdps"], "blizzardIds": [252], "apiNames": ["Unholy"]}
+      ]
+    },
+    {
+      "id": 7,
+      "key": "shaman",
+      "color": "#0070DD",
+      "name": {"en": "Shaman", "es": "Chamán"},
+      "specs": [
+        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [262], "apiNames": ["Elemental"]},
+        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [263], "apiNames": ["Enhancement"]},
+        {
+          "key": "restoration",
+          "name": {"en": "Restoration", "es": "Restauración"},
+          "roles": ["healer"],
+          "blizzardIds": [264],
+          "apiNames": ["Restoration"]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "key": "mage",
+      "color": "#3FC7EB",
+      "name": {"en": "Mage", "es": "Mago"},
+      "specs": [
+        {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [62], "apiNames": ["Arcane"]},
+        {"key": "fire", "name": {"en": "Fire", "es": "Fuego"}, "roles": ["rdps"], "blizzardIds": [63], "apiNames": ["Fire"]},
+        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["rdps"], "blizzardIds": [64], "apiNames": ["Frost"]}
+      ]
+    },
+    {
+      "id": 9,
+      "key": "warlock",
+      "color": "#8788EE",
+      "name": {"en": "Warlock", "es": "Brujo"},
+      "specs": [
+        {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [265], "apiNames": ["Affliction"]},
+        {"key": "demonology", "name": {"en": "Demonology", "es": "Demonología"}, "roles": ["rdps"], "blizzardIds": [266], "apiNames": ["Demonology"]},
+        {
+          "key": "destruction",
+          "name": {"en": "Destruction", "es": "Destrucción"},
+          "roles": ["rdps"],
+          "blizzardIds": [267],
+          "apiNames": ["Destruction"]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "key": "monk",
+      "color": "#00FF98",
+      "name": {"en": "Monk", "es": "Monje"},
+      "specs": [
+        {
+          "key": "brewmaster",
+          "name": {"en": "Brewmaster", "es": "Maestro cervecero"},
+          "roles": ["tank"],
+          "blizzardIds": [268],
+          "apiNames": ["Brewmaster"]
+        },
+        {
+          "key": "mistweaver",
+          "name": {"en": "Mistweaver", "es": "Tejedor de niebla"},
+          "roles": ["healer"],
+          "blizzardIds": [270],
+          "apiNames": ["Mistweaver"]
+        },
+        {
+          "key": "windwalker",
+          "name": {"en": "Windwalker", "es": "Viajero del viento"},
+          "roles": ["mdps"],
+          "blizzardIds": [269],
+          "apiNames": ["Windwalker"]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "key": "druid",
+      "color": "#FF7C0A",
+      "name": {"en": "Druid", "es": "Druida"},
+      "specs": [
+        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [102], "apiNames": ["Balance"]},
+        {"key": "feral", "name": {"en": "Feral", "es": "Feral"}, "roles": ["mdps"], "blizzardIds": [103], "apiNames": ["Feral"]},
+        {"key": "guardian", "name": {"en": "Guardian", "es": "Guardián"}, "roles": ["tank"], "blizzardIds": [104], "apiNames": ["Guardian"]},
+        {
+          "key": "restoration",
+          "name": {"en": "Restoration", "es": "Restauración"},
+          "roles": ["healer"],
+          "blizzardIds": [105],
+          "apiNames": ["Restoration"]
+        }
+      ]
+    }
+  ],
+  "raidSizes": [{"size": 10, "groupSize": 5, "enabled": true}, {"size": 25, "groupSize": 5, "enabled": true}],
+  "raids": [
+    {"key": "mogushan-vaults", "name": {"en": "Mogu'shan Vaults", "es": "Cámaras Mogu'shan"}, "size": 25, "enabled": true},
+    {"key": "heart-of-fear", "name": {"en": "Heart of Fear", "es": "Corazón del Miedo"}, "size": 25, "enabled": true},
+    {
+      "key": "terrace-of-endless-spring",
+      "name": {"en": "Terrace of Endless Spring", "es": "Veranda de la Primavera Eterna"},
+      "size": 25,
+      "enabled": true
+    },
+    {"key": "throne-of-thunder", "name": {"en": "Throne of Thunder", "es": "Solio del Trueno"}, "size": 25, "enabled": true},
+    {"key": "siege-of-orgrimmar", "name": {"en": "Siege of Orgrimmar", "es": "Asedio de Orgrimmar"}, "size": 25, "enabled": true}
+  ],
+  "rosterStatuses": [
+    {"key": "raider", "name": {"en": "Raider", "es": "Raider"}, "color": "#4caf50", "raiding": true},
+    {"key": "trial", "name": {"en": "Trial", "es": "Prueba"}, "color": "#ffb300", "raiding": true},
+    {"key": "bench", "name": {"en": "Bench", "es": "Banquillo"}, "color": "#90a4ae", "raiding": true},
+    {"key": "social", "name": {"en": "Social", "es": "Social"}, "color": "#78909c", "raiding": false},
+    {"key": "alt", "name": {"en": "Alt", "es": "Alter"}, "color": "#8d6e63", "raiding": false},
+    {"key": "ignored", "name": {"en": "Ignored", "es": "Ignorado"}, "color": "#616161", "raiding": false, "hidden": true}
+  ],
+  "statPanel": [
+    {
+      "key": "base",
+      "name": {"en": "Base Stats", "es": "Estadísticas básicas"},
+      "entries": [
+        {"key": "strength", "label": {"en": "Strength", "es": "Fuerza"}, "stats": ["strength"]},
+        {"key": "agility", "label": {"en": "Agility", "es": "Agilidad"}, "stats": ["agility"]},
+        {"key": "stamina", "label": {"en": "Stamina", "es": "Aguante"}, "stats": ["stamina"]},
+        {"key": "intellect", "label": {"en": "Intellect", "es": "Intelecto"}, "stats": ["intellect"]},
+        {"key": "spirit", "label": {"en": "Spirit", "es": "Espíritu"}, "stats": ["spirit"]},
+        {"key": "armor", "label": {"en": "Armor", "es": "Armadura"}, "stats": ["armor"]}
+      ]
+    },
+    {
+      "key": "melee",
+      "name": {"en": "Melee", "es": "Cuerpo a cuerpo"},
+      "entries": [
+        {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["attack_power"]},
+        {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["melee_hit"], "format": "percent"},
+        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["melee_crit"], "format": "percent"},
+        {"key": "expertise", "label": {"en": "Expertise", "es": "Pericia"}, "stats": ["expertise"], "format": "percent", "hideIfZero": true},
+        {"key": "melee-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["melee_haste"], "format": "percent", "hideIfZero": true},
+        {"key": "mastery", "label": {"en": "Mastery", "es": "Maestría"}, "stats": ["mastery"], "format": "percent", "hideIfZero": true}
+      ]
+    },
+    {
+      "key": "ranged",
+      "name": {"en": "Ranged", "es": "A distancia"},
+      "entries": [
+        {"key": "ranged-attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["ranged_attack_power"]},
+        {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["ranged_hit"], "format": "percent"},
+        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["ranged_crit"], "format": "percent"}
+      ]
+    },
+    {
+      "key": "spell",
+      "name": {"en": "Spell", "es": "Hechizos"},
+      "entries": [
+        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "stats": ["spell_power"]},
+        {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "stats": ["bonus_healing"]},
+        {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["spell_hit"], "format": "percent"},
+        {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["spell_crit"], "format": "percent"},
+        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "stats": ["mana_regen"]},
+        {"key": "spell-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["spell_haste"], "format": "percent", "hideIfZero": true}
+      ]
+    },
+    {
+      "key": "defenses",
+      "name": {"en": "Defenses", "es": "Defensas"},
+      "entries": [
+        {"key": "armor", "label": {"en": "Armor", "es": "Armadura"}, "stats": ["armor"]},
+        {"key": "defense", "label": {"en": "Defense", "es": "Defensa"}, "stats": ["defense"]},
+        {"key": "dodge", "label": {"en": "Dodge", "es": "Esquivar"}, "stats": ["dodge"], "format": "percent"},
+        {"key": "parry", "label": {"en": "Parry", "es": "Parada"}, "stats": ["parry"], "format": "percent", "hideIfZero": true},
+        {"key": "block", "label": {"en": "Block", "es": "Bloqueo"}, "stats": ["block"], "format": "percent", "hideIfZero": true}
+      ]
+    },
+    {
+      "key": "resistances",
+      "name": {"en": "Resistances", "es": "Resistencias"},
+      "entries": [
+        {"key": "arcane", "label": {"en": "Arcane", "es": "Arcano"}, "stats": ["arcane_resistance"]},
+        {"key": "fire", "label": {"en": "Fire", "es": "Fuego"}, "stats": ["fire_resistance"]},
+        {"key": "nature", "label": {"en": "Nature", "es": "Naturaleza"}, "stats": ["nature_resistance"]},
+        {"key": "frost", "label": {"en": "Frost", "es": "Escarcha"}, "stats": ["frost_resistance"]},
+        {"key": "shadow", "label": {"en": "Shadow", "es": "Sombras"}, "stats": ["shadow_resistance"]}
+      ]
+    }
+  ],
+  "buffs": [
+    {
+      "key": "stats",
+      "name": {"en": "Stats +5%", "es": "Estadísticas +5%"},
+      "category": "buff",
+      "providers": [{"classKey": "druid"}, {"classKey": "paladin"}, {"classKey": "monk"}, {"classKey": "hunter", "specs": ["beast-mastery"]}],
+      "note": "Mark of the Wild, Blessing of Kings, Legacy of the Emperor, Embrace of the Shale Spider (pet)."
+    },
+    {
+      "key": "stamina",
+      "name": {"en": "Stamina +10%", "es": "Aguante +10%"},
+      "category": "buff",
+      "providers": [{"classKey": "priest"}, {"classKey": "warrior"}, {"classKey": "warlock"}, {"classKey": "hunter", "specs": ["beast-mastery"]}],
+      "note": "Power Word: Fortitude, Commanding Shout, Blood Pact, Qiraji Fortitude (pet)."
+    },
+    {
+      "key": "attack-power",
+      "name": {"en": "Attack power +10%", "es": "Poder de ataque +10%"},
+      "category": "buff",
+      "providers": [{"classKey": "warrior"}, {"classKey": "death-knight"}, {"classKey": "hunter"}],
+      "note": "Battle Shout, Horn of Winter, Trueshot Aura."
+    },
+    {
+      "key": "spell-power",
+      "name": {"en": "Spell power +10%", "es": "Poder con hechizos +10%"},
+      "category": "buff",
+      "providers": [{"classKey": "mage"}, {"classKey": "shaman"}, {"classKey": "warlock"}, {"classKey": "hunter", "specs": ["beast-mastery"]}],
+      "note": "Arcane Brilliance, Burning Wrath, Dark Intent, Still Water (pet)."
+    },
+    {
+      "key": "melee-haste",
+      "name": {"en": "Attack speed +10%", "es": "Velocidad de ataque +10%"},
+      "category": "buff",
+      "providers": [
+        {"classKey": "death-knight", "specs": ["frost", "unholy"]},
+        {"classKey": "rogue"},
+        {"classKey": "shaman", "specs": ["enhancement"]},
+        {"classKey": "hunter"}
+      ],
+      "note": "Unholy Aura, Swiftblade's Cunning, Unleashed Rage, Cackling Howl / Serpent's Swiftness (pets)."
+    },
+    {
+      "key": "spell-haste",
+      "name": {"en": "Spell haste +5%", "es": "Celeridad con hechizos +5%"},
+      "category": "buff",
+      "providers": [
+        {"classKey": "druid", "specs": ["balance"]},
+        {"classKey": "priest", "specs": ["shadow"]},
+        {"classKey": "shaman", "specs": ["elemental"]},
+        {"classKey": "hunter", "specs": ["beast-mastery"]}
+      ],
+      "note": "Moonkin Aura, Shadowform, Elemental Oath, Mind Quickening (pet)."
+    },
+    {
+      "key": "critical-strike",
+      "name": {"en": "Critical strike +5%", "es": "Golpe crítico +5%"},
+      "category": "buff",
+      "providers": [
+        {"classKey": "druid", "specs": ["feral", "guardian"]},
+        {"classKey": "mage"},
+        {"classKey": "monk", "specs": ["windwalker"]},
+        {"classKey": "hunter"}
+      ],
+      "note": "Leader of the Pack, Arcane Brilliance, Legacy of the White Tiger, Furious Howl (pets)."
+    },
+    {
+      "key": "mastery",
+      "name": {"en": "Mastery", "es": "Maestría"},
+      "category": "buff",
+      "providers": [{"classKey": "paladin"}, {"classKey": "shaman"}, {"classKey": "hunter"}],
+      "note": "Blessing of Might, Grace of Air, Roar of Courage / Spirit Beast Blessing (pets)."
+    },
+    {
+      "key": "weakened-armor",
+      "name": {"en": "Weakened Armor", "es": "Armadura debilitada"},
+      "category": "debuff",
+      "providers": [{"classKey": "warrior"}, {"classKey": "druid"}, {"classKey": "rogue"}, {"classKey": "hunter"}],
+      "note": "Sunder Armor, Faerie Fire, Expose Armor, pets."
+    },
+    {
+      "key": "physical-vulnerability",
+      "name": {"en": "Physical Vulnerability", "es": "Vulnerabilidad física"},
+      "category": "debuff",
+      "providers": [
+        {"classKey": "warrior", "specs": ["arms", "fury"]},
+        {"classKey": "death-knight", "specs": ["frost", "unholy"]},
+        {"classKey": "paladin", "specs": ["retribution"]},
+        {"classKey": "hunter"}
+      ],
+      "note": "Colossus Smash, Brittle Bones / Ebon Plaguebringer, Judgments of the Bold, pets."
+    },
+    {
+      "key": "magic-vulnerability",
+      "name": {"en": "Magic Vulnerability", "es": "Vulnerabilidad mágica"},
+      "category": "debuff",
+      "providers": [{"classKey": "warlock"}, {"classKey": "rogue"}, {"classKey": "hunter"}],
+      "note": "Curse of the Elements, Master Poisoner, Fire Breath (pet)."
+    },
+    {
+      "key": "weakened-blows",
+      "name": {"en": "Weakened Blows", "es": "Golpes debilitados"},
+      "category": "debuff",
+      "providers": [
+        {"classKey": "warrior"},
+        {"classKey": "paladin", "specs": ["protection", "retribution"]},
+        {"classKey": "death-knight", "specs": ["blood"]},
+        {"classKey": "druid", "specs": ["feral", "guardian"]},
+        {"classKey": "monk", "specs": ["brewmaster"]},
+        {"classKey": "shaman"},
+        {"classKey": "hunter"}
+      ],
+      "note": "Thunder Clap, Hammer of the Righteous, Scarlet Fever, Thrash, Keg Smash, Earth Shock, pets."
+    },
+    {
+      "key": "slow-casting",
+      "name": {"en": "Slow casting", "es": "Lanzamiento lento"},
+      "category": "debuff",
+      "providers": [
+        {"classKey": "rogue"},
+        {"classKey": "warlock"},
+        {"classKey": "death-knight"},
+        {"classKey": "mage", "specs": ["arcane"]},
+        {"classKey": "hunter"}
+      ],
+      "note": "Mind-numbing Poison, Curse of Enfeeblement, Necrotic Strike, Slow, pets."
+    },
+    {
+      "key": "mortal-wounds",
+      "name": {"en": "Mortal Wounds", "es": "Heridas mortales"},
+      "category": "debuff",
+      "providers": [{"classKey": "warrior"}, {"classKey": "rogue"}, {"classKey": "hunter"}, {"classKey": "monk", "specs": ["windwalker"]}],
+      "note": "Mortal Strike / Wild Strike, Wound Poison, Widow Venom, Rising Sun Kick."
+    },
+    {
+      "key": "bloodlust",
+      "name": {"en": "Bloodlust / Heroism", "es": "Ansia de sangre / Heroísmo"},
+      "category": "utility",
+      "providers": [{"classKey": "shaman"}, {"classKey": "mage"}, {"classKey": "hunter", "specs": ["beast-mastery"]}],
+      "note": "Also Time Warp (mage) and Ancient Hysteria (pet)."
+    },
+    {
+      "key": "battle-res",
+      "name": {"en": "Combat resurrection", "es": "Resurrección en combate"},
+      "category": "utility",
+      "providers": [{"classKey": "druid"}, {"classKey": "death-knight"}, {"classKey": "warlock"}],
+      "note": "Rebirth, Raise Ally, Soulstone."
+    },
+    {
+      "key": "skull-banner",
+      "name": {"en": "Skull Banner", "es": "Estandarte de calavera"},
+      "category": "utility",
+      "providers": [{"classKey": "warrior"}]
+    },
+    {
+      "key": "stormlash-totem",
+      "name": {"en": "Stormlash Totem", "es": "Tótem Látigo de tormenta"},
+      "category": "utility",
+      "providers": [{"classKey": "shaman"}]
+    },
+    {
+      "key": "rallying-cry",
+      "name": {"en": "Rallying Cry", "es": "Grito de convocación"},
+      "category": "utility",
+      "providers": [{"classKey": "warrior"}]
+    },
+    {"key": "devotion-aura", "name": {"en": "Devotion Aura", "es": "Aura de devoción"}, "category": "utility", "providers": [{"classKey": "paladin"}]},
+    {
+      "key": "spirit-link-totem",
+      "name": {"en": "Spirit Link Totem", "es": "Tótem Enlace de espíritu"},
+      "category": "utility",
+      "providers": [{"classKey": "shaman", "specs": ["restoration"]}]
+    },
+    {
+      "key": "power-infusion",
+      "name": {"en": "Power Infusion", "es": "Infusión de poder"},
+      "category": "utility",
+      "providers": [{"classKey": "priest", "specs": ["discipline"]}]
+    },
+    {"key": "innervate", "name": {"en": "Innervate", "es": "Estimular"}, "category": "utility", "providers": [{"classKey": "druid"}]}
+  ],
+  "sync": {"defaultIntervalMinutes": 60, "minIntervalMinutes": 15, "defaultMinLevel": 10}
+}

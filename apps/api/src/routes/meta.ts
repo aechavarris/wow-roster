@@ -1,27 +1,33 @@
-import { DEFAULT_LOCALE, REGIONS, SUPPORTED_LOCALES } from "@wow/config";
+import { DEFAULT_LOCALE, REGIONS, SUPPORTED_LOCALES, type GameProfile } from "@wow/config";
 import type { FastifyInstance } from "fastify";
 import type { AppDeps } from "../deps";
 
-export async function metaRoutes(app: FastifyInstance, { profile, env }: AppDeps) {
+/** What the web app needs from a game version's rules (no API namespaces). */
+const publicVersion = (v: GameProfile) => ({
+  id: v.id,
+  label: v.label,
+  name: v.name,
+  maxLevel: v.maxLevel,
+  apiAvailable: v.api.available,
+  hasRealms: v.api.hasRealms,
+  wowheadDomain: v.wowheadDomain,
+  roles: v.roles,
+  classes: v.classes,
+  raidSizes: v.raidSizes,
+  raids: v.raids,
+  rosterStatuses: v.rosterStatuses,
+  statPanel: v.statPanel,
+  buffs: v.buffs,
+  sync: v.sync,
+});
+
+export async function metaRoutes(app: FastifyInstance, { versions, env }: AppDeps) {
   app.get("/health", async () => ({ ok: true }));
 
   /** Public game configuration the web app renders from (no secrets). */
   app.get("/config", async () => ({
-    profile: {
-      id: profile.id,
-      label: profile.label,
-      maxLevel: profile.maxLevel,
-      hasRealms: profile.api.hasRealms,
-      wowheadDomain: profile.wowheadDomain,
-      roles: profile.roles,
-      classes: profile.classes,
-      raidSizes: profile.raidSizes,
-      raids: profile.raids,
-      rosterStatuses: profile.rosterStatuses,
-      statPanel: profile.statPanel,
-      buffs: profile.buffs,
-      sync: profile.sync,
-    },
+    versions: versions.list.map(publicVersion),
+    defaultVersion: versions.defaultId,
     regions: REGIONS,
     defaultRegion: env.BLIZZARD_REGION,
     locales: SUPPORTED_LOCALES,

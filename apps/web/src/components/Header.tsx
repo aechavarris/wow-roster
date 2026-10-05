@@ -6,10 +6,9 @@ import { LoginButton, LogoutButton } from "./AuthButtons";
 interface Props {
   user: { battletag: string } | null;
   loginEnabled: boolean;
-  profileLabel: string;
 }
 
-export function Header({ user, loginEnabled, profileLabel }: Props) {
+export function Header({ user, loginEnabled }: Props) {
   const t = useTranslations("app");
   return (
     <header className="border-b border-border bg-surface">
@@ -17,9 +16,6 @@ export function Header({ user, loginEnabled, profileLabel }: Props) {
         <Link href="/" className="heading text-lg text-accent no-underline">
           {t("name")}
         </Link>
-        <span className="hidden text-xs text-muted sm:inline" title={t("gameProfile")}>
-          {profileLabel}
-        </span>
         <div className="ml-auto flex items-center gap-3">
           <LocaleSwitcher />
           {user ? (

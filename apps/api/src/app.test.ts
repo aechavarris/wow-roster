@@ -1,6 +1,6 @@
 import { BlizzardClient } from "@wow/blizzard";
-import { resolveProfile } from "@wow/config";
-import { syncCharacter, syncGuild, type CoreContext } from "@wow/core";
+import { loadGameVersions } from "@wow/config";
+import { ApiUnavailableError, syncCharacter, syncGuild, type CoreContext } from "@wow/core";
 import { createPrismaClient } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -13,7 +13,7 @@ import type { SyncQueue } from "./deps";
  */
 const DATABASE_URL = process.env.TEST_DATABASE_URL ?? "postgresql://wow:wow@localhost:5432/wow_roster_test";
 const prisma = createPrismaClient(DATABASE_URL);
-const profile = resolveProfile("retail-dev");
+const versions = loadGameVersions("retail");
 
 const member = (id: number, name: string, rank: number, classId = 1) => ({
   character: { id, name, level: 80, realm: { slug: "los-errantes" }, playable_class: { id: classId } },
@@ -72,17 +72,26 @@ const blizzardRoutes: Record<string, unknown> = {
   "/data/wow/media/spell/355": { assets: [{ key: "icon", value: "https://render/icons/taunt.jpg" }] },
 };
 
+/** The fake game data lives in retail; every other game version's namespace answers 404. */
+const RETAIL_NAMESPACES = new Set(["profile-eu", "static-eu", "dynamic-eu"]);
+
 const fakeFetch = (async (input: string | URL) => {
   const url = new URL(input.toString());
   if (url.pathname === "/token") return Response.json({ access_token: "app", expires_in: 3600 });
+  const namespace = url.searchParams.get("namespace");
+  if (namespace && !RETAIL_NAMESPACES.has(namespace)) return new Response(null, { status: 404 });
   const body = blizzardRoutes[url.pathname];
   return body ? Response.json(body) : new Response(null, { status: 404 });
 }) as typeof fetch;
 
 const core: CoreContext = {
   prisma,
-  profile,
-  blizzard: (region) => new BlizzardClient({ clientId: "id", clientSecret: "secret", region, api: profile.api, fetch: fakeFetch }),
+  versions,
+  blizzard: (version, region) => {
+    const api = versions.byId.get(version)?.api;
+    if (!api?.available) throw new ApiUnavailableError(version);
+    return new BlizzardClient({ clientId: "id", clientSecret: "secret", region, api, fetch: fakeFetch });
+  },
 };
 
 const calls: string[] = [];
@@ -121,7 +130,7 @@ beforeAll(async () => {
       API_PORT: 0,
     },
     prisma,
-    profile,
+    versions,
     core,
     queue,
     oauth: {
@@ -144,11 +153,16 @@ afterAll(async () => {
 });
 
 describe("config", () => {
-  it("exposes the game profile with only 10 and 20 player raid sizes enabled", async () => {
-    const response = await app.inject({ method: "GET", url: "/api/config" });
-    const body = response.json();
+  it("exposes every game version without API namespaces", async () => {
+    const body = (await app.inject({ method: "GET", url: "/api/config" })).json();
     expect(body.loginEnabled).toBe(true);
-    expect(body.profile.raidSizes.filter((r: { enabled: boolean }) => r.enabled).map((r: { size: number }) => r.size)).toEqual([10, 20]);
+    expect(body.defaultVersion).toBe("retail");
+    type Version = { id: string; apiAvailable: boolean; raidSizes: { size: number; enabled: boolean }[]; api?: unknown };
+    const byId = Object.fromEntries((body.versions as Version[]).map((v) => [v.id, v]));
+    expect(Object.keys(byId)).toEqual(["forever", "classic-era", "anniversary", "progression", "retail"]);
+    expect(byId.forever!.apiAvailable).toBe(false);
+    expect(byId.forever!.raidSizes.filter((r) => r.enabled).map((r) => r.size)).toEqual([10, 20]);
+    expect(byId.retail!.api).toBeUndefined();
   });
 });
 
@@ -181,7 +195,7 @@ describe("guilds", () => {
       method: "POST",
       url: "/api/guilds",
       cookies: { wr_session: session },
-      payload: { region: "eu", realm: "Los Errantes", name: "Horda Eterna" },
+      payload: { gameVersion: "retail", region: "eu", realm: "Los Errantes", name: "Horda Eterna" },
     });
   }
 
@@ -280,7 +294,7 @@ describe("custom rosters and planned characters", () => {
 
   it("plans a roster without a guild, invites a member and links a planned entry to a real character", async () => {
     const owner = await login(1001);
-    const created = await send("POST", "/api/rosters", owner, { name: "Equipo Forever", region: "eu" });
+    const created = await send("POST", "/api/rosters", owner, { name: "Equipo Forever", gameVersion: "retail", region: "eu" });
     expect(created.statusCode).toBe(201);
     const { guild } = created.json();
     expect(guild).toMatchObject({ kind: "custom", name: "Equipo Forever", realm: null, slug: null });
@@ -344,27 +358,91 @@ describe("characters", () => {
     const session = await login();
     const page = await app.inject({
       method: "GET",
-      url: "/api/characters/eu/los-errantes/Garrosh",
+      url: "/api/characters/retail/eu/los-errantes/Garrosh",
       cookies: { wr_session: session },
     });
     expect(page.statusCode).toBe(200);
     expect(page.json().character).toMatchObject({ name: "Garrosh", specName: "protection", equippedItemLevel: 700 });
-    expect((await app.inject({ method: "GET", url: "/api/characters/eu/los-errantes/Nobody" })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/api/characters/retail/eu/los-errantes/Nobody" })).statusCode).toBe(404);
   });
 
   it("enriches synced characters with icons and serves the cached talent tree", async () => {
     const session = await login();
-    const page = await app.inject({ method: "GET", url: "/api/characters/eu/los-errantes/Garrosh", cookies: { wr_session: session } });
+    const page = await app.inject({ method: "GET", url: "/api/characters/retail/eu/los-errantes/Garrosh", cookies: { wr_session: session } });
     const { profile } = page.json().character;
     expect(profile.equipment[0]).toMatchObject({ name: { en: "Helm", es: "Yelmo" }, icon: "https://render/icons/helm.jpg" });
     expect(profile.talents[0]).toMatchObject({ treeId: 790, specId: 73, selected: [{ nodeId: 1, rank: 1 }] });
 
     // Cached during the sync, so anonymous visitors can read it.
-    const tree = await app.inject({ method: "GET", url: "/api/talent-trees/eu/790/73" });
+    const tree = await app.inject({ method: "GET", url: "/api/talent-trees/retail/eu/790/73" });
     expect(tree.statusCode).toBe(200);
     expect(tree.json().layout.classNodes[0].options[0]).toMatchObject({ name: { en: "Taunt" }, icon: "https://render/icons/taunt.jpg" });
 
     // Uncached trees are only built for signed-in users.
-    expect((await app.inject({ method: "GET", url: "/api/talent-trees/eu/790/71" })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/api/talent-trees/retail/eu/790/71" })).statusCode).toBe(404);
+  });
+});
+
+describe("game versions", () => {
+  const send = (method: "POST" | "PATCH", url: string, session: string, payload?: object) =>
+    app.inject({ method, url, cookies: { wr_session: session }, payload });
+
+  it("claims characters per game version and keeps the same name apart across versions", async () => {
+    const session = await login();
+    const me = (await app.inject({ method: "GET", url: "/api/me", cookies: { wr_session: session } })).json();
+    // Only retail has data in the fake API; the Classic versions answered 404 and were skipped.
+    expect(me.characters.map((c: { name: string; gameVersion: string }) => `${c.gameVersion}:${c.name}`)).toEqual(["retail:Thrall"]);
+
+    await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "los-errantes", name: "Thrall", nameKey: "thrall" },
+    });
+    expect(await prisma.character.count({ where: { nameKey: "thrall" } })).toBe(2);
+  });
+
+  it("applies each version's own classes and specs to planned characters", async () => {
+    const owner = await login(1001);
+    const era = (await send("POST", "/api/rosters", owner, { name: "Vanilla", gameVersion: "classic-era", region: "eu" })).json().guild;
+    expect(era.gameVersion).toBe("classic-era");
+    // Combat exists in Classic; Outlaw and monks do not.
+    expect((await send("POST", `/api/guilds/${era.id}/roster/planned`, owner, { classId: 4, specKey: "combat" })).statusCode).toBe(201);
+    expect((await send("POST", `/api/guilds/${era.id}/roster/planned`, owner, { classId: 4, specKey: "outlaw" })).statusCode).toBe(400);
+    expect((await send("POST", `/api/guilds/${era.id}/roster/planned`, owner, { classId: 10 })).statusCode).toBe(400);
+
+    const retail = (await send("POST", "/api/rosters", owner, { name: "Retail", gameVersion: "retail", region: "eu" })).json().guild;
+    expect((await send("POST", `/api/guilds/${retail.id}/roster/planned`, owner, { classId: 4, specKey: "outlaw" })).statusCode).toBe(201);
+    expect((await send("POST", `/api/guilds/${retail.id}/roster/planned`, owner, { classId: 4, specKey: "combat" })).statusCode).toBe(400);
+
+    expect((await send("POST", "/api/rosters", owner, { name: "X", gameVersion: "wotlk", region: "eu" })).statusCode).toBe(400);
+  });
+
+  it("only lets the owner change the version of a custom roster without real characters", async () => {
+    const owner = await login(1001);
+    const roster = (await send("POST", "/api/rosters", owner, { name: "Plan", gameVersion: "retail", region: "eu" })).json().guild;
+    await send("POST", `/api/guilds/${roster.id}/roster/planned`, owner, { classId: 4, specKey: "outlaw" });
+
+    const invite = (await send("POST", `/api/guilds/${roster.id}/invites`, owner, { role: "OFFICER" })).json();
+    const officer = await login(2002);
+    await send("POST", `/api/invites/${invite.token}/accept`, officer);
+    expect((await send("PATCH", `/api/guilds/${roster.id}`, officer, { gameVersion: "classic-era" })).statusCode).toBe(403);
+
+    const changed = await send("PATCH", `/api/guilds/${roster.id}`, owner, { gameVersion: "classic-era" });
+    expect(changed.json().guild.gameVersion).toBe("classic-era");
+    // Outlaw does not exist in Classic: the planned spec is cleared, the class stays.
+    const entry = await prisma.rosterEntry.findFirstOrThrow({ where: { guildId: roster.id } });
+    expect(entry).toMatchObject({ plannedClassId: 4, plannedSpec: null });
+
+    await send("PATCH", `/api/guilds/${roster.id}`, owner, { gameVersion: "retail" });
+    expect((await send("POST", `/api/guilds/${roster.id}/roster`, owner, { realm: "Los Errantes", name: "Garrosh" })).statusCode).toBe(201);
+    expect((await send("PATCH", `/api/guilds/${roster.id}`, owner, { gameVersion: "classic-era" })).statusCode).toBe(409);
+  });
+
+  it("keeps Forever rosters to planned characters until Blizzard publishes its API", async () => {
+    const owner = await login(1001);
+    const roster = (await send("POST", "/api/rosters", owner, { name: "Forever", gameVersion: "forever", region: "eu" })).json().guild;
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, owner, { classId: 2, specKey: "holy" })).statusCode).toBe(201);
+    const real = await send("POST", `/api/guilds/${roster.id}/roster`, owner, { realm: "Los Errantes", name: "Garrosh" });
+    expect(real.statusCode).toBe(409);
+    expect(real.json().error).toBe("game_version_without_api");
+    expect((await app.inject({ method: "GET", url: "/api/characters/forever/eu/x/Garrosh", cookies: { wr_session: owner } })).statusCode).toBe(409);
   });
 });

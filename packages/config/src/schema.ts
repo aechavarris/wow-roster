@@ -56,6 +56,8 @@ export const rosterStatusSchema = z.object({
 });
 
 export const apiSchema = z.object({
+  /** False while Blizzard has no public API for the version (Forever): rosters can only hold planned characters. */
+  available: z.boolean().default(true),
   /** Namespace templates; `{region}` is replaced at runtime. */
   profileNamespace: z.string(),
   staticNamespace: z.string(),
@@ -109,6 +111,8 @@ export type StatSection = z.infer<typeof statSectionSchema>;
 export const gameProfileSchema = z.object({
   id: z.string(),
   label: z.string(),
+  /** Short name shown when picking a game version for a roster. */
+  name: localizedSchema,
   maxLevel: z.number().int().positive(),
   api: apiSchema,
   /** Wowhead tooltip domain prefix: "" for retail, "classic", "forever"... */
@@ -129,6 +133,7 @@ export const gameProfileSchema = z.object({
 });
 
 export type GameProfile = z.infer<typeof gameProfileSchema>;
+export type ApiConfig = z.infer<typeof apiSchema>;
 export type GameClass = z.infer<typeof classSchema>;
 export type GameSpec = z.infer<typeof specSchema>;
 export type GameRole = z.infer<typeof roleSchema>;

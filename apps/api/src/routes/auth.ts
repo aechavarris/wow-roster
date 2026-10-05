@@ -11,7 +11,7 @@ const safeRedirect = (value: string | undefined) =>
   value && value.startsWith("/") && !value.startsWith("//") ? value : "/";
 
 export async function authRoutes(app: FastifyInstance, deps: AppDeps) {
-  const { env, prisma, profile, core, queue, oauth } = deps;
+  const { env, prisma, versions, core, queue, oauth } = deps;
   const secure = env.PUBLIC_URL.startsWith("https://");
 
   app.get("/auth/login", async (request, reply) => {
@@ -43,19 +43,21 @@ export async function authRoutes(app: FastifyInstance, deps: AppDeps) {
       update: { battletag: bnetUser.battletag, lastLoginAt: new Date() },
     });
 
-    // Claiming characters is best effort: login still succeeds if the profile API is unavailable.
-    try {
-      const region = stored.data.region;
-      const characters = await core.blizzard(region).getAccountCharacters(accessToken);
-      const ids = await claimAccountCharacters(core, user.id, region, characters);
-      const minLevel = profile.sync.defaultMinLevel;
-      const toSync = characters
-        .map((c, i) => ({ level: c.level, id: ids[i]! }))
-        .filter((c) => c.level >= minLevel)
-        .map((c) => c.id);
-      await queue.syncCharacters(toSync);
-    } catch (error) {
-      request.log.warn({ err: error }, "could not load account characters");
+    // Claiming characters is best effort and per game version: login still succeeds if a version's
+    // profile API is unavailable or the account has no characters there.
+    const region = stored.data.region;
+    for (const version of versions.list.filter((v) => v.api.available)) {
+      try {
+        const characters = await core.blizzard(version.id, region).getAccountCharacters(accessToken);
+        const ids = await claimAccountCharacters(core, user.id, { version: version.id, region }, characters);
+        const toSync = characters
+          .map((c, i) => ({ level: c.level, id: ids[i]! }))
+          .filter((c) => c.level >= version.sync.defaultMinLevel)
+          .map((c) => c.id);
+        await queue.syncCharacters(toSync);
+      } catch (error) {
+        request.log.warn({ err: error, gameVersion: version.id }, "could not load account characters");
+      }
     }
 
     const session = await createSession(prisma, user.id);

@@ -1,8 +1,13 @@
 import { findClass, localize, type GameClass } from "@wow/config";
 import type { CSSProperties } from "react";
-import type { PublicConfig } from "./types";
+import type { GameVersion, PublicConfig } from "./types";
 
-type Profile = PublicConfig["profile"];
+type Profile = GameVersion;
+
+/** The rules of a game version, or of the default one for missing or unknown ids. */
+export function versionOf(config: PublicConfig, id: string | null | undefined): GameVersion {
+  return config.versions.find((v) => v.id === id) ?? config.versions.find((v) => v.id === config.defaultVersion)!;
+}
 
 export function classOf(profile: Profile, classId: number | null | undefined): GameClass | undefined {
   return findClass(profile, classId);
@@ -33,8 +38,8 @@ export function statusOf(profile: Profile, key: string) {
   return profile.rosterStatuses.find((s) => s.key === key);
 }
 
-export function characterPath(c: { region: string; realm: string; name: string }) {
-  return `/character/${c.region}/${encodeURIComponent(c.realm)}/${encodeURIComponent(c.name.toLowerCase())}`;
+export function characterPath(c: { gameVersion: string; region: string; realm: string; name: string }) {
+  return `/character/${c.gameVersion}/${c.region}/${encodeURIComponent(c.realm)}/${encodeURIComponent(c.name.toLowerCase())}`;
 }
 
 /** Exact in-game quality colors, used inside the always-dark game tooltips and icon frames. */

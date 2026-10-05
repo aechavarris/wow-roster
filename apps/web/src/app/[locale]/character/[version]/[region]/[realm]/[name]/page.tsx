@@ -5,12 +5,13 @@ import { ProfessionsPanel, ReputationsPanel } from "@/components/character/Profe
 import { RefreshCharacterButton } from "@/components/character/RefreshCharacterButton";
 import { StatsPanel } from "@/components/character/StatsPanel";
 import { TalentsPanel } from "@/components/character/TalentsPanel";
+import { VersionBadge } from "@/components/VersionSelect";
 import { Link } from "@/i18n/routing";
 import { apiGet, getConfig, getMe } from "@/lib/api";
-import { classColor, className, classText, specName } from "@/lib/game";
+import { classColor, className, classText, specName, versionOf } from "@/lib/game";
 import type { CharacterDetail } from "@/lib/types";
 
-type Props = PageProps<"/[locale]/character/[region]/[realm]/[name]">;
+type Props = PageProps<"/[locale]/character/[version]/[region]/[realm]/[name]">;
 
 export async function generateMetadata({ params }: Props) {
   const { name } = await params;
@@ -18,19 +19,20 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function CharacterPage({ params }: Props) {
-  const { locale, region, realm, name } = await params;
+  const { locale, version, region, realm, name } = await params;
   setRequestLocale(locale);
   const [t, format, config, me, data] = await Promise.all([
     getTranslations("character"),
     getFormatter(),
     getConfig(),
     getMe(),
-    apiGet<{ character: CharacterDetail }>(`/characters/${region}/${realm}/${name}`),
+    apiGet<{ character: CharacterDetail }>(`/characters/${version}/${region}/${realm}/${name}`),
   ]);
   if (!data) notFound();
   const c = data.character;
   const profile = c.profile;
-  const { profile: game } = config;
+  // Classes, specs and the stats layout come from the character's game version.
+  const game = versionOf(config, c.gameVersion);
   const missing = profile?.missing ?? {};
   const color = classColor(game, c.classId);
 
@@ -48,7 +50,8 @@ export default async function CharacterPage({ params }: Props) {
           <p className="text-sm">
             {t("summary", { level: c.level })} · {specName(game, c.classId, c.specName, locale)} {className(game, c.classId, locale)}
           </p>
-          <p className="text-sm text-muted">
+          <p className="flex flex-wrap items-center gap-x-1 text-sm text-muted">
+            <VersionBadge version={game} />
             {c.realm} · {c.region.toUpperCase()}
             {c.guild && (
               <>
@@ -76,7 +79,7 @@ export default async function CharacterPage({ params }: Props) {
             <GearPanel items={profile.equipment} missing={missing.equipment} media={profile.media} classColor={color} />
             <StatsPanel stats={profile.statistics} missing={missing.statistics} panel={game.statPanel} itemLevel={c.equippedItemLevel} />
           </div>
-          <TalentsPanel setups={profile.talents} missing={missing.specializations} region={c.region} />
+          <TalentsPanel setups={profile.talents} missing={missing.specializations} version={c.gameVersion} region={c.region} />
           <div className="grid items-start gap-4 md:grid-cols-2">
             <ProfessionsPanel professions={profile.professions} missing={missing.professions} />
             <ReputationsPanel reputations={profile.reputations} missing={missing.reputations} />
