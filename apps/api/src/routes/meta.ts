@@ -18,6 +18,10 @@ const publicVersion = (v: GameProfile) => ({
   rosterStatuses: v.rosterStatuses,
   statPanel: v.statPanel,
   buffs: v.buffs,
+  professions: v.professions,
+  maxPrimaryProfessions: v.maxPrimaryProfessions,
+  /** False where professions are entered by hand (the version's API has none). */
+  apiProfessions: v.api.available && v.api.characterEndpoints.includes("professions"),
   sync: v.sync,
 });
 

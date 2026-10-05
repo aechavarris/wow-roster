@@ -207,7 +207,19 @@
     "health": "Health",
     "power": "Resource",
     "ratingLine": "Rating: {value}",
-    "baseLine": "Base: {value}"
+    "baseLine": "Base: {value}",
+    "professionTiers": "By expansion",
+    "recipes": "{count, plural, one {# recipe} other {# recipes}}",
+    "professionsManualHelp": "Blizzard's API has no professions for this game version: the character's owner enters them.",
+    "professionsNotSet": "The owner has not entered their professions yet.",
+    "editProfessions": "Edit professions",
+    "primaryProfession": "Primary profession {number}",
+    "secondaryProfessions": "Secondary",
+    "skill": "Skill",
+    "noProfession": "None",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving…"
   },
   "slots": {
     "HEAD": "Head",
@@ -287,7 +299,11 @@
     "unknown_role": "Unknown role.",
     "unknown_status": "Unknown status.",
     "entry_pending": "This entry is pending: the owner has to accept it first.",
-    "too_many_pending": "You have too many pending proposals in this roster. Wait for the owner to review them."
+    "too_many_pending": "You have too many pending proposals in this roster. Wait for the owner to review them.",
+    "unknown_profession": "That profession does not exist in this game version.",
+    "invalid_profession_skill": "The skill is above that profession's cap in this game version.",
+    "too_many_primary_professions": "A character can only have two primary professions.",
+    "professions_from_api": "In this game version professions come from Blizzard's API."
   },
   "createRoster": {
     "title": "Create a custom roster",

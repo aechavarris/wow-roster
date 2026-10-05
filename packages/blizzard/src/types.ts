@@ -147,6 +147,8 @@ export interface CharacterMedia {
 }
 
 export interface ProfessionTier {
+  /** Blizzard tier id; newer expansions have higher ids. */
+  id?: number;
   name?: LocalizedText;
   skill?: number;
   maxSkill?: number;

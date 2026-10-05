@@ -88,3 +88,21 @@ describe("blizzardSlug", () => {
     expect(blizzardSlug("Zul'jin")).toBe("zuljin");
   });
 });
+
+describe("professions", () => {
+  it("lists each version's own professions with unique ids and keys", () => {
+    const keys = (id: string) => resolveProfile(id).professions.map((p) => p.key);
+    for (const id of ["forever", "classic-era", "anniversary", "progression", "retail"]) {
+      const professions = resolveProfile(id).professions;
+      expect(new Set(professions.map((p) => p.id)).size).toBe(professions.length);
+      expect(new Set(professions.map((p) => p.key)).size).toBe(professions.length);
+    }
+    expect(keys("classic-era")).not.toContain("jewelcrafting");
+    expect(keys("anniversary")).toContain("jewelcrafting");
+    expect(keys("anniversary")).not.toContain("inscription");
+    expect(keys("progression")).toEqual(expect.arrayContaining(["inscription", "archaeology", "first-aid"]));
+    // First Aid was removed in Battle for Azeroth.
+    expect(keys("retail")).not.toContain("first-aid");
+    expect(resolveProfile("progression").professions.find((p) => p.key === "mining")?.maxSkill).toBe(600);
+  });
+});

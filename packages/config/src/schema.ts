@@ -108,6 +108,19 @@ export type Buff = z.infer<typeof buffSchema>;
 export type StatEntry = z.infer<typeof statEntrySchema>;
 export type StatSection = z.infer<typeof statSectionSchema>;
 
+/**
+ * A profession of the game version. `id` is Blizzard's profession (skill line) id, the same the
+ * profession API returns; `maxSkill` is the cap at this version's level cap (absent where the API
+ * reports it per expansion tier, as in retail).
+ */
+export const professionSchema = z.object({
+  id: z.number().int().positive(),
+  key: z.string(),
+  name: localizedSchema,
+  kind: z.enum(["primary", "secondary"]),
+  maxSkill: z.number().int().positive().optional(),
+});
+
 export const gameProfileSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -125,6 +138,10 @@ export const gameProfileSchema = z.object({
   statPanel: z.array(statSectionSchema).default([]),
   /** Raid composition coverage; replaced as a whole when a profile extends another. */
   buffs: z.array(buffSchema).default([]),
+  /** Professions that exist in this version; validates manually entered ones where the API has none. */
+  professions: z.array(professionSchema).default([]),
+  /** How many primary professions a character can learn. */
+  maxPrimaryProfessions: z.number().int().positive().default(2),
   sync: z.object({
     defaultIntervalMinutes: z.number().int().positive(),
     minIntervalMinutes: z.number().int().positive(),
@@ -139,6 +156,7 @@ export type GameSpec = z.infer<typeof specSchema>;
 export type GameRole = z.infer<typeof roleSchema>;
 export type RosterStatus = z.infer<typeof rosterStatusSchema>;
 export type RaidSize = z.infer<typeof raidSizeSchema>;
+export type GameProfession = z.infer<typeof professionSchema>;
 
 /** A profile file may extend another one and override any top-level key. */
 export const profileFileSchema = gameProfileSchema.partial().extend({

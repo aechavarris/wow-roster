@@ -21,7 +21,25 @@ export interface GameVersion {
   rosterStatuses: RosterStatus[];
   statPanel: StatSection[];
   buffs: Buff[];
+  professions: GameProfession[];
+  maxPrimaryProfessions: number;
+  /** False where the version's API has no professions and owners enter them by hand (Classic). */
+  apiProfessions: boolean;
   sync: { defaultIntervalMinutes: number; minIntervalMinutes: number; defaultMinLevel: number };
+}
+
+export interface GameProfession {
+  id: number;
+  key: string;
+  name: Localized;
+  kind: "primary" | "secondary";
+  maxSkill?: number;
+}
+
+/** A profession entered by the character's owner; skill is optional. */
+export interface ManualProfession {
+  id: number;
+  skill: number | null;
 }
 
 export interface PublicConfig {
@@ -145,6 +163,7 @@ export interface CharacterDetail {
   claimed: boolean;
   guild: { id: string; name: string } | null;
   profile: Omit<CharacterProfile, "summary"> | null;
+  manualProfessions: ManualProfession[] | null;
 }
 
 export interface RosterMember {

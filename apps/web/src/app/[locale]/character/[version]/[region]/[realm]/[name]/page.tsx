@@ -81,7 +81,14 @@ export default async function CharacterPage({ params }: Props) {
           </div>
           <TalentsPanel setups={profile.talents} missing={missing.specializations} version={c.gameVersion} region={c.region} />
           <div className="grid items-start gap-4 md:grid-cols-2">
-            <ProfessionsPanel professions={profile.professions} missing={missing.professions} />
+            <ProfessionsPanel
+              game={game}
+              professions={profile.professions}
+              missing={missing.professions}
+              manual={c.manualProfessions}
+              characterId={c.id}
+              canEdit={me.characters?.some((own) => own.id === c.id) ?? false}
+            />
             <ReputationsPanel reputations={profile.reputations} missing={missing.reputations} />
           </div>
         </>
