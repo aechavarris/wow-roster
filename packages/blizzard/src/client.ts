@@ -49,6 +49,8 @@ export interface BlizzardClientOptions {
   /** Locale for names in responses; English keeps spec matching stable. */
   locale?: string;
   fetch?: typeof fetch;
+  /** Base wait before retrying a throttled or failed request; tests set it to 0. */
+  retryDelayMs?: number;
 }
 
 type NamespaceKind = "profile" | "static" | "dynamic";
@@ -60,6 +62,10 @@ interface RequestOptions {
   /** Overrides the client locale; null omits it so Blizzard returns every locale. */
   locale?: string | null;
 }
+
+/** Gateway and server errors Blizzard returns now and then under load; worth one more try. */
+const TRANSIENT_STATUSES = new Set([500, 502, 503, 504]);
+const MAX_RETRIES = 3;
 
 const encodeName = (name: string) => encodeURIComponent(name.trim().toLowerCase());
 
@@ -109,13 +115,26 @@ export class BlizzardClient {
     const locale = options.locale === undefined ? (this.options.locale ?? "en_US") : options.locale;
     if (locale) url.searchParams.set("locale", locale);
     const token = userToken ?? (await this.getAppToken());
-    const response = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
-
-    if (response.status === 429 && attempt < 3) {
-      const wait = Number(response.headers.get("retry-after") ?? 1) * 1000;
-      await new Promise((resolve) => setTimeout(resolve, wait * (attempt + 1)));
+    const baseDelay = this.options.retryDelayMs ?? 1000;
+    const retry = async (waitMs: number) => {
+      await new Promise((resolve) => setTimeout(resolve, waitMs * (attempt + 1)));
       return this.request<T>(path, options, attempt + 1);
+    };
+
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (error) {
+      // Dropped connections and DNS hiccups: retry, then surface as a gateway error.
+      if (attempt < MAX_RETRIES) return retry(baseDelay);
+      throw new BlizzardApiError(502, path, `Blizzard API unreachable on ${path}: ${(error as Error).message}`);
     }
+
+    if (response.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = Number(response.headers.get("retry-after"));
+      return retry(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : baseDelay);
+    }
+    if (TRANSIENT_STATUSES.has(response.status) && attempt < MAX_RETRIES) return retry(baseDelay);
     if (response.status === 401 && !userToken && attempt === 0) {
       this.appToken = undefined;
       return this.request<T>(path, options, attempt + 1);

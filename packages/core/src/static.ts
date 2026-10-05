@@ -45,9 +45,16 @@ async function store(ctx: CoreContext, key: string, data: unknown) {
 
 /** Icon URLs by id, fetched once per game version and region. Ids without media are remembered as missing. */
 export async function getIcons(ctx: CoreContext, target: GameTarget, kind: IconKind, ids: number[]): Promise<Map<number, string>> {
+  const { icons, failed, requested } = await fetchIcons(ctx, target, kind, ids);
+  if (failed > 0 && failed === requested) throw new Error(`No ${kind} icon could be fetched (${failed} failed)`);
+  return icons;
+}
+
+/** Like getIcons, but reports how many media calls failed; failed ids are not cached so they are tried again later. */
+async function fetchIcons(ctx: CoreContext, target: GameTarget, kind: IconKind, ids: number[]) {
   const unique = [...new Set(ids.filter((id) => Number.isFinite(id)))];
   const icons = new Map<number, string>();
-  if (unique.length === 0) return icons;
+  if (unique.length === 0) return { icons, failed: 0, requested: 0 };
 
   const keyOf = (id: number) => cacheKey(target, "icon", kind, id);
   const rows = await ctx.prisma.staticCache.findMany({ where: { key: { in: unique.map(keyOf) } } });
@@ -61,12 +68,19 @@ export async function getIcons(ctx: CoreContext, target: GameTarget, kind: IconK
   }
 
   const client = ctx.blizzard(target.version, target.region);
+  let failed = 0;
   await mapLimit(missing, CONCURRENCY, async (id) => {
-    const icon = await client.getIcon(kind, id);
+    let icon: string | undefined;
+    try {
+      icon = await client.getIcon(kind, id);
+    } catch {
+      failed++;
+      return;
+    }
     await store(ctx, keyOf(id), icon);
     if (icon) icons.set(id, icon);
   });
-  return icons;
+  return { icons, failed, requested: missing.length };
 }
 
 /** Retail talent tree layout for a spec, with spell icons on every option; cached per game version and region. */
@@ -82,14 +96,24 @@ export async function getTalentTree(
   if (row?.data && isFresh(row.fetchedAt)) return row.data as unknown as TalentTreeLayout;
   if (options.fetchIfMissing === false) return (row?.data as unknown as TalentTreeLayout) ?? null;
 
-  const layout = await ctx.blizzard(target.version, target.region).getTalentTree(treeId, specId);
+  const stale = (row?.data as unknown as TalentTreeLayout | null) ?? null;
+  let layout: TalentTreeLayout;
+  try {
+    layout = await ctx.blizzard(target.version, target.region).getTalentTree(treeId, specId);
+  } catch (error) {
+    // An expired copy still draws the right tree until the API answers again.
+    if (stale) return stale;
+    throw error;
+  }
   const allNodes = [...layout.classNodes, ...layout.specNodes, ...layout.heroTrees.flatMap((h) => h.nodes)];
   const spellIds = allNodes.flatMap((n) => n.options.flatMap((o) => (o.spellId ? [o.spellId] : [])));
-  const icons = await getIcons(ctx, target, "spell", spellIds);
+  // Icons are decoration: failed media calls leave those nodes with a fallback instead of hiding the whole tree,
+  // and the layout is only cached once every icon came back, so the gaps fill in on a later visit.
+  const { icons, failed } = await fetchIcons(ctx, target, "spell", spellIds);
   for (const node of allNodes) {
     for (const option of node.options) if (option.spellId) option.icon = icons.get(option.spellId);
   }
-  await store(ctx, key, layout);
+  if (failed === 0) await store(ctx, key, layout);
   return layout;
 }
 
