@@ -124,6 +124,14 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if (-not (Test-Path "$env:DEPLOY_PATH\.env")) { throw "Missing $env:DEPLOY_PATH\.env (see deploy/home.env.example)" }
           New-Item -ItemType Directory -Force "$env:DEPLOY_PATH\deploy" | Out-Null
+          # Caddy and Tailscale only read their bind-mounted config at start, and compose does not
+          # recreate a container when a mounted file changes: note which ones need recreating.
+          $changed = @()
+          foreach ($pair in @(@('Caddyfile', 'caddy'), @('tailscale-serve.json', 'tailscale'))) {
+            $target = "$env:DEPLOY_PATH\deploy\$($pair[0])"
+            if (-not (Test-Path $target) -or (Get-FileHash "deploy\$($pair[0])").Hash -ne (Get-FileHash $target).Hash) { $changed += $pair[1] }
+          }
+          "RECREATE_SERVICES=$($changed -join ' ')" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           Copy-Item docker-compose.prod.yml, docker-compose.home.yml $env:DEPLOY_PATH -Force
           Copy-Item deploy\Caddyfile, deploy\tailscale-serve.json "$env:DEPLOY_PATH\deploy" -Force
       - name: Roll out
@@ -134,4 +142,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d --remove-orphans
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($env:RECREATE_SERVICES) {
+            $services = $env:RECREATE_SERVICES -split ' '
+            Write-Output "Config changed, recreating: $services"
+            docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d --force-recreate @services
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
           docker image prune -f
