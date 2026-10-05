@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildRoster, type RosterInputEntry } from "./roster";
 import { defaultStatusForRank } from "./sync";
 
-const profile = resolveProfile("retail-dev");
+const profile = resolveProfile("retail");
 
 type EntryOverrides = Partial<Omit<RosterInputEntry, "character">> & { character?: Partial<RosterInputEntry["character"]> };
 
@@ -19,6 +19,7 @@ function entry(id: string, overrides: EntryOverrides = {}): RosterInputEntry {
     ...rest,
     character: {
       id: `c-${id}`,
+      gameVersion: "retail",
       region: "eu",
       realm: "realm",
       name: id,

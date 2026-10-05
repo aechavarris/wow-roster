@@ -4,8 +4,10 @@ import { Composition } from "@/components/Composition";
 import { RosterTable } from "@/components/RosterTable";
 import { RosterTools } from "@/components/RosterTools";
 import { SyncGuildButton } from "@/components/SyncGuildButton";
+import { VersionBadge } from "@/components/VersionSelect";
 import { Link } from "@/i18n/routing";
 import { apiGet, getConfig, getMe } from "@/lib/api";
+import { versionOf } from "@/lib/game";
 import type { GuildResponse, RosterPlayer } from "@/lib/types";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/guild/[id]">) {
@@ -28,15 +30,22 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
   if (!data || !roster) notFound();
   const { guild, viewerRole } = data;
   const isOfficer = viewerRole === "OWNER" || viewerRole === "OFFICER";
+  // Classes, specs, buffs and the API all come from the roster's game version.
+  const version = versionOf(config, guild.gameVersion);
 
   const inRoster = new Set(roster.players.flatMap((p) => [p.main, ...p.alts]).flatMap((c) => (c.characterId ? [c.characterId] : [])));
-  const myCharacters = (me.characters ?? []).filter((c) => c.region === guild.region && !inRoster.has(c.id) && c.level >= 10);
+  const myCharacters = (me.characters ?? []).filter(
+    (c) => c.gameVersion === guild.gameVersion && c.region === guild.region && !inRoster.has(c.id) && c.level >= 10,
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="heading text-3xl">{guild.name}</h1>
+          <h1 className="heading flex flex-wrap items-center gap-3 text-3xl">
+            {guild.name}
+            <VersionBadge version={version} />
+          </h1>
           <p className="text-sm text-muted">
             {guild.kind === "custom" ? t("customRoster") : `${guild.realm} · ${t("linkedRoster")}`} · {guild.region.toUpperCase()}
             {guild.faction ? ` · ${t(`faction.${guild.faction}`)}` : ""}
@@ -47,24 +56,23 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
         </div>
         {isOfficer && (
           <div className="flex gap-2">
-            <SyncGuildButton guildId={guild.id} />
+            {version.apiAvailable && <SyncGuildButton guildId={guild.id} />}
             <Link href={`/guild/${guild.id}/settings`} className="btn">
               {t("settings")}
             </Link>
           </div>
         )}
       </div>
-      <Composition players={roster.players} profile={config.profile} />
+      <Composition players={roster.players} profile={version} />
       <RosterTable
         guildId={guild.id}
         players={roster.players}
-        profile={config.profile}
+        profile={version}
         viewerRole={viewerRole}
         viewerUserId={me.user?.id ?? null}
-        hasRealms={config.profile.hasRealms}
         showRank={guild.kind === "guild"}
       />
-      <RosterTools guildId={guild.id} region={guild.region} profile={config.profile} viewerRole={viewerRole} myCharacters={myCharacters} />
+      <RosterTools guildId={guild.id} region={guild.region} profile={version} viewerRole={viewerRole} myCharacters={myCharacters} />
     </div>
   );
 }

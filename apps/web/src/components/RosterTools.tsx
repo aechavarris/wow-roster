@@ -6,9 +6,9 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
 import { classColor, classText } from "@/lib/game";
-import type { MeResponse, PublicConfig, ViewerRole } from "@/lib/types";
+import type { GameVersion, MeResponse, ViewerRole } from "@/lib/types";
 
-type Profile = PublicConfig["profile"];
+type Profile = GameVersion;
 
 interface Props {
   guildId: string;
@@ -45,10 +45,15 @@ export function RosterTools({ guildId, region, profile, viewerRole, myCharacters
     <div className="space-y-3">
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <PlannedForm guildId={guildId} profile={profile} isOfficer={isOfficer} run={run} />
-        <div className="space-y-4">
-          {myCharacters.length > 0 && <MyCharactersForm guildId={guildId} profile={profile} characters={myCharacters} run={run} />}
-          {isOfficer && <RealCharacterForm guildId={guildId} hasRealms={profile.hasRealms} region={region} run={run} />}
-        </div>
+        {profile.apiAvailable ? (
+          <div className="space-y-4">
+            {myCharacters.length > 0 && <MyCharactersForm guildId={guildId} profile={profile} characters={myCharacters} run={run} />}
+            {isOfficer && <RealCharacterForm guildId={guildId} hasRealms={profile.hasRealms} region={region} run={run} />}
+          </div>
+        ) : (
+          // Versions without a Blizzard API (Forever, for now) only hold planned characters.
+          <p className="card text-sm text-muted">{t("noApiYet")}</p>
+        )}
       </div>
       {message && (
         <p role="status" className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>

@@ -1,5 +1,5 @@
 import { authorizeUrl, exchangeCode, getUserInfo } from "@wow/blizzard";
-import { loadGameProfile } from "@wow/config/node";
+import { loadServerGameVersions } from "@wow/config/node";
 import {
   QUEUES,
   blizzardFactory,
@@ -17,7 +17,7 @@ import type { SyncQueue } from "./deps";
 import { loadEnv } from "./env";
 
 const env = loadEnv();
-const profile = loadGameProfile();
+const versions = loadServerGameVersions();
 const prisma = createPrismaClient(env.DATABASE_URL);
 const redisUrl = env.REDIS_URL;
 const guildQueue = new Queue<GuildSyncJob>(QUEUES.guildSync, { connection: createRedis(redisUrl) });
@@ -58,8 +58,8 @@ const app = await buildApp(
   {
     env: { ...env, ALLOW_UNVERIFIED_GUILDS: process.env.ALLOW_UNVERIFIED_GUILDS === "true" },
     prisma,
-    profile,
-    core: { prisma, profile, blizzard: blizzardFactory(profile, oauthConfig) },
+    versions,
+    core: { prisma, versions, blizzard: blizzardFactory(versions, oauthConfig) },
     queue,
     oauth: {
       authorizeUrl: (state) => authorizeUrl(oauthConfig, state),

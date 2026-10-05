@@ -25,7 +25,7 @@ const retailStats = {
 
 describe("computeStatPanel", () => {
   it("follows the retail character sheet: attributes then enhancements", () => {
-    const panel = computeStatPanel(resolveProfile("retail-dev").statPanel, retailStats);
+    const panel = computeStatPanel(resolveProfile("retail").statPanel, retailStats);
     expect(panel.map((s) => s.key)).toEqual(["attributes", "enhancements"]);
     expect(panel[0]!.rows.map((r) => [r.label.en, r.value, r.base])).toEqual([
       ["Intellect", 2253, 622],

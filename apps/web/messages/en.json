@@ -141,7 +141,8 @@
     "myAdded": "Characters added; they will sync in a few seconds.",
     "realAdded": "Character added.",
     "addHelp": "Any existing character in {region}, from this guild or another.",
-    "roleFromSpec": "From the spec"
+    "roleFromSpec": "From the spec",
+    "noApiYet": "This version has no public Blizzard API yet: for now the roster only holds planned characters. Once it is published you can link them to the real ones."
   },
   "settings": {
     "title": "Guild settings",
@@ -276,7 +277,12 @@
     "invite_expired": "The invite has expired or has no uses left.",
     "member_not_found": "That user is not a member.",
     "cannot_change_owner": "The owner's role cannot be changed.",
-    "cannot_remove_owner": "The owner cannot leave or be removed."
+    "cannot_remove_owner": "The owner cannot leave or be removed.",
+    "game_version_without_api": "This game version has no Blizzard API yet: it only holds planned characters.",
+    "game_version_from_guild": "A linked roster uses its guild's version and cannot change it.",
+    "game_version_has_characters": "The roster has real characters: remove them before changing the version.",
+    "unknown_role": "Unknown role.",
+    "unknown_status": "Unknown status."
   },
   "createRoster": {
     "title": "Create a custom roster",
@@ -330,5 +336,18 @@
     "loginFirst": "Sign in with Battle.net to join.",
     "accept": "Join the roster",
     "joining": "Joining…"
+  },
+  "versions": {
+    "label": "Game version",
+    "plannedOnly": "planned only",
+    "title": "Game version",
+    "help": "Sets the classes, specializations, buffs and the API real characters are read from.",
+    "changeHelp": "Planned specializations that do not exist in the new version are cleared; classes stay so you can pick again.",
+    "lockedGuild": "A roster linked to a guild uses the version the guild exists in.",
+    "lockedCharacters": "This roster has real characters, which belong to its version. Remove them before changing it.",
+    "confirm": "Change this roster's game version?",
+    "changed": "Version changed.",
+    "save": "Change version",
+    "saving": "Saving…"
   }
 }

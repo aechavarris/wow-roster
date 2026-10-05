@@ -3,22 +3,30 @@ import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, Stat
 
 /** Shapes returned by the API (see apps/api/src/routes). */
 
+/** A game version's rules as the API exposes them (see apps/api/src/routes/meta.ts). */
+export interface GameVersion {
+  id: string;
+  label: string;
+  /** Short name for pickers and badges. */
+  name: Localized;
+  maxLevel: number;
+  /** False while Blizzard has no API for the version (Forever): rosters only hold planned characters. */
+  apiAvailable: boolean;
+  hasRealms: boolean;
+  wowheadDomain: string;
+  roles: GameRole[];
+  classes: GameClass[];
+  raidSizes: RaidSize[];
+  raids: { key: string; name: Localized; size: number; enabled: boolean }[];
+  rosterStatuses: RosterStatus[];
+  statPanel: StatSection[];
+  buffs: Buff[];
+  sync: { defaultIntervalMinutes: number; minIntervalMinutes: number; defaultMinLevel: number };
+}
+
 export interface PublicConfig {
-  profile: {
-    id: string;
-    label: string;
-    maxLevel: number;
-    hasRealms: boolean;
-    wowheadDomain: string;
-    roles: GameRole[];
-    classes: GameClass[];
-    raidSizes: RaidSize[];
-    raids: { key: string; name: Localized; size: number; enabled: boolean }[];
-    rosterStatuses: RosterStatus[];
-    statPanel: StatSection[];
-    buffs: Buff[];
-    sync: { defaultIntervalMinutes: number; minIntervalMinutes: number; defaultMinLevel: number };
-  };
+  versions: GameVersion[];
+  defaultVersion: string;
   regions: string[];
   defaultRegion: string;
   loginEnabled: boolean;
@@ -33,6 +41,7 @@ export interface MeResponse {
   user: { id: string; battletag: string; locale: string } | null;
   characters?: {
     id: string;
+    gameVersion: string;
     region: string;
     realm: string;
     name: string;
@@ -45,12 +54,13 @@ export interface MeResponse {
     lastSyncedAt: string | null;
     guild: { id: string; name: string } | null;
   }[];
-  guilds?: { id: string; kind: RosterKind; name: string; realm: string | null; region: string; role: ViewerRole }[];
+  guilds?: { id: string; kind: RosterKind; gameVersion: string; name: string; realm: string | null; region: string; role: ViewerRole }[];
 }
 
 export interface Guild {
   id: string;
   kind: RosterKind;
+  gameVersion: string;
   region: string;
   realm: string | null;
   slug: string | null;
@@ -81,6 +91,7 @@ export interface RosterCharacter {
   /** Null for planned entries that do not exist in the game yet. */
   characterId: string | null;
   planned: boolean;
+  gameVersion: string | null;
   region: string | null;
   realm: string | null;
   name: string;
@@ -112,6 +123,7 @@ export interface RosterPlayer {
 
 export interface CharacterDetail {
   id: string;
+  gameVersion: string;
   region: string;
   realm: string;
   name: string;

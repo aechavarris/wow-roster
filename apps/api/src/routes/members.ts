@@ -114,7 +114,13 @@ export async function memberRoutes(app: FastifyInstance, { prisma, env }: AppDep
     const { token } = z.object({ token: z.string() }).parse(request.params);
     const { invite, usable } = await loadInvite(token);
     return {
-      roster: { id: invite.guild.id, name: invite.guild.name, kind: invite.guild.kind, region: invite.guild.region },
+      roster: {
+        id: invite.guild.id,
+        name: invite.guild.name,
+        kind: invite.guild.kind,
+        gameVersion: invite.guild.gameVersion,
+        region: invite.guild.region,
+      },
       role: invite.role,
       usable,
       currentRole: await guildRole(prisma, invite.guild, request.user),

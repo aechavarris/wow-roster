@@ -11,7 +11,7 @@ import { Unavailable } from "./Unavailable";
 type LayoutState = { status: "loading" } | { status: "ready"; layout: TalentTreeLayout } | { status: "error" };
 
 /** One tab per talent setup: spec loadouts in retail, dual-spec groups in Classic/Forever. */
-export function TalentsPanel({ setups, missing, region }: { setups?: TalentSetup[]; missing?: string; region: string }) {
+export function TalentsPanel({ setups, missing, version, region }: { setups?: TalentSetup[]; missing?: string; version: string; region: string }) {
   const t = useTranslations("character");
   const [selected, setSelected] = useState(() => Math.max(0, setups?.findIndex((s) => s.active) ?? 0));
   const setup = setups?.[selected];
@@ -41,14 +41,14 @@ export function TalentsPanel({ setups, missing, region }: { setups?: TalentSetup
               </button>
             ))}
           </div>
-          {setup && (setup.treeId && setup.specId && setup.selected ? <RetailTrees setup={setup} region={region} /> : <ClassicTrees setup={setup} />)}
+          {setup && (setup.treeId && setup.specId && setup.selected ? <RetailTrees setup={setup} version={version} region={region} /> : <ClassicTrees setup={setup} />)}
         </>
       )}
     </section>
   );
 }
 
-function RetailTrees({ setup, region }: { setup: TalentSetup; region: string }) {
+function RetailTrees({ setup, version, region }: { setup: TalentSetup; version: string; region: string }) {
   const t = useTranslations("character");
   const locale = useLocale();
   const [state, setState] = useState<LayoutState>({ status: "loading" });
@@ -56,14 +56,14 @@ function RetailTrees({ setup, region }: { setup: TalentSetup; region: string }) 
   useEffect(() => {
     let cancelled = false;
     setState({ status: "loading" });
-    fetch(`/api/talent-trees/${region}/${setup.treeId}/${setup.specId}`)
+    fetch(`/api/talent-trees/${version}/${region}/${setup.treeId}/${setup.specId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: { layout: TalentTreeLayout }) => !cancelled && setState({ status: "ready", layout: data.layout }))
       .catch(() => !cancelled && setState({ status: "error" }));
     return () => {
       cancelled = true;
     };
-  }, [region, setup.treeId, setup.specId]);
+  }, [version, region, setup.treeId, setup.specId]);
 
   const picks = useMemo(() => new Map((setup.selected ?? []).map((s) => [s.nodeId, s])), [setup.selected]);
 

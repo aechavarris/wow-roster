@@ -4,9 +4,19 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
+import type { GameVersion } from "@/lib/types";
+import { VersionSelect } from "./VersionSelect";
+
+interface Props {
+  regions: string[];
+  defaultRegion: string;
+  /** Every version, including those without an API yet (planned characters only). */
+  versions: GameVersion[];
+  defaultVersion: string;
+}
 
 /** Creates a roster without an in-game guild, e.g. to plan a team before launch. */
-export function CreateRosterForm({ regions, defaultRegion }: { regions: string[]; defaultRegion: string }) {
+export function CreateRosterForm({ regions, defaultRegion, versions, defaultVersion }: Props) {
   const t = useTranslations("createRoster");
   const tErrors = useTranslations("errors");
   const router = useRouter();
@@ -24,6 +34,7 @@ export function CreateRosterForm({ regions, defaultRegion }: { regions: string[]
         try {
           const { guild } = await apiSend<{ guild: { id: string } }>("POST", "/rosters", {
             name: data.get("name"),
+            gameVersion: data.get("gameVersion"),
             region: data.get("region"),
           });
           router.push(`/guild/${guild.id}`);
@@ -36,6 +47,7 @@ export function CreateRosterForm({ regions, defaultRegion }: { regions: string[]
     >
       <h2 className="heading text-lg">{t("title")}</h2>
       <p className="text-xs text-muted">{t("help")}</p>
+      <VersionSelect id="cr-version" versions={versions} defaultValue={defaultVersion} />
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="label" htmlFor="cr-region">{t("region")}</label>

@@ -3,12 +3,13 @@ import { getTalentTree, nameKey, syncCharacter } from "@wow/core";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AppDeps } from "../deps";
-import { HttpError, notFound, unauthorized } from "../errors";
+import { HttpError, gameVersionSchema, notFound, unauthorized } from "../errors";
 
 /** Minimum time between manual refreshes of the same character. */
 const MANUAL_REFRESH_COOLDOWN_MS = 2 * 60_000;
 
-export async function characterRoutes(app: FastifyInstance, { prisma, core }: AppDeps) {
+export async function characterRoutes(app: FastifyInstance, { prisma, core, versions }: AppDeps) {
+  const version = gameVersionSchema(versions);
   const detail = (id: string) =>
     prisma.character.findUnique({
       where: { id },
@@ -26,23 +27,21 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core }: Ap
   };
 
   /**
-   * Character page data. Unknown characters are looked up in the game on demand
+   * Character page data. Unknown characters are looked up in the game version's API on demand
    * for signed-in users, so anyone can search a character.
    */
-  app.get("/characters/:region/:realm/:name", async (request) => {
+  app.get("/characters/:version/:region/:realm/:name", async (request) => {
     const params = z
-      .object({ region: z.enum(REGIONS), realm: z.string(), name: z.string() })
+      .object({ version, region: z.enum(REGIONS), realm: z.string(), name: z.string() })
       .parse(request.params);
-    const where = {
-      region_realm_nameKey: { region: params.region, realm: blizzardSlug(params.realm), nameKey: nameKey(params.name) },
-    };
-    let character = await prisma.character.findUnique({ where });
+    const key = { gameVersion: params.version, region: params.region, realm: blizzardSlug(params.realm), nameKey: nameKey(params.name) };
+    let character = await prisma.character.findUnique({ where: { gameVersion_region_realm_nameKey: key } });
 
     if (!character) {
       if (!request.user) throw notFound("character_not_found");
-      character = await prisma.character.create({
-        data: { region: params.region, realm: blizzardSlug(params.realm), name: params.name.trim(), nameKey: nameKey(params.name) },
-      });
+      // Throws (409) for versions without an API before anything is stored.
+      core.blizzard(params.version, params.region);
+      character = await prisma.character.create({ data: { ...key, name: params.name.trim() } });
       if ((await syncCharacter(core, character.id, true)) === "not_found") {
         await prisma.character.delete({ where: { id: character.id } });
         throw notFound("character_not_found_in_game");
@@ -55,11 +54,11 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core }: Ap
    * Static talent tree layout for a spec. Cached trees are public; building a missing one
    * costs ~150 API calls, so only signed-in users can trigger it.
    */
-  app.get("/talent-trees/:region/:treeId/:specId", async (request, reply) => {
+  app.get("/talent-trees/:version/:region/:treeId/:specId", async (request, reply) => {
     const params = z
-      .object({ region: z.enum(REGIONS), treeId: z.coerce.number().int().positive(), specId: z.coerce.number().int().positive() })
+      .object({ version, region: z.enum(REGIONS), treeId: z.coerce.number().int().positive(), specId: z.coerce.number().int().positive() })
       .parse(request.params);
-    const layout = await getTalentTree(core, params.region, params.treeId, params.specId, {
+    const layout = await getTalentTree(core, { version: params.version, region: params.region }, params.treeId, params.specId, {
       fetchIfMissing: request.user !== null,
     });
     if (!layout) throw notFound("talent_tree_not_found");

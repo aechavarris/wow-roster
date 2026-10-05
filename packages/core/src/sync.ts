@@ -1,7 +1,7 @@
 import { BlizzardApiError, type CharacterProfile, type CharacterSummary, type AccountCharacter } from "@wow/blizzard";
 import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
-import type { CoreContext } from "./context";
+import { gameVersion, type CoreContext } from "./context";
 import { enrichProfile } from "./static";
 
 /** Ranks up to this index default to a raiding status; officers can remap them later. */
@@ -38,8 +38,9 @@ async function staleRosterCharacters(ctx: CoreContext, guildId: string, interval
  * guild, so only their characters are refreshed. Returns the characters whose details are stale.
  */
 export async function syncGuild(ctx: CoreContext, guildId: string): Promise<{ staleCharacterIds: string[] }> {
-  const { prisma, profile } = ctx;
+  const { prisma } = ctx;
   const guild = await prisma.guild.findUniqueOrThrow({ where: { id: guildId }, include: { ranks: true } });
+  const profile = gameVersion(ctx, guild.gameVersion);
 
   if (guild.kind !== "guild" || !guild.realm || !guild.slug) {
     await prisma.guild.update({ where: { id: guildId }, data: { lastSyncedAt: new Date(), syncError: null } });
@@ -47,7 +48,7 @@ export async function syncGuild(ctx: CoreContext, guildId: string): Promise<{ st
   }
   const realm = guild.realm;
   const slug = guild.slug;
-  const client = ctx.blizzard(guild.region);
+  const client = ctx.blizzard(guild.gameVersion, guild.region);
 
   try {
     const [info, members] = await Promise.all([
@@ -77,9 +78,21 @@ export async function syncGuild(ctx: CoreContext, guildId: string): Promise<{ st
       };
       const character = await prisma.character.upsert({
         where: {
-          region_realm_nameKey: { region: guild.region, realm: member.realmSlug, nameKey: nameKey(member.name) },
+          gameVersion_region_realm_nameKey: {
+            gameVersion: guild.gameVersion,
+            region: guild.region,
+            realm: member.realmSlug,
+            nameKey: nameKey(member.name),
+          },
         },
-        create: { region: guild.region, realm: member.realmSlug, name: member.name, nameKey: nameKey(member.name), ...fields },
+        create: {
+          gameVersion: guild.gameVersion,
+          region: guild.region,
+          realm: member.realmSlug,
+          name: member.name,
+          nameKey: nameKey(member.name),
+          ...fields,
+        },
         update: { name: member.name, ...fields },
         select: { id: true },
       });
@@ -148,9 +161,10 @@ export type CharacterSyncResult = "updated" | "unchanged" | "not_found";
  * only the summary is stored to save API quota.
  */
 export async function syncCharacter(ctx: CoreContext, characterId: string, force = false): Promise<CharacterSyncResult> {
-  const { prisma, profile } = ctx;
+  const { prisma } = ctx;
   const character = await prisma.character.findUniqueOrThrow({ where: { id: characterId } });
-  const client = ctx.blizzard(character.region);
+  const profile = gameVersion(ctx, character.gameVersion);
+  const client = ctx.blizzard(character.gameVersion, character.region);
   const ref = { realm: character.realm, name: character.name };
 
   let summary: CharacterSummary;
@@ -183,7 +197,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
   }
 
   const details = await client.getCharacterProfile(ref, summary);
-  await enrichProfile(ctx, character.region, details);
+  await enrichProfile(ctx, { version: character.gameVersion, region: character.region }, details);
   const { summary: _summary, ...stored } = details;
   await prisma.character.update({
     where: { id: characterId },
@@ -200,15 +214,16 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
 }
 
 /**
- * Records the characters of a Battle.net account as owned by the user and
- * releases characters the account no longer has in that region.
+ * Records the characters of a Battle.net account in one game version as owned by the user and
+ * releases characters the account no longer has in that version and region.
  */
 export async function claimAccountCharacters(
   ctx: CoreContext,
   userId: string,
-  region: string,
+  target: { version: string; region: string },
   characters: AccountCharacter[],
 ): Promise<string[]> {
+  const { version: gameVersion, region } = target;
   const { prisma } = ctx;
   const ids: string[] = [];
   for (const c of characters) {
@@ -221,15 +236,15 @@ export async function claimAccountCharacters(
       ownerId: userId,
     };
     const character = await prisma.character.upsert({
-      where: { region_realm_nameKey: { region, realm: c.realmSlug, nameKey: nameKey(c.name) } },
-      create: { region, realm: c.realmSlug, name: c.name, nameKey: nameKey(c.name), ...fields },
+      where: { gameVersion_region_realm_nameKey: { gameVersion, region, realm: c.realmSlug, nameKey: nameKey(c.name) } },
+      create: { gameVersion, region, realm: c.realmSlug, name: c.name, nameKey: nameKey(c.name), ...fields },
       update: { name: c.name, ...fields },
       select: { id: true },
     });
     ids.push(character.id);
   }
   await prisma.character.updateMany({
-    where: { ownerId: userId, region, id: { notIn: ids } },
+    where: { ownerId: userId, gameVersion, region, id: { notIn: ids } },
     data: { ownerId: null, isMain: false },
   });
   return ids;

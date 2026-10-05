@@ -4,9 +4,9 @@ import { computeComposition, localize } from "@wow/config";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { classText } from "@/lib/game";
-import type { PublicConfig, RosterPlayer } from "@/lib/types";
+import type { GameVersion, RosterPlayer } from "@/lib/types";
 
-type Profile = PublicConfig["profile"];
+type Profile = GameVersion;
 
 /**
  * Raid composition of the raiding players (their mains): roles, classes and which unique

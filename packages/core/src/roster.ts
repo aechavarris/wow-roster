@@ -3,6 +3,7 @@ import { defaultRoleForSpec, findClass, type GameProfile } from "@wow/config";
 /** Minimal shapes so the roster can be built from Prisma rows or test fixtures. */
 export interface RosterInputCharacter {
   id: string;
+  gameVersion: string;
   region: string;
   realm: string;
   name: string;
@@ -40,6 +41,8 @@ export interface RosterCharacterView {
   entryId: string;
   characterId: string | null;
   planned: boolean;
+  /** Game version of the real character (null for planned entries). */
+  gameVersion: string | null;
   region: string | null;
   realm: string | null;
   name: string;
@@ -99,6 +102,7 @@ export function toCharacterView(
     entryId: entry.id,
     characterId: c?.id ?? null,
     planned: !c,
+    gameVersion: c?.gameVersion ?? null,
     region: c?.region ?? null,
     realm: c?.realm ?? null,
     name: c?.name ?? (entry.plannedName || entry.playerName || "?"),

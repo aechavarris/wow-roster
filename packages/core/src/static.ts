@@ -9,8 +9,14 @@ const CONCURRENCY = 8;
 
 type IconKind = "item" | "spell" | "profession";
 
-const cacheKey = (ctx: CoreContext, region: string, ...parts: (string | number)[]) =>
-  [ctx.profile.id, region.toLowerCase(), ...parts].join(":");
+/** Where static data comes from: a game version's API in a region. */
+export interface GameTarget {
+  version: string;
+  region: string;
+}
+
+const cacheKey = (target: GameTarget, ...parts: (string | number)[]) =>
+  [target.version, target.region.toLowerCase(), ...parts].join(":");
 
 const isFresh = (fetchedAt: Date) => Date.now() - fetchedAt.getTime() < TTL_MS;
 
@@ -37,13 +43,13 @@ async function store(ctx: CoreContext, key: string, data: unknown) {
   });
 }
 
-/** Icon URLs by id, fetched once per game profile and region. Ids without media are remembered as missing. */
-export async function getIcons(ctx: CoreContext, region: string, kind: IconKind, ids: number[]): Promise<Map<number, string>> {
+/** Icon URLs by id, fetched once per game version and region. Ids without media are remembered as missing. */
+export async function getIcons(ctx: CoreContext, target: GameTarget, kind: IconKind, ids: number[]): Promise<Map<number, string>> {
   const unique = [...new Set(ids.filter((id) => Number.isFinite(id)))];
   const icons = new Map<number, string>();
   if (unique.length === 0) return icons;
 
-  const keyOf = (id: number) => cacheKey(ctx, region, "icon", kind, id);
+  const keyOf = (id: number) => cacheKey(target, "icon", kind, id);
   const rows = await ctx.prisma.staticCache.findMany({ where: { key: { in: unique.map(keyOf) } } });
   const cached = new Map(rows.map((r) => [r.key, r]));
   const missing: number[] = [];
@@ -54,7 +60,7 @@ export async function getIcons(ctx: CoreContext, region: string, kind: IconKind,
     } else missing.push(id);
   }
 
-  const client = ctx.blizzard(region);
+  const client = ctx.blizzard(target.version, target.region);
   await mapLimit(missing, CONCURRENCY, async (id) => {
     const icon = await client.getIcon(kind, id);
     await store(ctx, keyOf(id), icon);
@@ -63,23 +69,23 @@ export async function getIcons(ctx: CoreContext, region: string, kind: IconKind,
   return icons;
 }
 
-/** Retail talent tree layout for a spec, with spell icons on every option; cached per game profile and region. */
+/** Retail talent tree layout for a spec, with spell icons on every option; cached per game version and region. */
 export async function getTalentTree(
   ctx: CoreContext,
-  region: string,
+  target: GameTarget,
   treeId: number,
   specId: number,
   options: { fetchIfMissing?: boolean } = {},
 ): Promise<TalentTreeLayout | null> {
-  const key = cacheKey(ctx, region, "talent-tree", treeId, specId);
+  const key = cacheKey(target, "talent-tree", treeId, specId);
   const row = await ctx.prisma.staticCache.findUnique({ where: { key } });
   if (row?.data && isFresh(row.fetchedAt)) return row.data as unknown as TalentTreeLayout;
   if (options.fetchIfMissing === false) return (row?.data as unknown as TalentTreeLayout) ?? null;
 
-  const layout = await ctx.blizzard(region).getTalentTree(treeId, specId);
+  const layout = await ctx.blizzard(target.version, target.region).getTalentTree(treeId, specId);
   const allNodes = [...layout.classNodes, ...layout.specNodes, ...layout.heroTrees.flatMap((h) => h.nodes)];
   const spellIds = allNodes.flatMap((n) => n.options.flatMap((o) => (o.spellId ? [o.spellId] : [])));
-  const icons = await getIcons(ctx, region, "spell", spellIds);
+  const icons = await getIcons(ctx, target, "spell", spellIds);
   for (const node of allNodes) {
     for (const option of node.options) if (option.spellId) option.icon = icons.get(option.spellId);
   }
@@ -91,11 +97,11 @@ export async function getTalentTree(
  * Adds icons to a freshly fetched character profile and warms the talent tree cache
  * for its loadouts. Failures only cost the visuals, never the sync itself.
  */
-export async function enrichProfile(ctx: CoreContext, region: string, profile: CharacterProfile): Promise<void> {
+export async function enrichProfile(ctx: CoreContext, target: GameTarget, profile: CharacterProfile): Promise<void> {
   const tasks: Promise<unknown>[] = [];
   const equipment = profile.equipment ?? [];
   tasks.push(
-    getIcons(ctx, region, "item", [
+    getIcons(ctx, target, "item", [
       ...equipment.map((i) => i.itemId),
       ...equipment.flatMap((i) => i.gems.flatMap((g) => (g.itemId ? [g.itemId] : []))),
     ]).then((icons) => {
@@ -107,12 +113,12 @@ export async function enrichProfile(ctx: CoreContext, region: string, profile: C
   );
   const professions = profile.professions ?? [];
   tasks.push(
-    getIcons(ctx, region, "profession", professions.map((p) => p.id)).then((icons) => {
+    getIcons(ctx, target, "profession", professions.map((p) => p.id)).then((icons) => {
       for (const p of professions) p.icon = icons.get(p.id);
     }),
   );
   for (const setup of profile.talents ?? []) {
-    if (setup.treeId && setup.specId) tasks.push(getTalentTree(ctx, region, setup.treeId, setup.specId));
+    if (setup.treeId && setup.specId) tasks.push(getTalentTree(ctx, target, setup.treeId, setup.specId));
   }
 
   const results = await Promise.allSettled(tasks);
