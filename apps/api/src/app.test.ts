@@ -927,3 +927,55 @@ describe("members and invites", () => {
     expect((await send("POST", `/api/invites/${token}/accept`, await login(5005))).json().error).toBe("invite_expired");
   });
 });
+
+describe("professions", () => {
+  it("exposes each version's own profession catalog", async () => {
+    type Version = { id: string; apiProfessions: boolean; professions: { key: string; maxSkill?: number }[] };
+    const body = (await app.inject({ method: "GET", url: "/api/config" })).json();
+    const byId = Object.fromEntries((body.versions as Version[]).map((v) => [v.id, v]));
+    expect(byId.retail!.apiProfessions).toBe(true);
+    expect(byId["classic-era"]!.apiProfessions).toBe(false);
+    expect(byId["classic-era"]!.professions.map((p) => p.key)).not.toContain("jewelcrafting");
+    expect(byId.anniversary!.professions.find((p) => p.key === "jewelcrafting")?.maxSkill).toBe(375);
+  });
+
+  it("lets owners of Classic characters record their professions within the version's rules", async () => {
+    const session = await login();
+    const user = await prisma.user.findFirstOrThrow({ where: { bnetId: 1001 } });
+    const character = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "mirage-raceway", name: "Dracatxi", nameKey: "dracatxi", ownerId: user.id },
+    });
+    const put = (professions: object[], who = session) =>
+      app.inject({ method: "PUT", url: `/api/characters/${character.id}/professions`, cookies: { wr_session: who }, payload: { professions } });
+
+    const saved = await put([{ id: 186, skill: 300 }, { id: 164, skill: 275 }, { id: 185 }]);
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().character.manualProfessions).toEqual([
+      { id: 186, skill: 300 },
+      { id: 164, skill: 275 },
+      { id: 185, skill: null },
+    ]);
+    // Jewelcrafting arrived with TBC; Classic Era caps at 300 and two primaries.
+    expect((await put([{ id: 755, skill: 10 }])).json().error).toBe("unknown_profession");
+    expect((await put([{ id: 186, skill: 301 }])).json().error).toBe("invalid_profession_skill");
+    expect((await put([{ id: 186 }, { id: 186 }])).json().error).toBe("unknown_profession");
+    expect((await put([{ id: 186 }, { id: 164 }, { id: 171 }])).json().error).toBe("too_many_primary_professions");
+    expect((await put([{ id: 186 }], await login(2002))).statusCode).toBe(403);
+
+    // Clearing them stores nothing.
+    expect((await put([])).json().character.manualProfessions).toBeNull();
+  });
+
+  it("keeps API-provided professions read-only", async () => {
+    const session = await login();
+    const thrall = await prisma.character.findFirstOrThrow({ where: { gameVersion: "retail", nameKey: "thrall" } });
+    const response = await app.inject({
+      method: "PUT",
+      url: `/api/characters/${thrall.id}/professions`,
+      cookies: { wr_session: session },
+      payload: { professions: [{ id: 755, skill: 100 }] },
+    });
+    expect(response.json().error).toBe("professions_from_api");
+    expect((await app.inject({ method: "PUT", url: `/api/characters/${thrall.id}/professions`, payload: { professions: [] } })).statusCode).toBe(401);
+  });
+});

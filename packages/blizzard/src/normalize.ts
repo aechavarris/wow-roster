@@ -326,14 +326,23 @@ export function normalizeStatistics(raw: Raw): Record<string, StatValue> {
   return stats;
 }
 
+/**
+ * Retail splits each profession into one tier per expansion ("Khaz Algar Jewelcrafting"…), each with
+ * its own skill. Taking the first tier showed whatever expansion came first (often an untouched 1/300),
+ * so tiers are sorted by id, highest first: the tiers of recent expansions have the highest ids, and
+ * the profession's headline skill is that tier's. Every tier stays in the list for the details view.
+ */
 export function normalizeProfessions(raw: Raw): Profession[] {
   const map = (p: Raw, secondary: boolean): Profession => {
-    const tiers = list(p.tiers).map((t) => ({
-      name: localized(t.tier?.name),
-      skill: num(t.skill_points),
-      maxSkill: num(t.max_skill_points),
-      knownRecipes: list(t.known_recipes).length || undefined,
-    }));
+    const tiers = list(p.tiers)
+      .map((t) => ({
+        id: num(t.tier?.id),
+        name: localized(t.tier?.name),
+        skill: num(t.skill_points),
+        maxSkill: num(t.max_skill_points),
+        knownRecipes: list(t.known_recipes).length || undefined,
+      }))
+      .sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
     return {
       id: p.profession?.id,
       name: localized(p.profession?.name) ?? {},

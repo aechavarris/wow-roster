@@ -100,7 +100,8 @@ pnpm typecheck; pnpm test; pnpm build
 
 - TypeScript strict; validate all input with zod; API errors are `HttpError(status, code)` and the web shows `errors.<code>` translations.
 - Every UI string goes in `apps/web/messages/es.json` **and** `en.json` with the same keys.
-- Game data and rules belong in the profiles, not in components. Profiles can `extends` another and override arrays by key (`roles`, `classes`, `raidSizes`, `raids`, `rosterStatuses`); `statPanel` and `buffs` are replaced whole. `packages/config/src/composition.test.ts` checks every buff provider references a real class/spec of its version.
+- Game data and rules belong in the profiles, not in components. Profiles can `extends` another and override arrays by key (`roles`, `classes`, `raidSizes`, `raids`, `rosterStatuses`, `professions`); `statPanel` and `buffs` are replaced whole.
+- Professions differ per version: each profile lists its own (`professions`, Blizzard profession ids, `maxSkill` cap, `maxPrimaryProfessions`). Retail reads them from the API, one tier per expansion (the headline is the highest tier id). Classic APIs have none, so the character's owner enters them (`Character.manualProfessions`, `PUT /api/characters/:id/professions`), validated against the version's catalog. `packages/config/src/composition.test.ts` checks every buff provider references a real class/spec of its version.
 - Match the surrounding style: JSDoc comments that explain *why*, no Prettier config (hand-formatted, ~130 columns).
 - Next.js 16 differs from older versions (async `params`/`cookies()`, `proxy.ts` instead of middleware, Turbopack). Read `apps/web/AGENTS.md` and the docs in `node_modules/next/dist/docs/` before writing web code.
 - Class colors on text use `classText(color)` + the `text-class` class so yellow/white stay readable in the light theme.

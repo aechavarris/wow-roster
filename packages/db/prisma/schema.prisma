@@ -142,6 +142,8 @@ model Character {
   isMain            Boolean       @default(false)
   /// Normalized details: equipment, talents, media, statistics, professions, reputations.
   profile           Json?
+  /// Professions entered by the owner ([{ id, skill }]) for game versions whose API has none (Classic).
+  manualProfessions Json?
   lastSyncedAt      DateTime?
   syncError         String?
   createdAt         DateTime      @default(now())

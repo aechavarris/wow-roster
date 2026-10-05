@@ -339,5 +339,22 @@
     },
     {"key": "innervate", "category": "utility", "name": {"en": "Innervate", "es": "Estimular"}, "providers": [{"classKey": "druid"}]}
   ],
+  "professions": [
+    {"id": 171, "key": "alchemy", "name": {"en": "Alchemy", "es": "Alquimia"}, "kind": "primary"},
+    {"id": 164, "key": "blacksmithing", "name": {"en": "Blacksmithing", "es": "Herrería"}, "kind": "primary"},
+    {"id": 333, "key": "enchanting", "name": {"en": "Enchanting", "es": "Encantamiento"}, "kind": "primary"},
+    {"id": 202, "key": "engineering", "name": {"en": "Engineering", "es": "Ingeniería"}, "kind": "primary"},
+    {"id": 182, "key": "herbalism", "name": {"en": "Herbalism", "es": "Herboristería"}, "kind": "primary"},
+    {"id": 773, "key": "inscription", "name": {"en": "Inscription", "es": "Inscripción"}, "kind": "primary"},
+    {"id": 755, "key": "jewelcrafting", "name": {"en": "Jewelcrafting", "es": "Joyería"}, "kind": "primary"},
+    {"id": 165, "key": "leatherworking", "name": {"en": "Leatherworking", "es": "Peletería"}, "kind": "primary"},
+    {"id": 186, "key": "mining", "name": {"en": "Mining", "es": "Minería"}, "kind": "primary"},
+    {"id": 393, "key": "skinning", "name": {"en": "Skinning", "es": "Desuello"}, "kind": "primary"},
+    {"id": 197, "key": "tailoring", "name": {"en": "Tailoring", "es": "Sastrería"}, "kind": "primary"},
+    {"id": 794, "key": "archaeology", "name": {"en": "Archaeology", "es": "Arqueología"}, "kind": "secondary"},
+    {"id": 185, "key": "cooking", "name": {"en": "Cooking", "es": "Cocina"}, "kind": "secondary"},
+    {"id": 356, "key": "fishing", "name": {"en": "Fishing", "es": "Pesca"}, "kind": "secondary"}
+  ],
+  "maxPrimaryProfessions": 2,
   "sync": {"defaultIntervalMinutes": 60, "minIntervalMinutes": 15, "defaultMinLevel": 10}
 }

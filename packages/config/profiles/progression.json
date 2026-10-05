@@ -466,5 +466,23 @@
     },
     {"key": "innervate", "name": {"en": "Innervate", "es": "Estimular"}, "category": "utility", "providers": [{"classKey": "druid"}]}
   ],
+  "professions": [
+    {"id": 171, "key": "alchemy", "name": {"en": "Alchemy", "es": "Alquimia"}, "kind": "primary", "maxSkill": 600},
+    {"id": 164, "key": "blacksmithing", "name": {"en": "Blacksmithing", "es": "Herrería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 333, "key": "enchanting", "name": {"en": "Enchanting", "es": "Encantamiento"}, "kind": "primary", "maxSkill": 600},
+    {"id": 202, "key": "engineering", "name": {"en": "Engineering", "es": "Ingeniería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 182, "key": "herbalism", "name": {"en": "Herbalism", "es": "Herboristería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 773, "key": "inscription", "name": {"en": "Inscription", "es": "Inscripción"}, "kind": "primary", "maxSkill": 600},
+    {"id": 755, "key": "jewelcrafting", "name": {"en": "Jewelcrafting", "es": "Joyería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 165, "key": "leatherworking", "name": {"en": "Leatherworking", "es": "Peletería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 186, "key": "mining", "name": {"en": "Mining", "es": "Minería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 393, "key": "skinning", "name": {"en": "Skinning", "es": "Desuello"}, "kind": "primary", "maxSkill": 600},
+    {"id": 197, "key": "tailoring", "name": {"en": "Tailoring", "es": "Sastrería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 794, "key": "archaeology", "name": {"en": "Archaeology", "es": "Arqueología"}, "kind": "secondary", "maxSkill": 600},
+    {"id": 185, "key": "cooking", "name": {"en": "Cooking", "es": "Cocina"}, "kind": "secondary", "maxSkill": 600},
+    {"id": 129, "key": "first-aid", "name": {"en": "First Aid", "es": "Primeros auxilios"}, "kind": "secondary", "maxSkill": 600},
+    {"id": 356, "key": "fishing", "name": {"en": "Fishing", "es": "Pesca"}, "kind": "secondary", "maxSkill": 600}
+  ],
+  "maxPrimaryProfessions": 2,
   "sync": {"defaultIntervalMinutes": 60, "minIntervalMinutes": 15, "defaultMinLevel": 10}
 }

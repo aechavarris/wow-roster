@@ -207,7 +207,19 @@
     "health": "Salud",
     "power": "Recurso",
     "ratingLine": "Índice: {value}",
-    "baseLine": "Base: {value}"
+    "baseLine": "Base: {value}",
+    "professionTiers": "Por expansión",
+    "recipes": "{count, plural, one {# receta} other {# recetas}}",
+    "professionsManualHelp": "La API de Blizzard no da las profesiones en esta versión: las indica el dueño del personaje.",
+    "professionsNotSet": "El dueño aún no ha indicado sus profesiones.",
+    "editProfessions": "Editar profesiones",
+    "primaryProfession": "Profesión principal {number}",
+    "secondaryProfessions": "Secundarias",
+    "skill": "Nivel",
+    "noProfession": "Ninguna",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saving": "Guardando…"
   },
   "slots": {
     "HEAD": "Cabeza",
@@ -287,7 +299,11 @@
     "unknown_role": "Rol desconocido.",
     "unknown_status": "Estado desconocido.",
     "entry_pending": "Esta entrada está pendiente: el propietario tiene que aceptarla antes.",
-    "too_many_pending": "Tienes demasiadas propuestas pendientes en este roster. Espera a que el propietario las revise."
+    "too_many_pending": "Tienes demasiadas propuestas pendientes en este roster. Espera a que el propietario las revise.",
+    "unknown_profession": "Esa profesión no existe en esta versión del juego.",
+    "invalid_profession_skill": "El nivel supera el máximo de esa profesión en esta versión.",
+    "too_many_primary_professions": "Solo se pueden tener dos profesiones principales.",
+    "professions_from_api": "En esta versión las profesiones vienen de la API de Blizzard."
   },
   "createRoster": {
     "title": "Crear roster libre",

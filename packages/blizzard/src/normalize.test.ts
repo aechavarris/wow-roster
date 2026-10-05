@@ -5,6 +5,7 @@ import {
   normalizeTalentTree,
   normalizeGuildRoster,
   normalizeMedia,
+  normalizeProfessions,
   normalizeSpecializations,
   normalizeStatistics,
   normalizeSummary,
@@ -271,5 +272,40 @@ describe("normalizeMedia / normalizeStatistics / normalizeGuildRoster", () => {
         members: [{ character: { id: 3, name: "Rexxar", level: 60, realm: { slug: "x" }, playable_class: { id: 3 } }, rank: 1 }],
       }),
     ).toEqual([{ blizzardId: 3, name: "Rexxar", realmSlug: "x", level: 60, classId: 3, raceId: undefined, rank: 1 }]);
+  });
+});
+
+describe("normalizeProfessions", () => {
+  const tier = (id: number, name: string, skill: number, max: number, recipes = 0) => ({
+    tier: { id, name: { en_US: name, es_ES: `${name} (es)` } },
+    skill_points: skill,
+    max_skill_points: max,
+    known_recipes: Array.from({ length: recipes }, (_, i) => ({ id: i })),
+  });
+
+  it("headlines the newest retail tier instead of the first one listed", () => {
+    const [jewelcrafting, cooking] = normalizeProfessions({
+      primaries: [
+        {
+          profession: { id: 755, name: { en_US: "Jewelcrafting", es_ES: "Joyería" } },
+          tiers: [tier(2477, "Jewelcrafting", 1, 300), tier(2822, "Dragon Isles Jewelcrafting", 100, 100, 40), tier(2878, "Khaz Algar Jewelcrafting", 87, 100, 25)],
+        },
+      ],
+      secondaries: [{ profession: { id: 185, name: { en_US: "Cooking" } }, tiers: [tier(2873, "Khaz Algar Cooking", 12, 100)] }],
+    });
+    expect(jewelcrafting).toMatchObject({ id: 755, name: { en: "Jewelcrafting", es: "Joyería" }, secondary: false, skill: 87, maxSkill: 100 });
+    expect(jewelcrafting!.tiers.map((t) => [t.id, t.skill, t.knownRecipes])).toEqual([
+      [2878, 87, 25],
+      [2822, 100, 40],
+      [2477, 1, undefined],
+    ]);
+    expect(jewelcrafting!.tiers[0]!.name).toEqual({ en: "Khaz Algar Jewelcrafting", es: "Khaz Algar Jewelcrafting (es)" });
+    expect(cooking).toMatchObject({ id: 185, secondary: true, skill: 12 });
+  });
+
+  it("keeps a profession-level skill when there are no tiers", () => {
+    const [archaeology] = normalizeProfessions({ secondaries: [{ profession: { id: 794, name: "Archaeology" }, skill_points: 950, max_skill_points: 950 }] });
+    expect(archaeology).toMatchObject({ skill: 950, maxSkill: 950, tiers: [] });
+    expect(normalizeProfessions({})).toEqual([]);
   });
 });
