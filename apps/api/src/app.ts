@@ -20,11 +20,12 @@ declare module "fastify" {
   }
 }
 
-export async function buildApp(deps: AppDeps, options: { logger?: boolean } = {}) {
+/** `rateLimit` is requests per minute and client IP; tests raise it since every request comes from one address. */
+export async function buildApp(deps: AppDeps, options: { logger?: boolean; rateLimit?: number } = {}) {
   const app = Fastify({ logger: options.logger ?? false, trustProxy: true });
 
   await app.register(cookie);
-  await app.register(rateLimit, { max: 300, timeWindow: "1 minute" });
+  await app.register(rateLimit, { max: options.rateLimit ?? 300, timeWindow: "1 minute" });
 
   app.decorateRequest("user", null);
   app.addHook("preHandler", async (request) => {
