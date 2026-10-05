@@ -2,7 +2,7 @@
 #   docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d
 # Tailscale Funnel publishes the site at https://<TS_HOSTNAME>.<tailnet>.ts.net with its own
 # HTTPS certificate, so no router ports are opened and no domain is needed. Caddy keeps the
-# /api routing but serves plain HTTP inside the Tailscale container's network.
+# /api routing but serves plain HTTP on the internal Docker network only.
 name: wow-roster-prod
 
 services:
@@ -21,10 +21,10 @@ services:
       - ./deploy/tailscale-serve.json:/config/serve.json:ro
 
   caddy:
-    # No host ports: traffic only arrives through the Tailscale Funnel.
+    # No host ports: traffic only arrives through the Tailscale Funnel, which proxies to
+    # http://caddy:80 over the Docker network. Caddy does not share Tailscale's network
+    # namespace on purpose: restarting the tailscale container would leave it unreachable.
     ports: !reset []
-    network_mode: service:tailscale
-    depends_on: !override [tailscale, web, api]
 
 volumes:
   tailscale_state:
