@@ -1,0 +1,150 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String            @id @default(cuid())
+  bnetId      Int               @unique
+  battletag   String
+  locale      String            @default("es")
+  createdAt   DateTime          @default(now())
+  lastLoginAt DateTime?
+  sessions    Session[]
+  characters  Character[]
+  memberships GuildMembership[]
+}
+
+/// The id is a SHA-256 hash of the session token stored in the cookie.
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// A guild registered in the app. `realm` is the realm slug, or the ruleset key for realmless games.
+model Guild {
+  id                  String            @id @default(cuid())
+  region              String
+  realm               String
+  slug                String
+  name                String
+  faction             String?
+  blizzardId          Int?
+  public              Boolean           @default(true)
+  syncIntervalMinutes Int
+  minLevel            Int
+  /// Users owning a character at this in-game rank or lower (0 = guild master) are officers in the app.
+  officerMaxRank      Int               @default(1)
+  lastSyncedAt        DateTime?
+  syncError           String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  ranks               GuildRank[]
+  memberships         GuildMembership[]
+  roster              RosterEntry[]
+  characters          Character[]
+
+  @@unique([region, realm, slug])
+}
+
+/// Maps an in-game guild rank to a roster status key from the game profile.
+model GuildRank {
+  guildId String
+  guild   Guild   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  rank    Int
+  label   String?
+  status  String
+
+  @@id([guildId, rank])
+}
+
+enum GuildRole {
+  OWNER
+  OFFICER
+  MEMBER
+}
+
+model GuildMembership {
+  userId  String
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guildId String
+  guild   Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  role    GuildRole @default(MEMBER)
+
+  @@id([userId, guildId])
+}
+
+/// A game character, shared by every app guild that tracks it.
+model Character {
+  id                String        @id @default(cuid())
+  region            String
+  realm             String
+  name              String
+  /// Lowercased name used for lookups.
+  nameKey           String
+  blizzardId        Int?
+  level             Int           @default(0)
+  classId           Int?
+  raceId            Int?
+  gender            String?
+  faction           String?
+  specId            Int?
+  specName          String?
+  averageItemLevel  Float?
+  equippedItemLevel Float?
+  lastLoginAt       DateTime?
+  avatarUrl         String?
+  /// In-game guild, when it is registered in the app.
+  guildId           String?
+  guild             Guild?        @relation(fields: [guildId], references: [id], onDelete: SetNull)
+  guildRank         Int?
+  /// Battle.net user that owns the character (verified at login).
+  ownerId           String?
+  owner             User?         @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  isMain            Boolean       @default(false)
+  /// Normalized details: equipment, talents, media, statistics, professions, reputations.
+  profile           Json?
+  lastSyncedAt      DateTime?
+  syncError         String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  rosterEntries     RosterEntry[]
+
+  @@unique([region, realm, nameKey])
+  @@index([guildId])
+  @@index([ownerId])
+}
+
+/// A character in an app guild's roster, with officer overrides.
+model RosterEntry {
+  id          String        @id @default(cuid())
+  guildId     String
+  guild       Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// "guild" when it comes from the in-game roster, "manual" when an officer added it.
+  source      String
+  /// Overrides the status derived from the guild rank.
+  status      String?
+  /// Overrides the role derived from the spec.
+  role        String?
+  note        String?
+  /// Officer-defined main for characters without a verified owner.
+  mainEntryId String?
+  mainEntry   RosterEntry?  @relation("RosterAlts", fields: [mainEntryId], references: [id], onDelete: SetNull)
+  alts        RosterEntry[] @relation("RosterAlts")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([guildId, characterId])
+}

@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: wow
+          POSTGRES_PASSWORD: wow
+          POSTGRES_DB: wow_roster_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wow"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://wow:wow@localhost:5432/wow_roster_test
+      TEST_DATABASE_URL: postgresql://wow:wow@localhost:5432/wow_roster_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:deploy
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

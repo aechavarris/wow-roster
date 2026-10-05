@@ -1,0 +1,183 @@
+import { namespaceFor, type GameProfile } from "@wow/config";
+import {
+  normalizeAccountCharacters,
+  normalizeEquipment,
+  normalizeGuild,
+  normalizeGuildRoster,
+  normalizeMedia,
+  normalizeProfessions,
+  normalizeReputations,
+  normalizeSpecializations,
+  normalizeStatistics,
+  normalizeSummary,
+} from "./normalize";
+import type {
+  AccountCharacter,
+  CharacterProfile,
+  CharacterRef,
+  CharacterSummary,
+  GuildInfo,
+  GuildRosterMember,
+} from "./types";
+
+export const OAUTH_HOST = "https://oauth.battle.net";
+
+export class BlizzardApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly path: string,
+    message?: string,
+  ) {
+    super(message ?? `Blizzard API ${status} on ${path}`);
+    this.name = "BlizzardApiError";
+  }
+
+  get notFound() {
+    return this.status === 404;
+  }
+}
+
+export interface BlizzardClientOptions {
+  clientId: string;
+  clientSecret: string;
+  region: string;
+  api: GameProfile["api"];
+  /** Locale for names in responses; English keeps spec matching stable. */
+  locale?: string;
+  fetch?: typeof fetch;
+}
+
+type NamespaceKind = "profile" | "static" | "dynamic";
+
+interface RequestOptions {
+  namespace: NamespaceKind;
+  /** User OAuth token for account-scoped endpoints; the app token is used otherwise. */
+  userToken?: string;
+}
+
+const encodeName = (name: string) => encodeURIComponent(name.trim().toLowerCase());
+
+export class BlizzardClient {
+  private appToken?: { value: string; expiresAt: number };
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(private readonly options: BlizzardClientOptions) {
+    this.fetchImpl = options.fetch ?? fetch;
+  }
+
+  get region() {
+    return this.options.region;
+  }
+
+  private get apiHost() {
+    return `https://${this.options.region}.api.blizzard.com`;
+  }
+
+  private namespace(kind: NamespaceKind) {
+    const { api } = this.options;
+    const template =
+      kind === "profile" ? api.profileNamespace : kind === "static" ? api.staticNamespace : api.dynamicNamespace;
+    return namespaceFor(template, this.options.region);
+  }
+
+  async getAppToken(): Promise<string> {
+    if (this.appToken && this.appToken.expiresAt > Date.now() + 60_000) return this.appToken.value;
+    const response = await this.fetchImpl(`${OAUTH_HOST}/token`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${this.options.clientId}:${this.options.clientSecret}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
+    if (!response.ok) throw new BlizzardApiError(response.status, "/token", "Could not obtain Blizzard app token");
+    const body = (await response.json()) as { access_token: string; expires_in: number };
+    this.appToken = { value: body.access_token, expiresAt: Date.now() + body.expires_in * 1000 };
+    return body.access_token;
+  }
+
+  async request<T>(path: string, { namespace, userToken }: RequestOptions, attempt = 0): Promise<T> {
+    const url = new URL(path, this.apiHost);
+    url.searchParams.set("namespace", this.namespace(namespace));
+    url.searchParams.set("locale", this.options.locale ?? "en_US");
+    const token = userToken ?? (await this.getAppToken());
+    const response = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
+
+    if (response.status === 429 && attempt < 3) {
+      const wait = Number(response.headers.get("retry-after") ?? 1) * 1000;
+      await new Promise((resolve) => setTimeout(resolve, wait * (attempt + 1)));
+      return this.request<T>(path, { namespace, userToken }, attempt + 1);
+    }
+    if (response.status === 401 && !userToken && attempt === 0) {
+      this.appToken = undefined;
+      return this.request<T>(path, { namespace, userToken }, attempt + 1);
+    }
+    if (!response.ok) throw new BlizzardApiError(response.status, path);
+    return (await response.json()) as T;
+  }
+
+  private characterPath(ref: CharacterRef, suffix = "") {
+    return `/profile/wow/character/${encodeURIComponent(ref.realm)}/${encodeName(ref.name)}${suffix}`;
+  }
+
+  async getGuild(realm: string, guildSlug: string): Promise<GuildInfo> {
+    const raw = await this.request(`/data/wow/guild/${encodeURIComponent(realm)}/${encodeURIComponent(guildSlug)}`, {
+      namespace: "profile",
+    });
+    return normalizeGuild(raw);
+  }
+
+  async getGuildRoster(realm: string, guildSlug: string): Promise<GuildRosterMember[]> {
+    const raw = await this.request(
+      `/data/wow/guild/${encodeURIComponent(realm)}/${encodeURIComponent(guildSlug)}/roster`,
+      { namespace: "profile" },
+    );
+    return normalizeGuildRoster(raw);
+  }
+
+  async getAccountCharacters(userToken: string): Promise<AccountCharacter[]> {
+    const raw = await this.request("/profile/user/wow", { namespace: "profile", userToken });
+    return normalizeAccountCharacters(raw);
+  }
+
+  async getCharacterSummary(ref: CharacterRef) {
+    return normalizeSummary(await this.request(this.characterPath(ref), { namespace: "profile" }));
+  }
+
+  /**
+   * Fetches the summary plus every detail endpoint the game profile declares.
+   * Detail failures are recorded in `missing` instead of failing the whole sync.
+   */
+  async getCharacterProfile(ref: CharacterRef, knownSummary?: CharacterSummary): Promise<CharacterProfile> {
+    const summary = knownSummary ?? (await this.getCharacterSummary(ref));
+    const profile: CharacterProfile = { summary, missing: {} };
+    const endpoints = this.options.api.characterEndpoints;
+
+    const fetchDetail = async <K extends keyof CharacterProfile>(
+      key: K,
+      endpoint: (typeof endpoints)[number],
+      suffix: string,
+      normalize: (raw: unknown) => CharacterProfile[K],
+    ) => {
+      if (!endpoints.includes(endpoint)) {
+        profile.missing[endpoint] = "unsupported";
+        return;
+      }
+      try {
+        profile[key] = normalize(await this.request(this.characterPath(ref, suffix), { namespace: "profile" }));
+      } catch (error) {
+        profile.missing[endpoint] = error instanceof BlizzardApiError ? String(error.status) : "error";
+      }
+    };
+
+    await Promise.all([
+      fetchDetail("equipment", "equipment", "/equipment", normalizeEquipment),
+      fetchDetail("talents", "specializations", "/specializations", normalizeSpecializations),
+      fetchDetail("media", "media", "/character-media", normalizeMedia),
+      fetchDetail("statistics", "statistics", "/statistics", normalizeStatistics),
+      fetchDetail("professions", "professions", "/professions", normalizeProfessions),
+      fetchDetail("reputations", "reputations", "/reputations", normalizeReputations),
+    ]);
+    return profile;
+  }
+}

@@ -1,0 +1,87 @@
+# Production stack on a single server. Images come from GHCR (see .github/workflows/deploy.yml).
+# Requires a .env next to this file (see .env.example) with at least DOMAIN, PUBLIC_URL,
+# POSTGRES_PASSWORD and the Blizzard credentials.
+name: wow-roster
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-wow}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wow_roster}
+  REDIS_URL: redis://redis:6379
+  BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:?set BLIZZARD_CLIENT_ID}
+  BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:?set BLIZZARD_CLIENT_SECRET}
+  BLIZZARD_REGION: ${BLIZZARD_REGION:-eu}
+  GAME_PROFILE: ${GAME_PROFILE:-retail-dev}
+  PUBLIC_URL: ${PUBLIC_URL:?set PUBLIC_URL}
+  SYNC_CHARACTER_JOBS_PER_SECOND: ${SYNC_CHARACTER_JOBS_PER_SECOND:-1}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web, api]
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-wow_roster}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wow}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  migrate:
+    image: ${IMAGE_PREFIX:-ghcr.io/aechavarris/wow-roster}/migrate:${IMAGE_TAG:-latest}
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    image: ${IMAGE_PREFIX:-ghcr.io/aechavarris/wow-roster}/api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      API_PORT: 4000
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    image: ${IMAGE_PREFIX:-ghcr.io/aechavarris/wow-roster}/worker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    image: ${IMAGE_PREFIX:-ghcr.io/aechavarris/wow-roster}/web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:4000
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:

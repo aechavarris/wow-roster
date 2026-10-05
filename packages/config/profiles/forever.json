@@ -1,0 +1,116 @@
+{
+  "id": "forever",
+  "label": "World of Warcraft: Forever",
+  "maxLevel": 60,
+  "api": {
+    "profileNamespace": "profile-forever-{region}",
+    "staticNamespace": "static-forever-{region}",
+    "dynamicNamespace": "dynamic-forever-{region}",
+    "hasRealms": false,
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations"]
+  },
+  "wowheadDomain": "forever",
+  "roles": [
+    { "key": "tank", "name": { "en": "Tank", "es": "Tanque" }, "color": "#4f86c6" },
+    { "key": "healer", "name": { "en": "Healer", "es": "Sanador" }, "color": "#4caf50" },
+    { "key": "mdps", "name": { "en": "Melee DPS", "es": "DPS cuerpo a cuerpo" }, "color": "#e05252" },
+    { "key": "rdps", "name": { "en": "Ranged DPS", "es": "DPS a distancia" }, "color": "#c77dff" }
+  ],
+  "classes": [
+    {
+      "id": 1, "key": "warrior", "color": "#C69B6D", "name": { "en": "Warrior", "es": "Guerrero" },
+      "specs": [
+        { "key": "arms", "name": { "en": "Arms", "es": "Armas" }, "roles": ["mdps"], "blizzardIds": [71], "apiNames": ["Arms"] },
+        { "key": "fury", "name": { "en": "Fury", "es": "Furia" }, "roles": ["mdps"], "blizzardIds": [72], "apiNames": ["Fury"] },
+        { "key": "protection", "name": { "en": "Protection", "es": "Protección" }, "roles": ["tank"], "blizzardIds": [73], "apiNames": ["Protection"] }
+      ]
+    },
+    {
+      "id": 2, "key": "paladin", "color": "#F48CBA", "name": { "en": "Paladin", "es": "Paladín" },
+      "specs": [
+        { "key": "holy", "name": { "en": "Holy", "es": "Sagrado" }, "roles": ["healer"], "blizzardIds": [65], "apiNames": ["Holy"] },
+        { "key": "protection", "name": { "en": "Protection", "es": "Protección" }, "roles": ["tank"], "blizzardIds": [66], "apiNames": ["Protection"] },
+        { "key": "retribution", "name": { "en": "Retribution", "es": "Reprensión" }, "roles": ["mdps"], "blizzardIds": [70], "apiNames": ["Retribution"] }
+      ]
+    },
+    {
+      "id": 3, "key": "hunter", "color": "#AAD372", "name": { "en": "Hunter", "es": "Cazador" },
+      "specs": [
+        { "key": "beast-mastery", "name": { "en": "Beast Mastery", "es": "Dominio de bestias" }, "roles": ["rdps"], "blizzardIds": [253], "apiNames": ["Beast Mastery"] },
+        { "key": "marksmanship", "name": { "en": "Marksmanship", "es": "Puntería" }, "roles": ["rdps"], "blizzardIds": [254], "apiNames": ["Marksmanship"] },
+        { "key": "survival", "name": { "en": "Survival", "es": "Supervivencia" }, "roles": ["rdps"], "blizzardIds": [255], "apiNames": ["Survival"] }
+      ]
+    },
+    {
+      "id": 4, "key": "rogue", "color": "#FFF468", "name": { "en": "Rogue", "es": "Pícaro" },
+      "specs": [
+        { "key": "assassination", "name": { "en": "Assassination", "es": "Asesinato" }, "roles": ["mdps"], "blizzardIds": [259], "apiNames": ["Assassination"] },
+        { "key": "combat", "name": { "en": "Combat", "es": "Combate" }, "roles": ["mdps"], "blizzardIds": [260], "apiNames": ["Combat", "Outlaw"] },
+        { "key": "subtlety", "name": { "en": "Subtlety", "es": "Sutileza" }, "roles": ["mdps"], "blizzardIds": [261], "apiNames": ["Subtlety"] }
+      ]
+    },
+    {
+      "id": 5, "key": "priest", "color": "#FFFFFF", "name": { "en": "Priest", "es": "Sacerdote" },
+      "specs": [
+        { "key": "discipline", "name": { "en": "Discipline", "es": "Disciplina" }, "roles": ["healer"], "blizzardIds": [256], "apiNames": ["Discipline"] },
+        { "key": "holy", "name": { "en": "Holy", "es": "Sagrado" }, "roles": ["healer"], "blizzardIds": [257], "apiNames": ["Holy"] },
+        { "key": "shadow", "name": { "en": "Shadow", "es": "Sombra" }, "roles": ["rdps"], "blizzardIds": [258], "apiNames": ["Shadow"] }
+      ]
+    },
+    {
+      "id": 7, "key": "shaman", "color": "#0070DD", "name": { "en": "Shaman", "es": "Chamán" },
+      "specs": [
+        { "key": "elemental", "name": { "en": "Elemental", "es": "Elemental" }, "roles": ["rdps"], "blizzardIds": [262], "apiNames": ["Elemental"] },
+        { "key": "enhancement", "name": { "en": "Enhancement", "es": "Mejora" }, "roles": ["mdps"], "blizzardIds": [263], "apiNames": ["Enhancement"] },
+        { "key": "restoration", "name": { "en": "Restoration", "es": "Restauración" }, "roles": ["healer"], "blizzardIds": [264], "apiNames": ["Restoration"] }
+      ]
+    },
+    {
+      "id": 8, "key": "mage", "color": "#3FC7EB", "name": { "en": "Mage", "es": "Mago" },
+      "specs": [
+        { "key": "arcane", "name": { "en": "Arcane", "es": "Arcano" }, "roles": ["rdps"], "blizzardIds": [62], "apiNames": ["Arcane"] },
+        { "key": "fire", "name": { "en": "Fire", "es": "Fuego" }, "roles": ["rdps"], "blizzardIds": [63], "apiNames": ["Fire"] },
+        { "key": "frost", "name": { "en": "Frost", "es": "Escarcha" }, "roles": ["rdps"], "blizzardIds": [64], "apiNames": ["Frost"] }
+      ]
+    },
+    {
+      "id": 9, "key": "warlock", "color": "#8788EE", "name": { "en": "Warlock", "es": "Brujo" },
+      "specs": [
+        { "key": "affliction", "name": { "en": "Affliction", "es": "Aflicción" }, "roles": ["rdps"], "blizzardIds": [265], "apiNames": ["Affliction"] },
+        { "key": "demonology", "name": { "en": "Demonology", "es": "Demonología" }, "roles": ["rdps"], "blizzardIds": [266], "apiNames": ["Demonology"] },
+        { "key": "destruction", "name": { "en": "Destruction", "es": "Destrucción" }, "roles": ["rdps"], "blizzardIds": [267], "apiNames": ["Destruction"] }
+      ]
+    },
+    {
+      "id": 11, "key": "druid", "color": "#FF7C0A", "name": { "en": "Druid", "es": "Druida" },
+      "specs": [
+        { "key": "balance", "name": { "en": "Balance", "es": "Equilibrio" }, "roles": ["rdps"], "blizzardIds": [102], "apiNames": ["Balance"] },
+        { "key": "feral", "name": { "en": "Feral", "es": "Feral" }, "roles": ["mdps", "tank"], "blizzardIds": [103, 104], "apiNames": ["Feral", "Feral Combat", "Guardian"] },
+        { "key": "restoration", "name": { "en": "Restoration", "es": "Restauración" }, "roles": ["healer"], "blizzardIds": [105], "apiNames": ["Restoration"] }
+      ]
+    }
+  ],
+  "raidSizes": [
+    { "size": 10, "groupSize": 5, "enabled": true },
+    { "size": 20, "groupSize": 5, "enabled": true },
+    { "size": 40, "groupSize": 5, "enabled": false, "note": "Paused: no official text confirms 40-player raids yet." }
+  ],
+  "raids": [
+    { "key": "barrow-deeps", "name": { "en": "Barrow Deeps", "es": "Barrow Deeps" }, "size": 10, "enabled": true },
+    { "key": "hyjal-summit", "name": { "en": "Hyjal Summit", "es": "Hyjal Summit" }, "size": 20, "enabled": true },
+    { "key": "onyxias-lair", "name": { "en": "Onyxia's Lair", "es": "Guarida de Onyxia" }, "size": 40, "enabled": false, "note": "Only reported by fan sites citing a roadmap image." }
+  ],
+  "rosterStatuses": [
+    { "key": "raider", "name": { "en": "Raider", "es": "Raider" }, "color": "#4caf50", "raiding": true },
+    { "key": "trial", "name": { "en": "Trial", "es": "Prueba" }, "color": "#ffb300", "raiding": true },
+    { "key": "bench", "name": { "en": "Bench", "es": "Banquillo" }, "color": "#90a4ae", "raiding": true },
+    { "key": "social", "name": { "en": "Social", "es": "Social" }, "color": "#78909c", "raiding": false },
+    { "key": "alt", "name": { "en": "Alt", "es": "Alter" }, "color": "#8d6e63", "raiding": false },
+    { "key": "ignored", "name": { "en": "Ignored", "es": "Ignorado" }, "color": "#616161", "raiding": false, "hidden": true }
+  ],
+  "sync": {
+    "defaultIntervalMinutes": 60,
+    "minIntervalMinutes": 15,
+    "defaultMinLevel": 10
+  }
+}

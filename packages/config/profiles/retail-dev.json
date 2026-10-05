@@ -1,0 +1,48 @@
+{
+  "id": "retail-dev",
+  "extends": "forever",
+  "label": "Development (retail API, Forever rules)",
+  "maxLevel": 90,
+  "api": {
+    "profileNamespace": "profile-{region}",
+    "staticNamespace": "static-{region}",
+    "dynamicNamespace": "dynamic-{region}",
+    "hasRealms": true,
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations"]
+  },
+  "wowheadDomain": "",
+  "classes": [
+    {
+      "id": 6, "key": "death-knight", "color": "#C41E3A", "name": { "en": "Death Knight", "es": "Caballero de la Muerte" },
+      "specs": [
+        { "key": "blood", "name": { "en": "Blood", "es": "Sangre" }, "roles": ["tank"], "blizzardIds": [250], "apiNames": ["Blood"] },
+        { "key": "frost", "name": { "en": "Frost", "es": "Escarcha" }, "roles": ["mdps"], "blizzardIds": [251], "apiNames": ["Frost"] },
+        { "key": "unholy", "name": { "en": "Unholy", "es": "Profano" }, "roles": ["mdps"], "blizzardIds": [252], "apiNames": ["Unholy"] }
+      ]
+    },
+    {
+      "id": 10, "key": "monk", "color": "#00FF98", "name": { "en": "Monk", "es": "Monje" },
+      "specs": [
+        { "key": "brewmaster", "name": { "en": "Brewmaster", "es": "Maestro cervecero" }, "roles": ["tank"], "blizzardIds": [268], "apiNames": ["Brewmaster"] },
+        { "key": "mistweaver", "name": { "en": "Mistweaver", "es": "Tejedor de niebla" }, "roles": ["healer"], "blizzardIds": [270], "apiNames": ["Mistweaver"] },
+        { "key": "windwalker", "name": { "en": "Windwalker", "es": "Viajero del viento" }, "roles": ["mdps"], "blizzardIds": [269], "apiNames": ["Windwalker"] }
+      ]
+    },
+    {
+      "id": 12, "key": "demon-hunter", "color": "#A330C9", "name": { "en": "Demon Hunter", "es": "Cazador de demonios" },
+      "specs": [
+        { "key": "havoc", "name": { "en": "Havoc", "es": "Devastación" }, "roles": ["mdps"], "blizzardIds": [577], "apiNames": ["Havoc"] },
+        { "key": "vengeance", "name": { "en": "Vengeance", "es": "Venganza" }, "roles": ["tank"], "blizzardIds": [581], "apiNames": ["Vengeance"] },
+        { "key": "devourer", "name": { "en": "Devourer", "es": "Devorador" }, "roles": ["rdps"], "blizzardIds": [1480], "apiNames": ["Devourer"] }
+      ]
+    },
+    {
+      "id": 13, "key": "evoker", "color": "#33937F", "name": { "en": "Evoker", "es": "Evocador" },
+      "specs": [
+        { "key": "devastation", "name": { "en": "Devastation", "es": "Devastación" }, "roles": ["rdps"], "blizzardIds": [1467], "apiNames": ["Devastation"] },
+        { "key": "preservation", "name": { "en": "Preservation", "es": "Preservación" }, "roles": ["healer"], "blizzardIds": [1468], "apiNames": ["Preservation"] },
+        { "key": "augmentation", "name": { "en": "Augmentation", "es": "Aumento" }, "roles": ["rdps"], "blizzardIds": [1473], "apiNames": ["Augmentation"] }
+      ]
+    }
+  ]
+}

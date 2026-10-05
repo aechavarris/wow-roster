@@ -1,0 +1,76 @@
+# Local development and self-hosting.
+#   Infra only (run apps with `pnpm dev`):  docker compose up -d postgres redis
+#   Full stack in containers:               docker compose --profile app up --build
+name: wow-roster
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-wow}:${POSTGRES_PASSWORD:-wow}@postgres:5432/${POSTGRES_DB:-wow_roster}
+  REDIS_URL: redis://redis:6379
+  BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:-}
+  BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:-}
+  BLIZZARD_REGION: ${BLIZZARD_REGION:-eu}
+  GAME_PROFILE: ${GAME_PROFILE:-retail-dev}
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+  SYNC_CHARACTER_JOBS_PER_SECOND: ${SYNC_CHARACTER_JOBS_PER_SECOND:-1}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wow}
+      POSTGRES_DB: ${POSTGRES_DB:-wow_roster}
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wow}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  migrate:
+    profiles: [app]
+    build: { context: ., target: migrate }
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    profiles: [app]
+    build: { context: ., target: api }
+    environment:
+      <<: *app-env
+      API_PORT: 4000
+    ports: ["4000:4000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    profiles: [app]
+    build: { context: ., target: worker }
+    environment: *app-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    profiles: [app]
+    build: { context: ., target: web }
+    environment:
+      API_INTERNAL_URL: http://api:4000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  redisdata:
