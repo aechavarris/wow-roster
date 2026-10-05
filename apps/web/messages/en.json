@@ -163,7 +163,8 @@
     "rankStatus": "Status",
     "guildMaster": "0 (guild master)",
     "saveRanks": "Save ranks",
-    "name": "Name"
+    "name": "Name",
+    "titleCustom": "Roster settings"
   },
   "character": {
     "summary": "Level {level}",

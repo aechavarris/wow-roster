@@ -18,7 +18,7 @@ export default async function GuildSettingsPage({ params }: PageProps<"/[locale]
       <Link href={`/guild/${id}`} className="text-sm text-muted hover:text-accent">
         ← {data.guild.name}
       </Link>
-      <h1 className="heading text-2xl">{t("title")}</h1>
+      <h1 className="heading text-2xl">{t(data.guild.kind === "custom" ? "titleCustom" : "title")}</h1>
       <GuildSettingsForm guild={data.guild} ranks={data.ranks} profile={config.profile} />
       <MembersPanel guildId={id} viewerRole={data.viewerRole} viewerUserId={me.user.id} />
     </div>

@@ -163,7 +163,8 @@
     "rankStatus": "Estado",
     "guildMaster": "0 (maestro)",
     "saveRanks": "Guardar rangos",
-    "name": "Nombre"
+    "name": "Nombre",
+    "titleCustom": "Ajustes del roster"
   },
   "character": {
     "summary": "Nivel {level}",

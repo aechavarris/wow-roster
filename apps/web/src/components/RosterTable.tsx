@@ -5,7 +5,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Fragment, useMemo, useState } from "react";
 import { Link, useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
-import { characterPath, classColor, className, roleOf, specName, statusOf } from "@/lib/game";
+import { characterPath, classColor, classText, className, roleOf, specName, statusOf } from "@/lib/game";
 import type { PublicConfig, RosterCharacter, RosterPlayer, ViewerRole } from "@/lib/types";
 
 type Profile = PublicConfig["profile"];
@@ -18,11 +18,13 @@ interface Props {
   viewerRole: ViewerRole;
   viewerUserId: string | null;
   hasRealms: boolean;
+  /** Guild ranks only exist in guild-linked rosters. */
+  showRank: boolean;
 }
 
 const AUTO = "__auto__";
 
-export function RosterTable({ guildId, players, profile, viewerRole, viewerUserId, hasRealms }: Props) {
+export function RosterTable({ guildId, players, profile, viewerRole, viewerUserId, hasRealms, showRank }: Props) {
   const t = useTranslations("roster");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -92,7 +94,7 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
 
   const header = (key: SortKey, label: string, extra = "") => (
     <th className={`px-2 py-2 font-medium ${extra}`} aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
-      <button type="button" onClick={() => toggleSort(key)} className="hover:text-accent">
+      <button type="button" onClick={() => toggleSort(key)} className="uppercase tracking-wide hover:text-accent">
         {label}
         {sort.key === key ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
       </button>
@@ -103,6 +105,7 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
     character: c,
     profile,
     hasRealms,
+    showRank,
     isOfficer,
     // Members edit their own planned entries; officers edit everything.
     canEditPlanning: isOfficer || (c.planned && c.userId !== null && c.userId === viewerUserId),
@@ -179,7 +182,7 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
               {header("status", t("columns.status"))}
               {header("itemLevel", t("columns.itemLevel"), "text-right")}
               {header("level", t("columns.level"), "text-right")}
-              {header("rank", t("columns.rank"), "text-right")}
+              {showRank && header("rank", t("columns.rank"), "text-right")}
               <th className="px-2 py-2 font-medium">{t("columns.updated")}</th>
               {viewerRole && <th className="px-2 py-2 font-medium">{t("columns.actions")}</th>}
             </tr>
@@ -187,7 +190,7 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
           <tbody className="divide-y divide-border bg-surface">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={viewerRole ? 9 : 8} className="px-2 py-6 text-center text-muted">{t("empty")}</td>
+                <td colSpan={(viewerRole ? 9 : 8) - (showRank ? 0 : 1)} className="px-2 py-6 text-center text-muted">{t("empty")}</td>
               </tr>
             )}
             {filtered.map((player) => (
@@ -214,6 +217,7 @@ interface RowProps {
   character: RosterCharacter;
   profile: Profile;
   hasRealms: boolean;
+  showRank: boolean;
   isOfficer: boolean;
   canEditPlanning: boolean;
   canRemove: boolean;
@@ -224,7 +228,7 @@ interface RowProps {
   actions: RowActions;
 }
 
-function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
+function Row({ character: c, profile, hasRealms, showRank, isOfficer, canEditPlanning, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
   const t = useTranslations("roster");
   const locale = useLocale();
   const format = useFormatter();
@@ -235,7 +239,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
 
   return (
     <tr className={`${isAlt ? "bg-surface-2/50 text-xs" : ""} ${c.planned ? "bg-accent/5" : ""}`}>
-      <td className="px-2 py-1.5">
+      <td className="min-w-44 px-2 py-1.5">
         <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${isAlt ? "pl-6" : ""}`}>
           {c.avatar && !isAlt ? (
             // eslint-disable-next-line @next/next/no-img-element -- Blizzard renders are already sized thumbnails.
@@ -246,9 +250,9 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
             </span>
           ) : null}
           {c.planned || !c.region || !c.realm ? (
-            <span className="font-medium italic" style={{ color }}>{c.name}</span>
+            <span className="text-class font-medium italic" style={classText(color)}>{c.name}</span>
           ) : (
-            <Link href={characterPath({ region: c.region, realm: c.realm, name: c.name })} className="font-medium hover:underline" style={{ color }}>
+            <Link href={characterPath({ region: c.region, realm: c.realm, name: c.name })} className="text-class font-medium hover:underline" style={classText(color)}>
               {c.name}
             </Link>
           )}
@@ -265,7 +269,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
           <div className="flex gap-1">
             <select
               aria-label={t("columns.class")}
-              className="input w-auto py-0.5"
+              className="input w-auto max-w-32 py-0.5"
               value={c.classId ?? ""}
               onChange={(e) => actions.update(c.entryId, { plannedClassId: Number(e.target.value) })}
             >
@@ -275,7 +279,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
             </select>
             <select
               aria-label={t("spec")}
-              className="input w-auto py-0.5"
+              className="input w-auto max-w-32 py-0.5"
               value={c.specKey ?? ""}
               onChange={(e) => actions.update(c.entryId, { plannedSpec: e.target.value || null })}
             >
@@ -295,7 +299,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
         {isOfficer || canEditPlanning ? (
           <select
             aria-label={t("columns.role")}
-            className="input w-auto py-0.5"
+            className="input w-auto max-w-40 py-0.5"
             value={c.roleOverridden ? (c.role ?? AUTO) : AUTO}
             onChange={(e) => actions.update(c.entryId, { role: e.target.value === AUTO ? null : e.target.value })}
           >
@@ -317,7 +321,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
         {isOfficer ? (
           <select
             aria-label={t("columns.status")}
-            className="input w-auto py-0.5"
+            className="input w-auto max-w-36 py-0.5"
             value={c.statusOverridden ? c.status : AUTO}
             onChange={(e) => actions.update(c.entryId, { status: e.target.value === AUTO ? null : e.target.value })}
           >
@@ -334,7 +338,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums">{c.itemLevel ? Math.round(c.itemLevel) : "—"}</td>
       <td className="px-2 py-1.5 text-right tabular-nums">{c.planned ? "—" : c.level}</td>
-      <td className="px-2 py-1.5 text-right tabular-nums">{c.guildRank ?? "—"}</td>
+      {showRank && <td className="px-2 py-1.5 text-right tabular-nums">{c.guildRank ?? "—"}</td>}
       <td className="px-2 py-1.5 text-xs text-muted">
         {c.planned ? (
           t("notInGameYet")
@@ -353,7 +357,7 @@ function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, can
             {isOfficer && mainOptions.length > 0 && !c.claimed && (
               <select
                 aria-label={t("linkMain")}
-                className="input w-28 py-0.5"
+                className="input w-24 py-0.5"
                 value=""
                 onChange={(e) => actions.update(c.entryId, { mainEntryId: e.target.value === AUTO ? null : e.target.value })}
               >

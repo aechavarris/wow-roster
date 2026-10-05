@@ -47,6 +47,16 @@
   }
 }
 
+/* Class colors are made for dark backgrounds; the light theme darkens them to keep yellow and white legible. */
+.text-class {
+  color: var(--class-color);
+}
+@media (prefers-color-scheme: light) {
+  .text-class {
+    color: color-mix(in oklab, var(--class-color) 55%, black);
+  }
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);

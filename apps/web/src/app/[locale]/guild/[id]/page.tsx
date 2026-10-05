@@ -62,6 +62,7 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
         viewerRole={viewerRole}
         viewerUserId={me.user?.id ?? null}
         hasRealms={config.profile.hasRealms}
+        showRank={guild.kind === "guild"}
       />
       <RosterTools guildId={guild.id} region={guild.region} profile={config.profile} viewerRole={viewerRole} myCharacters={myCharacters} />
     </div>
