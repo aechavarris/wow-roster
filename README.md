@@ -92,6 +92,7 @@ One-time setup (Windows with Docker Desktop):
 3. **Blizzard client**: add `<PUBLIC_URL>/api/auth/callback` as a redirect URL.
 4. **Runner**: in the repository, open *Settings → Actions → Runners → New self-hosted runner → Windows* and follow the steps, with two changes. Add the label `wow-roster-home`. Install it as a service that runs under your own Windows account (`config.cmd … --labels wow-roster-home --runasservice --windowslogonaccount <user>`), so it can reach Docker Desktop.
 5. **Repository variable**: under *Settings → Secrets and variables → Actions → Variables*, add `DEPLOY_TARGET=home`, plus `HOME_DEPLOY_PATH` if you chose another folder.
-6. **First deploy**: run the *Deploy* workflow by hand (*Actions → Deploy → Run workflow*).
+6. **Public images**: the PC pulls the images without credentials. Make the four packages (`wow-roster/migrate`, `api`, `worker`, `web`) public under your GitHub profile's *Packages* tab: *Package settings → Change visibility*.
+7. **First deploy**: run the *Deploy* workflow by hand (*Actions → Deploy → Run workflow*).
 
 Keep Docker Desktop set to start on sign-in and the PC from sleeping. Only CI runs triggered by pushes to this repository reach the runner; pull requests from forks never deploy.

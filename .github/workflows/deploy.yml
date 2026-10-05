@@ -104,9 +104,10 @@ jobs:
     if: vars.DEPLOY_TARGET == 'home'
     runs-on: [self-hosted, wow-roster-home]
     environment: production
+    # The images are public (the repository is open source), so the PC pulls them without
+    # registry credentials; GHCR rejected the job's GITHUB_TOKEN from the Windows runner.
     permissions:
       contents: read
-      packages: read
     defaults:
       run:
         shell: powershell
@@ -125,10 +126,6 @@ jobs:
           New-Item -ItemType Directory -Force "$env:DEPLOY_PATH\deploy" | Out-Null
           Copy-Item docker-compose.prod.yml, docker-compose.home.yml $env:DEPLOY_PATH -Force
           Copy-Item deploy\Caddyfile, deploy\tailscale-serve.json "$env:DEPLOY_PATH\deploy" -Force
-      - name: Log in to GHCR
-        env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: $env:GHCR_TOKEN | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Roll out
         run: |
           $ErrorActionPreference = 'Stop'
