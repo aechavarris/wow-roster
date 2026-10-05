@@ -80,3 +80,18 @@ One-time server setup (any VPS with Docker):
 4. In the Blizzard client, add `https://<domain>/api/auth/callback` as a redirect URL.
 
 Caddy issues the HTTPS certificate automatically and routes `/api` to the API and everything else to the web app.
+
+### Self-hosting on a home PC
+
+For a low-traffic instance, a PC that stays on can be the server; deploys still come from GitHub. [Tailscale Funnel](https://tailscale.com/kb/1223/funnel) publishes the site at `https://<name>.<tailnet>.ts.net` with HTTPS. It needs no open router ports, no domain and no fixed IP. A self-hosted GitHub Actions runner on the PC pulls the new images after every green push to `main`. [docker-compose.home.yml](docker-compose.home.yml) layers this on top of the production stack under its own project name (`wow-roster-prod`), so it does not collide with the dev stack.
+
+One-time setup (Windows with Docker Desktop):
+
+1. **Tailscale**: create a free account, enable *MagicDNS* and *HTTPS certificates* under DNS in the admin console, check that the access policy grants the `funnel` attribute (new tailnets do), and create a **reusable, non-ephemeral** auth key.
+2. **Production folder**: create `C:\wow-roster-prod\.env` from [deploy/home.env.example](deploy/home.env.example) with the auth key, a strong `POSTGRES_PASSWORD` and the Blizzard credentials. `PUBLIC_URL` is `https://<TS_HOSTNAME>.<tailnet>.ts.net`; the tailnet name is in the admin console.
+3. **Blizzard client**: add `<PUBLIC_URL>/api/auth/callback` as a redirect URL.
+4. **Runner**: in the repository, open *Settings → Actions → Runners → New self-hosted runner → Windows* and follow the steps, with two changes. Add the label `wow-roster-home`. Install it as a service that runs under your own Windows account (`config.cmd … --labels wow-roster-home --runasservice --windowslogonaccount <user>`), so it can reach Docker Desktop.
+5. **Repository variable**: under *Settings → Secrets and variables → Actions → Variables*, add `DEPLOY_TARGET=home`, plus `HOME_DEPLOY_PATH` if you chose another folder.
+6. **First deploy**: run the *Deploy* workflow by hand (*Actions → Deploy → Run workflow*).
+
+Keep Docker Desktop set to start on sign-in and the PC from sleeping. Only CI runs triggered by pushes to this repository reach the runner; pull requests from forks never deploy.
