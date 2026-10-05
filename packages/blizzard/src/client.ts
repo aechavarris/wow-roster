@@ -4,13 +4,16 @@ import {
   normalizeEquipment,
   normalizeGuild,
   normalizeGuildRoster,
+  normalizeIcon,
   normalizeMedia,
   normalizeProfessions,
   normalizeReputations,
   normalizeSpecializations,
   normalizeStatistics,
   normalizeSummary,
+  normalizeTalentTree,
 } from "./normalize";
+import { BLIZZARD_LOCALES } from "./text";
 import type {
   AccountCharacter,
   CharacterProfile,
@@ -18,6 +21,7 @@ import type {
   CharacterSummary,
   GuildInfo,
   GuildRosterMember,
+  TalentTreeLayout,
 } from "./types";
 
 export const OAUTH_HOST = "https://oauth.battle.net";
@@ -53,6 +57,8 @@ interface RequestOptions {
   namespace: NamespaceKind;
   /** User OAuth token for account-scoped endpoints; the app token is used otherwise. */
   userToken?: string;
+  /** Overrides the client locale; null omits it so Blizzard returns every locale. */
+  locale?: string | null;
 }
 
 const encodeName = (name: string) => encodeURIComponent(name.trim().toLowerCase());
@@ -96,21 +102,23 @@ export class BlizzardClient {
     return body.access_token;
   }
 
-  async request<T>(path: string, { namespace, userToken }: RequestOptions, attempt = 0): Promise<T> {
+  async request<T>(path: string, options: RequestOptions, attempt = 0): Promise<T> {
+    const { namespace, userToken } = options;
     const url = new URL(path, this.apiHost);
     url.searchParams.set("namespace", this.namespace(namespace));
-    url.searchParams.set("locale", this.options.locale ?? "en_US");
+    const locale = options.locale === undefined ? (this.options.locale ?? "en_US") : options.locale;
+    if (locale) url.searchParams.set("locale", locale);
     const token = userToken ?? (await this.getAppToken());
     const response = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
 
     if (response.status === 429 && attempt < 3) {
       const wait = Number(response.headers.get("retry-after") ?? 1) * 1000;
       await new Promise((resolve) => setTimeout(resolve, wait * (attempt + 1)));
-      return this.request<T>(path, { namespace, userToken }, attempt + 1);
+      return this.request<T>(path, options, attempt + 1);
     }
     if (response.status === 401 && !userToken && attempt === 0) {
       this.appToken = undefined;
-      return this.request<T>(path, { namespace, userToken }, attempt + 1);
+      return this.request<T>(path, options, attempt + 1);
     }
     if (!response.ok) throw new BlizzardApiError(response.status, path);
     return (await response.json()) as T;
@@ -158,26 +166,52 @@ export class BlizzardClient {
       endpoint: (typeof endpoints)[number],
       suffix: string,
       normalize: (raw: unknown) => CharacterProfile[K],
+      locale?: null,
     ) => {
       if (!endpoints.includes(endpoint)) {
         profile.missing[endpoint] = "unsupported";
         return;
       }
       try {
-        profile[key] = normalize(await this.request(this.characterPath(ref, suffix), { namespace: "profile" }));
+        profile[key] = normalize(await this.request(this.characterPath(ref, suffix), { namespace: "profile", locale }));
       } catch (error) {
         profile.missing[endpoint] = error instanceof BlizzardApiError ? String(error.status) : "error";
       }
     };
 
     await Promise.all([
-      fetchDetail("equipment", "equipment", "/equipment", normalizeEquipment),
+      // All locales in one call so item tooltips can be shown in every UI language.
+      fetchDetail("equipment", "equipment", "/equipment", normalizeEquipment, null),
       fetchDetail("talents", "specializations", "/specializations", normalizeSpecializations),
       fetchDetail("media", "media", "/character-media", normalizeMedia),
       fetchDetail("statistics", "statistics", "/statistics", normalizeStatistics),
-      fetchDetail("professions", "professions", "/professions", normalizeProfessions),
-      fetchDetail("reputations", "reputations", "/reputations", normalizeReputations),
+      fetchDetail("professions", "professions", "/professions", normalizeProfessions, null),
+      fetchDetail("reputations", "reputations", "/reputations", normalizeReputations, null),
     ]);
     return profile;
+  }
+
+  /** Retail talent tree for one spec, fetched once per UI locale and merged. */
+  async getTalentTree(treeId: number, specId: number): Promise<TalentTreeLayout> {
+    const entries = await Promise.all(
+      Object.entries(BLIZZARD_LOCALES).map(async ([ui, blizzard]) => [
+        ui,
+        await this.request(`/data/wow/talent-tree/${treeId}/playable-specialization/${specId}`, {
+          namespace: "static",
+          locale: blizzard,
+        }),
+      ]),
+    );
+    return normalizeTalentTree(Object.fromEntries(entries));
+  }
+
+  /** Icon URL for an item, spell or profession; undefined when the game version has no media for it. */
+  async getIcon(kind: "item" | "spell" | "profession", id: number): Promise<string | undefined> {
+    try {
+      return normalizeIcon(await this.request(`/data/wow/media/${kind}/${id}`, { namespace: "static", locale: null }));
+    } catch (error) {
+      if (error instanceof BlizzardApiError && error.notFound) return undefined;
+      throw error;
+    }
   }
 }

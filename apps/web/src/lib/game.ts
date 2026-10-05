@@ -33,10 +33,19 @@ export function characterPath(c: { region: string; realm: string; name: string }
   return `/character/${c.region}/${encodeURIComponent(c.realm)}/${encodeURIComponent(c.name.toLowerCase())}`;
 }
 
-export function wowheadUrl(domain: string, type: "item" | "spell", id: number) {
-  return `https://www.wowhead.com/${domain ? `${domain}/` : ""}${type}=${id}`;
-}
+/** Exact in-game quality colors, used inside the always-dark game tooltips and icon frames. */
+export const GAME_QUALITY_COLORS: Record<string, string> = {
+  POOR: "#9d9d9d",
+  COMMON: "#ffffff",
+  UNCOMMON: "#1eff00",
+  RARE: "#0070dd",
+  EPIC: "#a335ee",
+  LEGENDARY: "#ff8000",
+  ARTIFACT: "#e6cc80",
+  HEIRLOOM: "#00ccff",
+};
 
+/** Theme-aware quality colors for text on the page background. */
 export const QUALITY_COLORS: Record<string, string> = {
   POOR: "var(--q-poor)",
   COMMON: "var(--q-common)",

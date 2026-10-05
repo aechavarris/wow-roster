@@ -108,6 +108,65 @@
     { "key": "alt", "name": { "en": "Alt", "es": "Alter" }, "color": "#8d6e63", "raiding": false },
     { "key": "ignored", "name": { "en": "Ignored", "es": "Ignorado" }, "color": "#616161", "raiding": false, "hidden": true }
   ],
+  "statPanel": [
+    {
+      "key": "base", "name": { "en": "Base Stats", "es": "Estadísticas básicas" },
+      "entries": [
+        { "key": "strength", "label": { "en": "Strength", "es": "Fuerza" }, "stats": ["strength"] },
+        { "key": "agility", "label": { "en": "Agility", "es": "Agilidad" }, "stats": ["agility"] },
+        { "key": "stamina", "label": { "en": "Stamina", "es": "Aguante" }, "stats": ["stamina"] },
+        { "key": "intellect", "label": { "en": "Intellect", "es": "Intelecto" }, "stats": ["intellect"] },
+        { "key": "spirit", "label": { "en": "Spirit", "es": "Espíritu" }, "stats": ["spirit"] },
+        { "key": "armor", "label": { "en": "Armor", "es": "Armadura" }, "stats": ["armor"] }
+      ]
+    },
+    {
+      "key": "melee", "name": { "en": "Melee", "es": "Cuerpo a cuerpo" },
+      "entries": [
+        { "key": "attack-power", "label": { "en": "Attack Power", "es": "Poder de ataque" }, "stats": ["attack_power"] },
+        { "key": "melee-hit", "label": { "en": "Hit Chance", "es": "Prob. de golpe" }, "stats": ["melee_hit"], "format": "percent" },
+        { "key": "melee-crit", "label": { "en": "Crit Chance", "es": "Prob. de crítico" }, "stats": ["melee_crit"], "format": "percent" }
+      ]
+    },
+    {
+      "key": "ranged", "name": { "en": "Ranged", "es": "A distancia" },
+      "entries": [
+        { "key": "ranged-attack-power", "label": { "en": "Attack Power", "es": "Poder de ataque" }, "stats": ["ranged_attack_power"] },
+        { "key": "ranged-hit", "label": { "en": "Hit Chance", "es": "Prob. de golpe" }, "stats": ["ranged_hit"], "format": "percent" },
+        { "key": "ranged-crit", "label": { "en": "Crit Chance", "es": "Prob. de crítico" }, "stats": ["ranged_crit"], "format": "percent" }
+      ]
+    },
+    {
+      "key": "spell", "name": { "en": "Spell", "es": "Hechizos" },
+      "entries": [
+        { "key": "spell-power", "label": { "en": "Bonus Damage", "es": "Bonificación de daño" }, "stats": ["spell_power"] },
+        { "key": "bonus-healing", "label": { "en": "Bonus Healing", "es": "Bonificación de sanación" }, "stats": ["bonus_healing"] },
+        { "key": "spell-hit", "label": { "en": "Hit Chance", "es": "Prob. de golpe" }, "stats": ["spell_hit"], "format": "percent" },
+        { "key": "spell-crit", "label": { "en": "Crit Chance", "es": "Prob. de crítico" }, "stats": ["spell_crit"], "format": "percent" },
+        { "key": "mana-regen", "label": { "en": "Mana Regen", "es": "Regeneración de maná" }, "stats": ["mana_regen"] }
+      ]
+    },
+    {
+      "key": "defenses", "name": { "en": "Defenses", "es": "Defensas" },
+      "entries": [
+        { "key": "armor", "label": { "en": "Armor", "es": "Armadura" }, "stats": ["armor"] },
+        { "key": "defense", "label": { "en": "Defense", "es": "Defensa" }, "stats": ["defense"] },
+        { "key": "dodge", "label": { "en": "Dodge", "es": "Esquivar" }, "stats": ["dodge"], "format": "percent" },
+        { "key": "parry", "label": { "en": "Parry", "es": "Parada" }, "stats": ["parry"], "format": "percent", "hideIfZero": true },
+        { "key": "block", "label": { "en": "Block", "es": "Bloqueo" }, "stats": ["block"], "format": "percent", "hideIfZero": true }
+      ]
+    },
+    {
+      "key": "resistances", "name": { "en": "Resistances", "es": "Resistencias" },
+      "entries": [
+        { "key": "arcane", "label": { "en": "Arcane", "es": "Arcano" }, "stats": ["arcane_resistance"] },
+        { "key": "fire", "label": { "en": "Fire", "es": "Fuego" }, "stats": ["fire_resistance"] },
+        { "key": "nature", "label": { "en": "Nature", "es": "Naturaleza" }, "stats": ["nature_resistance"] },
+        { "key": "frost", "label": { "en": "Frost", "es": "Escarcha" }, "stats": ["frost_resistance"] },
+        { "key": "shadow", "label": { "en": "Shadow", "es": "Sombras" }, "stats": ["shadow_resistance"] }
+      ]
+    }
+  ],
   "sync": {
     "defaultIntervalMinutes": 60,
     "minIntervalMinutes": 15,

@@ -140,7 +140,19 @@
     "none": "None",
     "showAll": "Show all ({count})",
     "refresh": "Refresh",
-    "refreshing": "Refreshing…"
+    "refreshing": "Refreshing…",
+    "itemLevelLine": "Item Level {value}",
+    "gems": "{count, plural, =0 {no gems} one {# gem} other {# gems}}",
+    "pointsSpent": "{count, plural, one {# point} other {# points}}",
+    "choiceNode": "Choose one:",
+    "chosen": "Chosen",
+    "rankOf": "Rank {rank}/{max}",
+    "rank": "Rank {rank}",
+    "loadingTalents": "Loading talent trees…",
+    "health": "Health",
+    "power": "Resource",
+    "ratingLine": "Rating: {value}",
+    "baseLine": "Base: {value}"
   },
   "slots": {
     "HEAD": "Head",

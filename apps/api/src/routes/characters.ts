@@ -1,5 +1,5 @@
 import { REGIONS, blizzardSlug } from "@wow/config";
-import { nameKey, syncCharacter } from "@wow/core";
+import { getTalentTree, nameKey, syncCharacter } from "@wow/core";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AppDeps } from "../deps";
@@ -49,6 +49,22 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core }: Ap
       }
     }
     return { character: serialize((await detail(character.id))!) };
+  });
+
+  /**
+   * Static talent tree layout for a spec. Cached trees are public; building a missing one
+   * costs ~150 API calls, so only signed-in users can trigger it.
+   */
+  app.get("/talent-trees/:region/:treeId/:specId", async (request, reply) => {
+    const params = z
+      .object({ region: z.enum(REGIONS), treeId: z.coerce.number().int().positive(), specId: z.coerce.number().int().positive() })
+      .parse(request.params);
+    const layout = await getTalentTree(core, params.region, params.treeId, params.specId, {
+      fetchIfMissing: request.user !== null,
+    });
+    if (!layout) throw notFound("talent_tree_not_found");
+    reply.header("Cache-Control", "public, max-age=86400");
+    return { layout };
   });
 
   app.post("/characters/:id/sync", async (request) => {

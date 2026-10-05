@@ -18,6 +18,7 @@ export async function metaRoutes(app: FastifyInstance, { profile, env }: AppDeps
       raidSizes: profile.raidSizes,
       raids: profile.raids,
       rosterStatuses: profile.rosterStatuses,
+      statPanel: profile.statPanel,
       sync: profile.sync,
     },
     regions: REGIONS,

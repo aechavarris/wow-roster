@@ -68,6 +68,31 @@ export const apiSchema = z.object({
   ),
 });
 
+/**
+ * One row of the character stats panel. `stats` lists API statistic keys; the highest one is
+ * shown (e.g. crit = max of melee/ranged/spell), and `labels` can name each candidate (primary stat).
+ */
+export const statEntrySchema = z.object({
+  key: z.string(),
+  label: localizedSchema,
+  stats: z.array(z.string()).min(1),
+  labels: z.record(z.string(), localizedSchema).optional(),
+  format: z.enum(["number", "percent"]).default("number"),
+  /** API key holding the rating behind a percentage, when it is not part of the stat itself. */
+  ratingStat: z.string().optional(),
+  hideIfZero: z.boolean().default(false),
+});
+
+/** Sections of the stats panel, in the order the game shows them. Rows whose stats the API lacks are skipped. */
+export const statSectionSchema = z.object({
+  key: z.string(),
+  name: localizedSchema,
+  entries: z.array(statEntrySchema),
+});
+
+export type StatEntry = z.infer<typeof statEntrySchema>;
+export type StatSection = z.infer<typeof statSectionSchema>;
+
 export const gameProfileSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -80,6 +105,7 @@ export const gameProfileSchema = z.object({
   raidSizes: z.array(raidSizeSchema),
   raids: z.array(raidSchema),
   rosterStatuses: z.array(rosterStatusSchema),
+  statPanel: z.array(statSectionSchema).default([]),
   sync: z.object({
     defaultIntervalMinutes: z.number().int().positive(),
     minIntervalMinutes: z.number().int().positive(),

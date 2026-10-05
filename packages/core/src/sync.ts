@@ -2,6 +2,7 @@ import { BlizzardApiError, type CharacterProfile, type CharacterSummary, type Ac
 import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
 import type { CoreContext } from "./context";
+import { enrichProfile } from "./static";
 
 /** Ranks up to this index default to a raiding status; officers can remap them later. */
 const DEFAULT_RAIDING_RANKS = 3;
@@ -170,6 +171,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
   }
 
   const details = await client.getCharacterProfile(ref, summary);
+  await enrichProfile(ctx, character.region, details);
   const { summary: _summary, ...stored } = details;
   await prisma.character.update({
     where: { id: characterId },

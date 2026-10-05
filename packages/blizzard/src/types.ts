@@ -1,3 +1,5 @@
+import type { LocalizedText } from "./text";
+
 /** Normalized character data shared by every game version. Fields are optional because each API exposes a different subset. */
 
 export interface CharacterRef {
@@ -25,16 +27,38 @@ export interface CharacterSummary {
   lastLoginAt?: string;
 }
 
+/** A tooltip line as the game shows it: text plus its color. */
+export interface TooltipLine {
+  text: LocalizedText;
+  color?: string;
+}
+
 export interface EquippedItem {
   slot: string;
-  slotName?: string;
   itemId: number;
-  name: string;
+  name: LocalizedText;
   quality?: string;
   itemLevel?: number;
-  enchantments: { id?: number; text: string; slot?: string }[];
-  gems: { itemId?: number; text?: string }[];
-  setName?: string;
+  /** Icon URL, filled from the static media cache. */
+  icon?: string;
+  /** Green subtitle under the name (e.g. "Mythic+"). */
+  nameDescription?: TooltipLine;
+  binding?: LocalizedText;
+  uniqueEquipped?: LocalizedText;
+  inventoryType?: LocalizedText;
+  itemSubclass?: LocalizedText;
+  armor?: TooltipLine;
+  weapon?: { damage?: LocalizedText; speed?: LocalizedText; dps?: LocalizedText };
+  stats: (TooltipLine & { type: string; negated?: boolean })[];
+  enchantments: { id?: number; text: LocalizedText; slot?: string }[];
+  gems: { itemId?: number; text?: LocalizedText; socket?: LocalizedText; icon?: string }[];
+  /** "Equip:" / "Use:" effects. */
+  spells: { spellId?: number; text: LocalizedText }[];
+  set?: { name: LocalizedText; items: { name: LocalizedText; equipped: boolean }[]; effects: { text: LocalizedText; active: boolean }[] };
+  /** Flavor text. */
+  description?: LocalizedText;
+  requirements: LocalizedText[];
+  durability?: LocalizedText;
   bonusIds: number[];
 }
 
@@ -42,6 +66,7 @@ export interface Talent {
   id?: number;
   spellId?: number;
   name: string;
+  description?: string;
   rank?: number;
 }
 
@@ -51,14 +76,69 @@ export interface TalentTree {
   talents: Talent[];
 }
 
+/** A talent node picked in a retail loadout; the visual layout comes from the static talent tree. */
+export interface SelectedTalentNode {
+  nodeId: number;
+  rank: number;
+  /** For choice nodes: the talent chosen. */
+  talentId?: number;
+  /** Granted for free by the game (not spent by the player). */
+  defaultPoints?: number;
+}
+
 /** One talent configuration: a retail spec loadout or a Classic/Forever dual-spec group. */
 export interface TalentSetup {
   active: boolean;
   specId?: number;
   specName?: string;
   loadoutCode?: string;
+  /** Retail: static tree to draw the loadout on. */
+  treeId?: number;
+  heroTreeId?: number;
+  selected?: SelectedTalentNode[];
+  /** Classic-style trees (and a readable fallback for retail). */
   trees: TalentTree[];
 }
+
+/** One option of a talent node (choice nodes have two). Text is localized; descriptions are per rank. */
+export interface TalentOption {
+  talentId?: number;
+  spellId?: number;
+  name: LocalizedText;
+  descriptions: LocalizedText[];
+  castTime?: LocalizedText;
+  cost?: LocalizedText;
+  range?: LocalizedText;
+  cooldown?: LocalizedText;
+  icon?: string;
+}
+
+export interface TalentNode {
+  id: number;
+  row: number;
+  col: number;
+  /** Exact in-game position (client units, ~600 per grid step); preferred over row/col for drawing. */
+  x?: number;
+  y?: number;
+  type: string;
+  maxRank: number;
+  lockedBy: number[];
+  options: TalentOption[];
+}
+
+/** Static layout of a retail talent tree for one spec, cached per game version. */
+export interface TalentTreeLayout {
+  treeId: number;
+  specId: number;
+  className?: LocalizedText;
+  specName?: LocalizedText;
+  classNodes: TalentNode[];
+  specNodes: TalentNode[];
+  heroTrees: { id: number; name: LocalizedText; nodes: TalentNode[] }[];
+}
+
+/** Stat as reported by the API: a plain number, or base/effective values, or a percentage with its rating. */
+export type StatValue = number | { base?: number; effective?: number; value?: number; rating?: number; ratingBonus?: number };
 
 export interface CharacterMedia {
   avatar?: string;
@@ -67,7 +147,7 @@ export interface CharacterMedia {
 }
 
 export interface ProfessionTier {
-  name?: string;
+  name?: LocalizedText;
   skill?: number;
   maxSkill?: number;
   knownRecipes?: number;
@@ -75,7 +155,8 @@ export interface ProfessionTier {
 
 export interface Profession {
   id: number;
-  name: string;
+  name: LocalizedText;
+  icon?: string;
   secondary: boolean;
   skill?: number;
   maxSkill?: number;
@@ -84,8 +165,8 @@ export interface Profession {
 
 export interface Reputation {
   factionId: number;
-  name: string;
-  standing?: string;
+  name: LocalizedText;
+  standing?: LocalizedText;
   value?: number;
   max?: number;
   tier?: number;
@@ -132,7 +213,7 @@ export interface CharacterProfile {
   equipment?: EquippedItem[];
   talents?: TalentSetup[];
   media?: CharacterMedia;
-  statistics?: Record<string, number>;
+  statistics?: Record<string, StatValue>;
   professions?: Profession[];
   reputations?: Reputation[];
   /** Endpoints that failed or are unsupported, with the reason. */

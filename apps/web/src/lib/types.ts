@@ -1,5 +1,5 @@
 import type { CharacterProfile } from "@wow/blizzard";
-import type { GameClass, GameRole, Localized, RaidSize, RosterStatus } from "@wow/config";
+import type { GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
 
@@ -15,6 +15,7 @@ export interface PublicConfig {
     raidSizes: RaidSize[];
     raids: { key: string; name: Localized; size: number; enabled: boolean }[];
     rosterStatuses: RosterStatus[];
+    statPanel: StatSection[];
     sync: { defaultIntervalMinutes: number; minIntervalMinutes: number; defaultMinLevel: number };
   };
   regions: string[];

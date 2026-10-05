@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { cleanWowText } from "./text";
 import {
   normalizeEquipment,
+  normalizeTalentTree,
   normalizeGuildRoster,
   normalizeMedia,
   normalizeSpecializations,
@@ -40,29 +42,145 @@ describe("normalizeSummary", () => {
 });
 
 describe("normalizeEquipment", () => {
-  it("extracts enchants and gems", () => {
+  // Shape of a locale-less /equipment response (every string in all locales).
+  const all = (en: string, es: string) => ({ en_US: en, es_ES: es, fr_FR: "x" });
+
+  it("keeps every tooltip line localized and colored", () => {
     const [item] = normalizeEquipment({
       equipped_items: [
         {
-          slot: { type: "HEAD", name: "Head" },
-          item: { id: 16866 },
-          name: "Helm of Ten Storms",
+          slot: { type: "HEAD", name: all("Head", "Cabeza") },
+          item: { id: 249961 },
+          name: all("Unbreakable Gaze", "Mirada inquebrantable"),
           quality: { type: "EPIC" },
-          level: { value: 76 },
-          enchantments: [{ enchantment_id: 2583, display_string: "Enchanted: +10 Stamina", enchantment_slot: { type: "PERMANENT" } }],
-          sockets: [{ item: { id: 1 }, display_string: "+5 Stamina" }, {}],
-          set: { item_set: { name: "The Ten Storms" } },
+          level: { value: 289 },
+          name_description: { display_string: all("Mythic+", "Mítica+"), color: { r: 0, g: 255, b: 0, a: 1 } },
+          binding: { type: "ON_ACQUIRE", name: all("Binds when picked up", "Se liga al recogerlo") },
+          armor: { value: 221, display: { display_string: all("221 Armor", "221 p. de armadura"), color: { r: 255, g: 255, b: 255, a: 1 } } },
+          stats: [
+            { type: { type: "STRENGTH" }, value: 106, is_negated: true, display: { display_string: all("+106 Strength", "+106 fuerza"), color: { r: 128, g: 128, b: 128 } } },
+          ],
+          enchantments: [
+            { enchantment_id: 8039, display_string: all("Enchanted: Acuity |A:Professions-ChatIcon-Quality-12-Tier2:20:20|a", "Encantado: Agudeza |A:x:20:20|a"), enchantment_slot: { type: "PERMANENT" } },
+          ],
+          sockets: [{ socket_type: { name: all("Prismatic Socket", "Ranura prismática") }, item: { id: 240902 }, display_string: all("+16 Mastery", "+16 maestría") }],
+          spells: [{ spell: { id: 1 }, description: all("Equip: Something.\r\nMore.", "Equipar: Algo.\r\nMás.") }],
+          set: {
+            item_set: { name: all("Radiant Verdict", "Veredicto luminoso") },
+            items: [{ item: { name: all("Helm", "Yelmo") }, is_equipped: true }, { item: { name: all("Legs", "Piernas") } }],
+            effects: [{ display_string: all("Set: Holy Shock heals 15% more.", "Conjunto: Choque Sagrado sana un 15% más."), required_count: 2, is_active: true }],
+          },
+          requirements: { level: { value: 90, display_string: all("Requires Level 90", "Necesitas ser de nivel 90") } },
         },
       ],
     });
     expect(item).toMatchObject({
       slot: "HEAD",
-      itemId: 16866,
-      itemLevel: 76,
-      setName: "The Ten Storms",
-      enchantments: [{ id: 2583, text: "Enchanted: +10 Stamina" }],
-      gems: [{ itemId: 1, text: "+5 Stamina" }],
+      itemId: 249961,
+      itemLevel: 289,
+      name: { en: "Unbreakable Gaze", es: "Mirada inquebrantable" },
+      nameDescription: { text: { es: "Mítica+" }, color: "#00ff00" },
+      armor: { text: { en: "221 Armor" }, color: "#ffffff" },
+      stats: [{ type: "STRENGTH", negated: true, color: "#808080", text: { es: "+106 fuerza" } }],
+      enchantments: [{ id: 8039, text: { en: "Enchanted: Acuity", es: "Encantado: Agudeza" }, slot: "PERMANENT" }],
+      gems: [{ itemId: 240902, socket: { es: "Ranura prismática" }, text: { en: "+16 Mastery" } }],
+      spells: [{ spellId: 1, text: { en: "Equip: Something.\nMore." } }],
+      set: {
+        name: { es: "Veredicto luminoso" },
+        items: [{ equipped: true }, { equipped: false }],
+        effects: [{ active: true, text: { en: "Set: Holy Shock heals 15% more." } }],
+      },
+      requirements: [{ en: "Requires Level 90", es: "Necesitas ser de nivel 90" }],
     });
+    // Only the configured UI locales are kept.
+    expect(Object.keys(item!.name)).toEqual(["en", "es"]);
+  });
+});
+
+describe("cleanWowText", () => {
+  it("strips client color, atlas and texture codes", () => {
+    expect(cleanWowText("|cff00ff00Green|r text |A:icon:20:20|a|Tpath:0|t")).toBe("Green text");
+  });
+});
+
+describe("normalizeTalentTree", () => {
+  const tree = (locale: "en" | "es") => {
+    const t = (en: string, es: string) => (locale === "en" ? en : es);
+    return {
+      id: 790,
+      playable_class: { name: t("Paladin", "Paladín") },
+      playable_specialization: { id: 65, name: t("Holy", "Sagrado") },
+      class_talent_nodes: [
+        {
+          id: 1,
+          node_type: { type: "ACTIVE" },
+          display_row: 1,
+          display_col: 9,
+          raw_position_x: 7800,
+          raw_position_y: 599,
+          ranks: [
+            { rank: 1, tooltip: { talent: { id: 10, name: t("Shock", "Choque") }, spell_tooltip: { spell: { id: 100 }, description: t("Rank one.", "Rango uno."), power_cost: t("3 Holy Power", "3 p. de poder sagrado") } } },
+            { rank: 2, tooltip: { talent: { id: 10, name: t("Shock", "Choque") }, spell_tooltip: { spell: { id: 100 }, description: t("Rank two.", "Rango dos.") } } },
+          ],
+        },
+        {
+          id: 2,
+          node_type: { type: "CHOICE" },
+          display_row: 2,
+          display_col: 10,
+          locked_by: [1],
+          ranks: [
+            {
+              rank: 1,
+              choice_of_tooltips: [
+                { talent: { id: 20, name: t("Left", "Izquierda") }, spell_tooltip: { spell: { id: 200 }, description: t("Left.", "Izq.") } },
+                { talent: { id: 21, name: t("Right", "Derecha") }, spell_tooltip: { spell: { id: 201 }, description: t("Right.", "Der.") } },
+              ],
+            },
+          ],
+        },
+      ],
+      spec_talent_nodes: [
+        // Real payloads repeat hero nodes here and include option-less nodes; both must be dropped.
+        heroNode(t),
+        { id: 4, node_type: { type: "CHOICE" }, display_row: 1, display_col: 1, ranks: [{ rank: 1 }] },
+        {
+          id: 5,
+          node_type: { type: "PASSIVE" },
+          ranks: [{ rank: 1, tooltip: { talent: { id: 50, name: t("Spec", "Espec") }, spell_tooltip: { spell: { id: 500 }, description: t("S.", "E.") } } }],
+        },
+      ],
+      hero_talent_trees: [{ id: 50, name: t("Herald of the Sun", "Heraldo del Sol"), hero_talent_nodes: [heroNode(t)] }],
+    };
+  };
+  const heroNode = (t: (en: string, es: string) => string) => ({
+    id: 3,
+    node_type: { type: "PASSIVE" },
+    ranks: [{ rank: 1, tooltip: { talent: { id: 30, name: t("Dawnlight", "Albaluz") }, spell_tooltip: { spell: { id: 300 }, description: t("D.", "A.") } } }],
+  });
+
+  it("merges both locales and keeps layout, ranks and choices", () => {
+    const layout = normalizeTalentTree({ en: tree("en"), es: tree("es") });
+    expect(layout).toMatchObject({ treeId: 790, specId: 65, specName: { en: "Holy", es: "Sagrado" } });
+    const [active, choice] = layout.classNodes;
+    expect(active).toMatchObject({ id: 1, row: 1, col: 9, x: 7800, y: 599, type: "ACTIVE", maxRank: 2, lockedBy: [] });
+    expect(active!.options).toHaveLength(1);
+    expect(active!.options[0]).toMatchObject({
+      talentId: 10,
+      spellId: 100,
+      name: { en: "Shock", es: "Choque" },
+      descriptions: [{ en: "Rank one.", es: "Rango uno." }, { en: "Rank two.", es: "Rango dos." }],
+      cost: { es: "3 p. de poder sagrado" },
+    });
+    expect(choice).toMatchObject({ type: "CHOICE", lockedBy: [1], maxRank: 1 });
+    expect(choice!.options.map((o) => o.name.es)).toEqual(["Izquierda", "Derecha"]);
+    expect(layout.heroTrees[0]).toMatchObject({ id: 50, name: { es: "Heraldo del Sol" } });
+    expect(layout.heroTrees[0]!.nodes.map((n) => n.id)).toEqual([3]);
+  });
+
+  it("keeps hero nodes out of the spec tree and drops nodes without options", () => {
+    const layout = normalizeTalentTree({ en: tree("en"), es: tree("es") });
+    expect(layout.specNodes.map((n) => n.id)).toEqual([5]);
   });
 });
 
@@ -88,10 +206,11 @@ describe("normalizeSpecializations", () => {
     expect(setups).toHaveLength(2);
     expect(setups[0]).toMatchObject({ active: true, specName: "Enhancement" });
     expect(setups[0]!.trees[1]!.talents[0]).toMatchObject({ id: 10, spellId: 99, name: "Stormstrike", rank: 1 });
+    expect(setups[0]!.selected).toBeUndefined();
     expect(setups[1]).toMatchObject({ active: false, specName: "Restoration" });
   });
 
-  it("handles retail spec loadouts", () => {
+  it("handles retail spec loadouts with the tree references and picked nodes", () => {
     const setups = normalizeSpecializations({
       active_specialization: { id: 73 },
       specializations: [
@@ -101,17 +220,24 @@ describe("normalizeSpecializations", () => {
             {
               is_active: true,
               talent_loadout_code: "ABC",
-              selected_class_talents: [{ id: 1, rank: 2, tooltip: { talent: { id: 5, name: "Shield Wall" } } }],
-              selected_spec_talents: [],
+              // Current API: plain picks carry only node id + rank; choice picks include the chosen talent.
+              selected_class_talents: [{ id: 1, rank: 2 }, { id: 2, rank: 1, tooltip: { talent: { id: 5, name: "Shield Wall" } } }],
+              selected_spec_talents: [{ id: 3, rank: 1, default_points: 1 }],
+              selected_class_talent_tree: { key: { href: "https://eu.api.blizzard.com/data/wow/talent-tree/790?namespace=static-12.1.0_68914-eu" } },
+              selected_hero_talent_tree: { id: 50, name: "Templar" },
             },
           ],
         },
         { specialization: { id: 71, name: "Arms" }, loadouts: [] },
       ],
     });
-    expect(setups[0]).toMatchObject({ active: true, specId: 73, loadoutCode: "ABC" });
-    expect(setups[0]!.trees).toEqual([{ name: "class", talents: [{ id: 1, name: "Shield Wall", rank: 2, spellId: undefined }] }]);
-    expect(setups[1]).toMatchObject({ active: false, specId: 71, trees: [] });
+    expect(setups[0]).toMatchObject({ active: true, specId: 73, loadoutCode: "ABC", treeId: 790, heroTreeId: 50 });
+    expect(setups[0]!.selected).toEqual([
+      { nodeId: 1, rank: 2, talentId: undefined, defaultPoints: undefined },
+      { nodeId: 2, rank: 1, talentId: 5, defaultPoints: undefined },
+      { nodeId: 3, rank: 1, talentId: undefined, defaultPoints: 1 },
+    ]);
+    expect(setups[1]).toMatchObject({ active: false, specId: 71, trees: [], selected: [] });
   });
 });
 
@@ -122,16 +248,21 @@ describe("normalizeMedia / normalizeStatistics / normalizeGuildRoster", () => {
     ).toEqual({ avatar: "a.jpg", inset: undefined, main: "m.png" });
   });
 
-  it("flattens statistics without assuming fields", () => {
+  it("keeps base/effective values and percentages with their rating", () => {
     expect(
       normalizeStatistics({
         _links: {},
         health: 5000,
         strength: { base: 100, effective: 150 },
-        melee_crit: { rating: 10, value: 7.5 },
-        power_type: { name: "Mana" },
+        melee_crit: { rating_bonus: 11.17, value: 21.17, rating_normalized: 514 },
+        power_type: { name: "Mana", id: 0 },
       }),
-    ).toEqual({ health: 5000, strength: 150, melee_crit: 7.5 });
+    ).toEqual({
+      health: 5000,
+      power_type_id: 0,
+      strength: { base: 100, effective: 150 },
+      melee_crit: { value: 21.17, rating: 514, ratingBonus: 11.17 },
+    });
   });
 
   it("maps guild roster members", () => {

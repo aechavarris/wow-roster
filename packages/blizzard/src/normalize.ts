@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- raw Blizzard payloads differ per game version and are validated field by field here. */
+import { cleanWowText, localized, rgbToHex, type LocalizedText } from "./text";
 import type {
   AccountCharacter,
   CharacterMedia,
@@ -8,9 +9,14 @@ import type {
   GuildRosterMember,
   Profession,
   Reputation,
+  StatValue,
   Talent,
+  TalentNode,
+  TalentOption,
   TalentSetup,
   TalentTree,
+  TalentTreeLayout,
+  TooltipLine,
 } from "./types";
 
 type Raw = any;
@@ -18,6 +24,7 @@ type Raw = any;
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
 const list = (v: unknown): Raw[] => (Array.isArray(v) ? v : []);
+const compact = <T>(values: (T | undefined)[]): T[] => values.filter((v): v is T => v !== undefined);
 
 /** Blizzard localizes names either as a plain string or as { en_US: "...", ... } when no locale is requested. */
 export function text(v: unknown): string | undefined {
@@ -27,6 +34,12 @@ export function text(v: unknown): string | undefined {
     return str(record.en_US) ?? str(Object.values(record).find((x) => typeof x === "string"));
   }
   return undefined;
+}
+
+/** The numeric id at the end of a Blizzard API href (e.g. ".../talent-tree/790/hero-talent/50?…" -> 50). */
+export function idFromHref(href: unknown): number | undefined {
+  const match = typeof href === "string" ? /\/(\d+)(?:\?|$)/.exec(href) : null;
+  return match ? Number(match[1]) : undefined;
 }
 
 export function normalizeSummary(raw: Raw): CharacterSummary {
@@ -50,33 +63,92 @@ export function normalizeSummary(raw: Raw): CharacterSummary {
   };
 }
 
+/** A "display" block ({ display_string, color }) as a colored tooltip line. */
+function line(display: Raw): TooltipLine | undefined {
+  const text = localized(display?.display_string);
+  return text ? { text, color: rgbToHex(display?.color) } : undefined;
+}
+
+/** Collects every display_string inside the requirements block (level, classes, skills, reputation…). */
+function requirementLines(requirements: Raw): LocalizedText[] {
+  if (!requirements || typeof requirements !== "object") return [];
+  return compact(Object.values(requirements).map((r: Raw) => localized(r?.display_string)));
+}
+
+/**
+ * Equipment with everything the in-game tooltip shows. Request it without a locale
+ * so every display string arrives in all languages in a single call.
+ */
 export function normalizeEquipment(raw: Raw): EquippedItem[] {
   return list(raw.equipped_items).map((item) => ({
     slot: item.slot?.type ?? "UNKNOWN",
-    slotName: text(item.slot?.name),
     itemId: item.item?.id,
-    name: text(item.name) ?? "",
+    name: localized(item.name) ?? { en: String(item.item?.id ?? "?") },
     quality: str(item.quality?.type),
     itemLevel: num(item.level?.value),
-    enchantments: list(item.enchantments).map((e) => ({
-      id: num(e.enchantment_id),
-      text: text(e.display_string) ?? text(e.source_item?.name) ?? "",
-      slot: str(e.enchantment_slot?.type),
+    nameDescription: line(item.name_description),
+    binding: localized(item.binding?.name),
+    uniqueEquipped: localized(item.unique_equipped),
+    inventoryType: localized(item.inventory_type?.name),
+    itemSubclass: localized(item.item_subclass?.name),
+    armor: line(item.armor?.display),
+    weapon: item.weapon
+      ? {
+          damage: localized(item.weapon.damage?.display_string),
+          speed: localized(item.weapon.attack_speed?.display_string),
+          dps: localized(item.weapon.dps?.display_string),
+        }
+      : undefined,
+    stats: compact(
+      list(item.stats).map((s) => {
+        const l = line(s.display);
+        return l ? { ...l, type: s.type?.type ?? "", negated: s.is_negated === true || undefined } : undefined;
+      }),
+    ),
+    enchantments: compact(
+      list(item.enchantments).map((e) => {
+        const t = localized(e.display_string) ?? localized(e.source_item?.name);
+        return t ? { id: num(e.enchantment_id), text: t, slot: str(e.enchantment_slot?.type) } : undefined;
+      }),
+    ),
+    gems: list(item.sockets).map((s) => ({
+      itemId: num(s.item?.id),
+      text: localized(s.display_string),
+      socket: localized(s.socket_type?.name),
     })),
-    gems: list(item.sockets)
-      .filter((s) => s.item || s.display_string)
-      .map((s) => ({ itemId: num(s.item?.id), text: text(s.display_string) })),
-    setName: text(item.set?.item_set?.name),
+    spells: compact(
+      list(item.spells).map((s) => {
+        const t = localized(s.description);
+        return t ? { spellId: num(s.spell?.id), text: t } : undefined;
+      }),
+    ),
+    set: item.set
+      ? {
+          name: localized(item.set.item_set?.name) ?? {},
+          items: list(item.set.items).map((i) => ({ name: localized(i.item?.name) ?? {}, equipped: i.is_equipped === true })),
+          effects: compact(
+            list(item.set.effects).map((e) => {
+              const t = localized(e.display_string);
+              return t ? { text: t, active: e.is_active === true } : undefined;
+            }),
+          ),
+        }
+      : undefined,
+    description: localized(item.description),
+    requirements: requirementLines(item.requirements),
+    durability: localized(item.durability?.display_string),
     bonusIds: list(item.bonus_list).filter((b) => typeof b === "number"),
   }));
 }
 
 function toTalent(t: Raw): Talent {
   const tooltip = t.tooltip ?? t;
+  const description = text(tooltip.spell_tooltip?.description);
   return {
     id: num(t.id) ?? num(tooltip.talent?.id) ?? num(t.talent?.id),
     spellId: num(tooltip.spell_tooltip?.spell?.id),
     name: text(tooltip.talent?.name) ?? text(tooltip.spell_tooltip?.spell?.name) ?? "",
+    description: description ? cleanWowText(description) : undefined,
     rank: num(t.rank) ?? num(t.talent_rank),
   };
 }
@@ -100,6 +172,11 @@ export function normalizeSpecializations(raw: Raw): TalentSetup[] {
     const loadouts = list(spec.loadouts);
     const loadout = loadouts.find((l) => l.is_active) ?? loadouts[0];
     const specId = num(spec.specialization?.id);
+    const picked = [
+      ...list(loadout?.selected_class_talents),
+      ...list(loadout?.selected_spec_talents),
+      ...list(loadout?.selected_hero_talents),
+    ];
     const trees: TalentTree[] = [
       { name: "class", talents: list(loadout?.selected_class_talents).map(toTalent) },
       { name: "spec", talents: list(loadout?.selected_spec_talents).map(toTalent) },
@@ -110,9 +187,103 @@ export function normalizeSpecializations(raw: Raw): TalentSetup[] {
       specId,
       specName: text(spec.specialization?.name),
       loadoutCode: str(loadout?.talent_loadout_code),
+      // The class tree reference only carries its id in the href (".../talent-tree/790?…").
+      treeId: idFromHref(loadout?.selected_class_talent_tree?.key?.href),
+      heroTreeId: num(loadout?.selected_hero_talent_tree?.id),
+      selected: picked
+        .filter((t) => num(t.id) !== undefined)
+        .map((t) => ({
+          nodeId: t.id,
+          rank: num(t.rank) ?? 1,
+          talentId: num(t.tooltip?.talent?.id),
+          defaultPoints: num(t.default_points),
+        })),
       trees,
     };
   });
+}
+
+/** Talent tree payloads fetched once per UI locale, merged into one localized layout. */
+export function normalizeTalentTree(rawByLocale: Record<string, Raw>): TalentTreeLayout {
+  const locales = Object.keys(rawByLocale);
+  const base = rawByLocale[locales[0]!];
+
+  /** Reads the same field from every locale's payload into one LocalizedText. */
+  const loc = (pick: (locale: string) => unknown): LocalizedText | undefined => {
+    const result: LocalizedText = {};
+    for (const locale of locales) {
+      const value = text(pick(locale));
+      if (value) result[locale] = cleanWowText(value);
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
+  };
+
+  const nodesOf = (select: (raw: Raw) => unknown): TalentNode[] => {
+    const nodeIndex = Object.fromEntries(
+      locales.map((l) => [l, new Map(list(select(rawByLocale[l])).map((n: Raw) => [n.id, n]))]),
+    );
+    return list(select(base)).map((node: Raw): TalentNode => {
+      const ranks = list(node.ranks);
+      const isChoice = list(ranks[0]?.choice_of_tooltips).length > 0;
+      // Choice nodes hold their options in rank 1; regular nodes have one tooltip per rank.
+      const tooltip = (locale: string, option: number, rank: number) => {
+        const n = nodeIndex[locale]!.get(node.id);
+        return isChoice ? list(n?.ranks)[0]?.choice_of_tooltips?.[option] : list(n?.ranks)[rank]?.tooltip;
+      };
+      const optionCount = isChoice ? list(ranks[0].choice_of_tooltips).length : 1;
+      const options: TalentOption[] = [];
+      for (let o = 0; o < optionCount; o++) {
+        const first = tooltip(locales[0]!, o, 0);
+        if (!first) continue;
+        const spell = (locale: string, rank = 0) => tooltip(locale, o, rank)?.spell_tooltip;
+        options.push({
+          talentId: num(first.talent?.id),
+          spellId: num(first.spell_tooltip?.spell?.id),
+          name: loc((l) => tooltip(l, o, 0)?.talent?.name) ?? {},
+          descriptions: compact((isChoice ? [0] : ranks.map((_, r) => r)).map((r) => loc((l) => spell(l, r)?.description))),
+          castTime: loc((l) => spell(l)?.cast_time),
+          cost: loc((l) => spell(l)?.power_cost),
+          range: loc((l) => spell(l)?.range),
+          cooldown: loc((l) => spell(l)?.cooldown),
+        });
+      }
+      return {
+        id: node.id,
+        row: num(node.display_row) ?? 0,
+        col: num(node.display_col) ?? 0,
+        x: num(node.raw_position_x),
+        y: num(node.raw_position_y),
+        type: str(node.node_type?.type) ?? "PASSIVE",
+        maxRank: Math.max(1, ranks.length),
+        lockedBy: list(node.locked_by).filter((id) => typeof id === "number"),
+        options,
+      };
+    });
+  };
+
+  // The API also lists every hero tree's nodes under spec_talent_nodes; they belong to the hero trees only.
+  const heroNodeIds = new Set(list(base.hero_talent_trees).flatMap((h: Raw) => list(h.hero_talent_nodes).map((n: Raw) => n.id)));
+  // Nodes without any option (no tooltip in the API) cannot be drawn or explained.
+  const drawable = (nodes: TalentNode[]) => nodes.filter((n) => n.options.length > 0);
+
+  return {
+    treeId: base.id,
+    specId: base.playable_specialization?.id,
+    className: loc((l) => rawByLocale[l].playable_class?.name),
+    specName: loc((l) => rawByLocale[l].playable_specialization?.name),
+    classNodes: drawable(nodesOf((raw) => raw.class_talent_nodes)),
+    specNodes: drawable(nodesOf((raw) => raw.spec_talent_nodes)).filter((n) => !heroNodeIds.has(n.id)),
+    heroTrees: list(base.hero_talent_trees).map((hero: Raw, index: number) => ({
+      id: hero.id,
+      name: loc((l) => list(rawByLocale[l].hero_talent_trees)[index]?.name) ?? {},
+      nodes: drawable(nodesOf((raw) => list(raw.hero_talent_trees)[index]?.hero_talent_nodes)),
+    })),
+  };
+}
+
+/** Icon URL from a media payload (item, spell, profession…). */
+export function normalizeIcon(raw: Raw): string | undefined {
+  return list(raw?.assets).find((a) => a.key === "icon")?.value;
 }
 
 export function normalizeMedia(raw: Raw): CharacterMedia {
@@ -125,16 +296,31 @@ export function normalizeMedia(raw: Raw): CharacterMedia {
   };
 }
 
-/** Flattens the statistics payload into numeric values without assuming which stats a game version has. */
-export function normalizeStatistics(raw: Raw): Record<string, number> {
-  const stats: Record<string, number> = {};
+/**
+ * Keeps each stat as the API reports it: plain numbers, base/effective pairs, or a
+ * percentage with its rating, so panels can show both like the game does.
+ */
+export function normalizeStatistics(raw: Raw): Record<string, StatValue> {
+  const stats: Record<string, StatValue> = {};
   for (const [key, value] of Object.entries(raw ?? {})) {
     if (key === "_links" || key === "character") continue;
+    // The resource type only matters by id (0 mana, 1 rage, 3 energy…), e.g. to color the power bar.
+    if (key === "power_type") {
+      const id = num((value as Raw)?.id);
+      if (id !== undefined) stats.power_type_id = id;
+      continue;
+    }
     if (typeof value === "number") stats[key] = value;
     else if (value && typeof value === "object") {
       const v = value as Raw;
-      const n = num(v.effective) ?? num(v.value) ?? num(v.rating_normalized);
-      if (n !== undefined) stats[key] = n;
+      const stat = {
+        base: num(v.base),
+        effective: num(v.effective),
+        value: num(v.value),
+        rating: num(v.rating_normalized) ?? num(v.rating),
+        ratingBonus: num(v.rating_bonus),
+      };
+      if (Object.values(stat).some((n) => n !== undefined)) stats[key] = JSON.parse(JSON.stringify(stat));
     }
   }
   return stats;
@@ -143,14 +329,14 @@ export function normalizeStatistics(raw: Raw): Record<string, number> {
 export function normalizeProfessions(raw: Raw): Profession[] {
   const map = (p: Raw, secondary: boolean): Profession => {
     const tiers = list(p.tiers).map((t) => ({
-      name: text(t.tier?.name),
+      name: localized(t.tier?.name),
       skill: num(t.skill_points),
       maxSkill: num(t.max_skill_points),
       knownRecipes: list(t.known_recipes).length || undefined,
     }));
     return {
       id: p.profession?.id,
-      name: text(p.profession?.name) ?? "",
+      name: localized(p.profession?.name) ?? {},
       secondary,
       skill: num(p.skill_points) ?? tiers[0]?.skill,
       maxSkill: num(p.max_skill_points) ?? tiers[0]?.maxSkill,
@@ -163,8 +349,8 @@ export function normalizeProfessions(raw: Raw): Profession[] {
 export function normalizeReputations(raw: Raw): Reputation[] {
   return list(raw.reputations).map((r) => ({
     factionId: r.faction?.id,
-    name: text(r.faction?.name) ?? "",
-    standing: text(r.standing?.name),
+    name: localized(r.faction?.name) ?? {},
+    standing: localized(r.standing?.name),
     value: num(r.standing?.value),
     max: num(r.standing?.max),
     tier: num(r.standing?.tier),

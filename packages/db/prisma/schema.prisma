@@ -125,6 +125,15 @@ model Character {
   @@index([ownerId])
 }
 
+/// Static game data (icons, talent trees) fetched once from the Blizzard API.
+/// The key includes the game profile and region, e.g. "retail-dev:eu:icon:item:249961".
+model StaticCache {
+  key       String   @id
+  /// JSON value; null records a lookup that had no data so it is not retried until it expires.
+  data      Json?
+  fetchedAt DateTime @default(now())
+}
+
 /// A character in an app guild's roster, with officer overrides.
 model RosterEntry {
   id          String        @id @default(cuid())

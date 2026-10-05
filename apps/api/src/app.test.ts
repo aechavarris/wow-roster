@@ -40,8 +40,36 @@ const blizzardRoutes: Record<string, unknown> = {
     equipped_item_level: 700,
     last_login_timestamp: 1_760_000_000_000,
   },
-  "/profile/wow/character/los-errantes/garrosh/equipment": { equipped_items: [] },
+  "/profile/wow/character/los-errantes/garrosh/equipment": {
+    equipped_items: [{ slot: { type: "HEAD" }, item: { id: 500 }, name: { en_US: "Helm", es_ES: "Yelmo" }, quality: { type: "EPIC" } }],
+  },
   "/profile/wow/character/los-errantes/garrosh/character-media": { assets: [{ key: "avatar", value: "https://render/avatar.jpg" }] },
+  "/profile/wow/character/los-errantes/garrosh/specializations": {
+    active_specialization: { id: 73 },
+    specializations: [
+      {
+        specialization: { id: 73, name: "Protection" },
+        loadouts: [
+          {
+            is_active: true,
+            selected_class_talents: [{ id: 1, rank: 1 }],
+            selected_class_talent_tree: { key: { href: "https://eu.api.blizzard.com/data/wow/talent-tree/790?namespace=static-eu" } },
+          },
+        ],
+      },
+    ],
+  },
+  "/data/wow/talent-tree/790/playable-specialization/73": {
+    id: 790,
+    playable_specialization: { id: 73, name: "Protection" },
+    class_talent_nodes: [
+      { id: 1, node_type: { type: "ACTIVE" }, display_row: 1, display_col: 1, ranks: [{ rank: 1, tooltip: { talent: { id: 9, name: "Taunt" }, spell_tooltip: { spell: { id: 355 }, description: "Taunts." } } }] },
+    ],
+    spec_talent_nodes: [],
+    hero_talent_trees: [],
+  },
+  "/data/wow/media/item/500": { assets: [{ key: "icon", value: "https://render/icons/helm.jpg" }] },
+  "/data/wow/media/spell/355": { assets: [{ key: "icon", value: "https://render/icons/taunt.jpg" }] },
 };
 
 const fakeFetch = (async (input: string | URL) => {
@@ -106,7 +134,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   calls.length = 0;
   await prisma.$executeRawUnsafe(
-    'TRUNCATE "RosterEntry", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User" CASCADE',
+    'TRUNCATE "RosterEntry", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User", "StaticCache" CASCADE',
   );
 });
 
@@ -252,5 +280,21 @@ describe("characters", () => {
     expect(page.statusCode).toBe(200);
     expect(page.json().character).toMatchObject({ name: "Garrosh", specName: "protection", equippedItemLevel: 700 });
     expect((await app.inject({ method: "GET", url: "/api/characters/eu/los-errantes/Nobody" })).statusCode).toBe(404);
+  });
+
+  it("enriches synced characters with icons and serves the cached talent tree", async () => {
+    const session = await login();
+    const page = await app.inject({ method: "GET", url: "/api/characters/eu/los-errantes/Garrosh", cookies: { wr_session: session } });
+    const { profile } = page.json().character;
+    expect(profile.equipment[0]).toMatchObject({ name: { en: "Helm", es: "Yelmo" }, icon: "https://render/icons/helm.jpg" });
+    expect(profile.talents[0]).toMatchObject({ treeId: 790, specId: 73, selected: [{ nodeId: 1, rank: 1 }] });
+
+    // Cached during the sync, so anonymous visitors can read it.
+    const tree = await app.inject({ method: "GET", url: "/api/talent-trees/eu/790/73" });
+    expect(tree.statusCode).toBe(200);
+    expect(tree.json().layout.classNodes[0].options[0]).toMatchObject({ name: { en: "Taunt" }, icon: "https://render/icons/taunt.jpg" });
+
+    // Uncached trees are only built for signed-in users.
+    expect((await app.inject({ method: "GET", url: "/api/talent-trees/eu/790/71" })).statusCode).toBe(404);
   });
 });

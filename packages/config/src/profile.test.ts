@@ -16,6 +16,11 @@ describe("resolveProfile", () => {
     expect(profile.raids.find((r) => r.key === "hyjal-summit")?.size).toBe(20);
   });
 
+  it("replaces the stats panel as a whole when extending", () => {
+    expect(resolveProfile("forever").statPanel.map((s) => s.key)).toEqual(["base", "melee", "ranged", "spell", "defenses", "resistances"]);
+    expect(resolveProfile("retail-dev").statPanel.map((s) => s.key)).toEqual(["attributes", "enhancements"]);
+  });
+
   it("accepts custom profiles that extend a built-in one", () => {
     const profile = resolveProfile("custom", {
       custom: { id: "custom", extends: "forever", raidSizes: [{ size: 40, enabled: true }] },

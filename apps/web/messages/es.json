@@ -140,7 +140,19 @@
     "none": "Ninguna",
     "showAll": "Ver todas ({count})",
     "refresh": "Actualizar",
-    "refreshing": "Actualizando…"
+    "refreshing": "Actualizando…",
+    "itemLevelLine": "Nivel de objeto {value}",
+    "gems": "{count, plural, =0 {sin gemas} one {# gema} other {# gemas}}",
+    "pointsSpent": "{count, plural, one {# punto} other {# puntos}}",
+    "choiceNode": "Elige uno:",
+    "chosen": "Elegido",
+    "rankOf": "Rango {rank}/{max}",
+    "rank": "Rango {rank}",
+    "loadingTalents": "Cargando árboles de talentos…",
+    "health": "Salud",
+    "power": "Recurso",
+    "ratingLine": "Índice: {value}",
+    "baseLine": "Base: {value}"
   },
   "slots": {
     "HEAD": "Cabeza",

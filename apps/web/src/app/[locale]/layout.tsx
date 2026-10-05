@@ -2,7 +2,6 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Cinzel, Inter } from "next/font/google";
 import { notFound } from "next/navigation";
-import Script from "next/script";
 import { Header } from "@/components/Header";
 import { routing } from "@/i18n/routing";
 import { getConfig, getMe } from "@/lib/api";
@@ -31,10 +30,6 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <Header user={me.user} loginEnabled={config.loginEnabled} profileLabel={config.profile.label} />
           <main className="mx-auto w-full max-w-7xl px-4 py-6">{children}</main>
         </NextIntlClientProvider>
-        <Script id="wowhead-config" strategy="beforeInteractive">
-          {`const whTooltips = { colorLinks: false, iconizeLinks: true, renameLinks: false };`}
-        </Script>
-        <Script src="https://wow.zamimg.com/js/tooltips.js" strategy="afterInteractive" />
       </body>
     </html>
   );

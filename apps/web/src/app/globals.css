@@ -97,3 +97,45 @@ a {
     @apply font-display font-semibold tracking-wide;
   }
 }
+
+/* In-game tooltip look; it stays dark in both themes, as in the game. */
+.game-tooltip {
+  position: fixed;
+  z-index: 50;
+  max-width: min(340px, calc(100vw - 20px));
+  padding: 8px 10px;
+  border: 1px solid #4a5a78;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(14, 20, 38, 0.97), rgba(6, 10, 22, 0.97));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.35;
+  pointer-events: none;
+  white-space: pre-line;
+}
+.game-tooltip .tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.game-tooltip .tt-green {
+  color: #1eff00;
+}
+.game-tooltip .tt-yellow {
+  color: #ffd100;
+}
+.game-tooltip .tt-grey {
+  color: #9d9d9d;
+}
+.game-tooltip .tt-gap {
+  margin-top: 6px;
+}
+
+/* Item quality borders on icons. */
+.icon-frame {
+  border: 2px solid var(--frame, #3a3f4b);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 10px -2px var(--frame, transparent);
+  background: #0b0d12;
+}

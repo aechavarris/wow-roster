@@ -11,6 +11,35 @@
     "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations"]
   },
   "wowheadDomain": "",
+  "statPanel": [
+    {
+      "key": "attributes", "name": { "en": "Attributes", "es": "Atributos" },
+      "entries": [
+        {
+          "key": "primary", "label": { "en": "Primary", "es": "Principal" }, "stats": ["strength", "agility", "intellect"],
+          "labels": {
+            "strength": { "en": "Strength", "es": "Fuerza" },
+            "agility": { "en": "Agility", "es": "Agilidad" },
+            "intellect": { "en": "Intellect", "es": "Intelecto" }
+          }
+        },
+        { "key": "stamina", "label": { "en": "Stamina", "es": "Aguante" }, "stats": ["stamina"] },
+        { "key": "armor", "label": { "en": "Armor", "es": "Armadura" }, "stats": ["armor"] }
+      ]
+    },
+    {
+      "key": "enhancements", "name": { "en": "Enhancements", "es": "Mejoras" },
+      "entries": [
+        { "key": "crit", "label": { "en": "Critical Strike", "es": "Golpe crítico" }, "stats": ["melee_crit", "ranged_crit", "spell_crit"], "format": "percent" },
+        { "key": "haste", "label": { "en": "Haste", "es": "Celeridad" }, "stats": ["melee_haste", "ranged_haste", "spell_haste"], "format": "percent" },
+        { "key": "mastery", "label": { "en": "Mastery", "es": "Maestría" }, "stats": ["mastery"], "format": "percent" },
+        { "key": "versatility", "label": { "en": "Versatility", "es": "Versatilidad" }, "stats": ["versatility_damage_done_bonus"], "format": "percent", "ratingStat": "versatility" },
+        { "key": "leech", "label": { "en": "Leech", "es": "Robo de vida" }, "stats": ["lifesteal"], "format": "percent", "hideIfZero": true },
+        { "key": "avoidance", "label": { "en": "Avoidance", "es": "Elusión" }, "stats": ["avoidance"], "format": "percent", "hideIfZero": true },
+        { "key": "speed", "label": { "en": "Speed", "es": "Velocidad" }, "stats": ["speed"], "format": "percent", "hideIfZero": true }
+      ]
+    }
+  ],
   "classes": [
     {
       "id": 6, "key": "death-knight", "color": "#C41E3A", "name": { "en": "Death Knight", "es": "Caballero de la Muerte" },

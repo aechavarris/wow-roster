@@ -19,6 +19,7 @@ const MERGE_KEYS: Record<string, string> = {
   raidSizes: "size",
   raids: "key",
   rosterStatuses: "key",
+  // statPanel is replaced as a whole: a different game version means a different panel.
 };
 
 function mergeArray(base: unknown[], override: unknown[], key: string): unknown[] {
