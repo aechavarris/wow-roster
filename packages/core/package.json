@@ -15,5 +15,8 @@
     "@wow/config": "workspace:*",
     "@wow/db": "workspace:*",
     "ioredis": "^6.0.0"
+  },
+  "devDependencies": {
+    "bullmq": "^6.3.11"
   }
 }

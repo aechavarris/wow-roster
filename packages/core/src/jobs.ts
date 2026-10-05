@@ -18,7 +18,9 @@ export interface CharacterSyncJob {
 }
 
 export const guildSchedulerId = (guildId: string) => `guild:${guildId}`;
-export const characterJobId = (characterId: string) => `character:${characterId}`;
+/** BullMQ rejects custom job ids containing ":", so job ids use dashes. */
+export const characterJobId = (characterId: string) => `character-${characterId}`;
+export const guildNowJobId = (guildId: string) => `guild-now-${guildId}`;
 
 /**
  * Creates a Redis client for BullMQ. BullMQ no longer loads ioredis itself in ESM,

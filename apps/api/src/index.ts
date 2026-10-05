@@ -4,6 +4,7 @@ import {
   QUEUES,
   blizzardFactory,
   characterJobId,
+  guildNowJobId,
   guildSchedulerId,
   createRedis,
   type CharacterSyncJob,
@@ -34,7 +35,7 @@ const queue: SyncQueue = {
     await guildQueue.removeJobScheduler(guildSchedulerId(guildId));
   },
   async syncGuildNow(guildId) {
-    await guildQueue.add("guild", { guildId }, { jobId: `guild-now:${guildId}`, removeOnComplete: true, removeOnFail: 50 });
+    await guildQueue.add("guild", { guildId }, { jobId: guildNowJobId(guildId), removeOnComplete: true, removeOnFail: 50 });
   },
   async syncCharacters(characterIds, force = false) {
     await characterQueue.addBulk(
