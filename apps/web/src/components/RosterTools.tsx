@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
-import { classColor } from "@/lib/game";
+import { classColor, classText } from "@/lib/game";
 import type { MeResponse, PublicConfig, ViewerRole } from "@/lib/types";
 
 type Profile = PublicConfig["profile"];
@@ -102,10 +102,10 @@ function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; pr
           <label className="label" htmlFor="plan-class">{t("class")}</label>
           <select
             id="plan-class"
-            className="input"
+            className="input text-class"
             value={classId}
             onChange={(e) => setClassId(Number(e.target.value))}
-            style={{ color: classColor(profile, classId) }}
+            style={classText(classColor(profile, classId))}
           >
             {profile.classes.map((c) => (
               <option key={c.id} value={c.id}>{localize(c.name, locale)}</option>
@@ -208,7 +208,7 @@ function MyCharactersForm({
                   })
                 }
               />
-              <span style={{ color: classColor(profile, c.classId) }}>{c.name}</span>
+              <span className="text-class" style={classText(classColor(profile, c.classId))}>{c.name}</span>
               <span className="text-xs text-muted">{c.level}</span>
             </label>
           </li>

@@ -3,6 +3,7 @@
 import { computeComposition, localize } from "@wow/config";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { classText } from "@/lib/game";
 import type { PublicConfig, RosterPlayer } from "@/lib/types";
 
 type Profile = PublicConfig["profile"];
@@ -78,8 +79,8 @@ export function Composition({ players, profile }: { players: RosterPlayer[]; pro
               return (
                 <li
                   key={c.id}
-                  className={`badge border ${count > 0 ? "border-transparent bg-surface-2" : "border-border opacity-40"}`}
-                  style={{ color: c.color }}
+                  className={`badge text-class border ${count > 0 ? "border-transparent bg-surface-2" : "border-border opacity-40"}`}
+                  style={classText(c.color)}
                 >
                   {localize(c.name, locale)} {count}
                 </li>

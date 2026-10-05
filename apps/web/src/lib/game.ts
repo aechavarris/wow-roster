@@ -1,4 +1,5 @@
 import { findClass, localize, type GameClass } from "@wow/config";
+import type { CSSProperties } from "react";
 import type { PublicConfig } from "./types";
 
 type Profile = PublicConfig["profile"];
@@ -14,6 +15,9 @@ export function className(profile: Profile, classId: number | null | undefined, 
 export function classColor(profile: Profile, classId: number | null | undefined) {
   return classOf(profile, classId)?.color ?? "var(--muted)";
 }
+
+/** Style for text in a class color; pair it with the `text-class` utility so it stays readable in the light theme. */
+export const classText = (color: string) => ({ "--class-color": color }) as CSSProperties;
 
 export function specName(profile: Profile, classId: number | null | undefined, specKey: string | null, locale: string) {
   if (!specKey) return "";

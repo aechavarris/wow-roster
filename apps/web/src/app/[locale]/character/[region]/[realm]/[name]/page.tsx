@@ -7,7 +7,7 @@ import { StatsPanel } from "@/components/character/StatsPanel";
 import { TalentsPanel } from "@/components/character/TalentsPanel";
 import { Link } from "@/i18n/routing";
 import { apiGet, getConfig, getMe } from "@/lib/api";
-import { classColor, className, specName } from "@/lib/game";
+import { classColor, className, classText, specName } from "@/lib/game";
 import type { CharacterDetail } from "@/lib/types";
 
 type Props = PageProps<"/[locale]/character/[region]/[realm]/[name]">;
@@ -42,7 +42,7 @@ export default async function CharacterPage({ params }: Props) {
           <img src={c.avatarUrl} alt="" width={64} height={64} className="rounded-lg border-2" style={{ borderColor: color }} />
         )}
         <div className="min-w-0">
-          <h1 className="heading text-3xl" style={{ color }}>
+          <h1 className="heading text-class text-3xl" style={classText(color)}>
             {c.name}
           </h1>
           <p className="text-sm">

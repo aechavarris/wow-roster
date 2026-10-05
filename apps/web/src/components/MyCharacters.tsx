@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import { apiSend } from "@/lib/client-api";
-import { characterPath, classColor, className, specName } from "@/lib/game";
+import { characterPath, classColor, className, classText, specName } from "@/lib/game";
 import type { MeResponse, PublicConfig } from "@/lib/types";
 
 interface Props {
@@ -38,7 +38,7 @@ export function MyCharacters({ characters, profile }: Props) {
                 <div className="h-10 w-10 rounded bg-border" />
               )}
               <div className="min-w-0 flex-1">
-                <Link href={characterPath(c)} className="block truncate font-medium" style={{ color: classColor(profile, c.classId) }}>
+                <Link href={characterPath(c)} className="text-class block truncate font-medium" style={classText(classColor(profile, c.classId))}>
                   {c.name}
                 </Link>
                 <p className="truncate text-xs text-muted">
