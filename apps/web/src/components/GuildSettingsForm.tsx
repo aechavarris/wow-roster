@@ -21,6 +21,8 @@ export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props
   const [ranks, setRanks] = useState(initialRanks);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
+  // Ranks, level threshold and officer rank only exist for rosters linked to an in-game guild.
+  const linked = guild.kind === "guild";
 
   async function save(action: () => Promise<unknown>) {
     setPending(true);
@@ -44,16 +46,32 @@ export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props
           event.preventDefault();
           const data = new FormData(event.currentTarget);
           void save(() =>
-            apiSend("PATCH", `/guilds/${guild.id}`, {
-              public: data.get("public") === "on",
-              syncIntervalMinutes: Number(data.get("syncIntervalMinutes")),
-              minLevel: Number(data.get("minLevel")),
-              officerMaxRank: Number(data.get("officerMaxRank")),
-            }),
+            apiSend(
+              "PATCH",
+              `/guilds/${guild.id}`,
+              linked
+                ? {
+                    public: data.get("public") === "on",
+                    syncIntervalMinutes: Number(data.get("syncIntervalMinutes")),
+                    minLevel: Number(data.get("minLevel")),
+                    officerMaxRank: Number(data.get("officerMaxRank")),
+                  }
+                : {
+                    name: String(data.get("name")),
+                    public: data.get("public") === "on",
+                    syncIntervalMinutes: Number(data.get("syncIntervalMinutes")),
+                  },
+            ),
           );
         }}
       >
         <h2 className="heading text-lg sm:col-span-2">{t("general")}</h2>
+        {!linked && (
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="roster-name">{t("name")}</label>
+            <input id="roster-name" name="name" required maxLength={60} defaultValue={guild.name} className="input" />
+          </div>
+        )}
         <label className="flex items-center gap-2 text-sm sm:col-span-2">
           <input type="checkbox" name="public" defaultChecked={guild.public} />
           {t("public")}
@@ -71,21 +89,26 @@ export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props
           />
           <p className="mt-1 text-xs text-muted">{t("syncIntervalHelp", { min: profile.sync.minIntervalMinutes })}</p>
         </div>
-        <div>
-          <label className="label" htmlFor="minLevel">{t("minLevel")}</label>
-          <input id="minLevel" name="minLevel" type="number" min={1} max={profile.maxLevel} defaultValue={guild.minLevel} className="input" />
-          <p className="mt-1 text-xs text-muted">{t("minLevelHelp")}</p>
-        </div>
-        <div>
-          <label className="label" htmlFor="officerMaxRank">{t("officerMaxRank")}</label>
-          <input id="officerMaxRank" name="officerMaxRank" type="number" min={0} max={9} defaultValue={guild.officerMaxRank} className="input" />
-          <p className="mt-1 text-xs text-muted">{t("officerMaxRankHelp")}</p>
-        </div>
+        {linked && (
+          <>
+            <div>
+              <label className="label" htmlFor="minLevel">{t("minLevel")}</label>
+              <input id="minLevel" name="minLevel" type="number" min={1} max={profile.maxLevel} defaultValue={guild.minLevel} className="input" />
+              <p className="mt-1 text-xs text-muted">{t("minLevelHelp")}</p>
+            </div>
+            <div>
+              <label className="label" htmlFor="officerMaxRank">{t("officerMaxRank")}</label>
+              <input id="officerMaxRank" name="officerMaxRank" type="number" min={0} max={9} defaultValue={guild.officerMaxRank} className="input" />
+              <p className="mt-1 text-xs text-muted">{t("officerMaxRankHelp")}</p>
+            </div>
+          </>
+        )}
         <div className="flex items-end sm:col-span-2">
           <button type="submit" className="btn btn-primary" disabled={pending}>{t("save")}</button>
         </div>
       </form>
 
+      {linked && (
       <div className="card space-y-3">
         <h2 className="heading text-lg">{t("ranks")}</h2>
         <p className="text-xs text-muted">{t("ranksHelp")}</p>
@@ -143,6 +166,7 @@ export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props
           {t("saveRanks")}
         </button>
       </div>
+      )}
 
       {message && (
         <p className={`text-sm ${message.kind === "ok" ? "text-success" : "text-danger"}`} role="status">

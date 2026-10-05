@@ -17,7 +17,8 @@ export async function apiGet<T>(path: string): Promise<T | null> {
 }
 
 export async function getConfig(): Promise<PublicConfig> {
-  const response = await fetch(`${API_URL}/api/config`, { next: { revalidate: 300 } });
+  // Short cache: the config changes with deploys and with GAME_PROFILE edits.
+  const response = await fetch(`${API_URL}/api/config`, { next: { revalidate: 60 } });
   if (!response.ok) throw new Error(`API ${response.status} on /config`);
   return (await response.json()) as PublicConfig;
 }

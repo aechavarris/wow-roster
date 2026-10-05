@@ -14,17 +14,32 @@
     "heroText": "Sincroniza tu hermandad con la armería de Blizzard, agrupa mains y alters por jugador y ten equipo, talentos y profesiones de todo el roster en un solo sitio.",
     "loginDisabled": "El inicio de sesión no está configurado: faltan las credenciales de la API de Blizzard.",
     "features": {
-      "roster": { "title": "Roster", "text": "Estados por rango, roles por especialización y ajustes manuales de los oficiales." },
-      "armory": { "title": "Armería", "text": "Equipo, encantamientos, talentos de ambas especializaciones, estadísticas, profesiones y reputaciones." },
-      "sheet": { "title": "Hoja de auditoría", "text": "Próximamente: reglas configurables, historial semanal y Google Sheet opcional." }
+      "roster": {
+        "title": "Roster",
+        "text": "Estados por rango, roles por especialización y ajustes manuales de los oficiales."
+      },
+      "armory": {
+        "title": "Armería",
+        "text": "Equipo, encantamientos, talentos de ambas especializaciones, estadísticas, profesiones y reputaciones."
+      },
+      "sheet": {
+        "title": "Hoja de auditoría",
+        "text": "Próximamente: reglas configurables, historial semanal y Google Sheet opcional."
+      }
     },
-    "myGuilds": "Mis hermandades",
-    "noGuilds": "Todavía no estás en ninguna hermandad registrada. Registra la tuya o pide a un oficial que lo haga.",
-    "roles": { "OWNER": "Propietario", "OFFICER": "Oficial", "MEMBER": "Miembro" }
+    "myGuilds": "Mis rosters",
+    "noGuilds": "Todavía no estás en ningún roster. Crea uno libre, vincula tu hermandad o pide una invitación.",
+    "roles": {
+      "OWNER": "Propietario",
+      "OFFICER": "Oficial",
+      "MEMBER": "Miembro"
+    },
+    "kindCustom": "Libre",
+    "kindGuild": "Hermandad"
   },
   "guildRegister": {
-    "title": "Registrar hermandad",
-    "help": "Necesitas un personaje con rango de oficial en la hermandad.",
+    "title": "Vincular hermandad",
+    "help": "Crea un roster que se sincroniza con tu hermandad del juego. Necesitas un personaje con rango de oficial.",
     "region": "Región",
     "realm": "Reino",
     "ruleset": "Ruleset",
@@ -49,14 +64,20 @@
     "setMain": "Marcar como main"
   },
   "guild": {
-    "faction": { "HORDE": "Horda", "ALLIANCE": "Alianza", "NEUTRAL": "Neutral" },
+    "faction": {
+      "HORDE": "Horda",
+      "ALLIANCE": "Alianza",
+      "NEUTRAL": "Neutral"
+    },
     "lastSync": "sincronizada {when}",
     "neverSynced": "pendiente de sincronizar",
     "syncError": "Error en la última sincronización: {error}",
     "settings": "Ajustes",
     "syncNow": "Sincronizar ahora",
     "syncQueued": "En cola",
-    "syncFailed": "No se pudo encolar"
+    "syncFailed": "No se pudo encolar",
+    "customRoster": "Roster libre",
+    "linkedRoster": "vinculado a la hermandad"
   },
   "roster": {
     "raiders": "{count, plural, =0 {Sin raiders} one {# raider} other {# raiders}}",
@@ -96,7 +117,31 @@
     "ruleset": "Ruleset",
     "name": "Nombre",
     "add": "Añadir",
-    "adding": "Buscando…"
+    "adding": "Buscando…",
+    "planned": "planificado",
+    "spec": "Especialización",
+    "anySpec": "Sin decidir",
+    "byDefault": "Por defecto ({value})",
+    "notInGameYet": "aún no existe",
+    "link": "Vincular",
+    "linkHelp": "Vincula esta entrada con el personaje real cuando exista en el juego",
+    "cancel": "Cancelar",
+    "planTitle": "Planificar personaje",
+    "planHelp": "Para personajes que todavía no existen (por ejemplo, el roster de Forever antes del lanzamiento). Más tarde se vinculan con el personaje real.",
+    "plannedName": "Nombre (opcional)",
+    "plannedNamePlaceholder": "p. ej. el nombre que piensas usar",
+    "playerName": "Jugador",
+    "note": "Nota",
+    "forMe": "Es para mí",
+    "plannedForYou": "Se añadirá a tu nombre.",
+    "planSubmit": "Añadir planificado",
+    "plannedAdded": "Personaje planificado añadido.",
+    "myTitle": "Añadir mis personajes",
+    "myAdd": "{count, plural, =0 {Añadir} one {Añadir # personaje} other {Añadir # personajes}}",
+    "myAdded": "Personajes añadidos; se sincronizarán en unos segundos.",
+    "realAdded": "Personaje añadido.",
+    "addHelp": "Cualquier personaje existente en {region}, de esta hermandad o de otra.",
+    "roleFromSpec": "Según la especialización"
   },
   "settings": {
     "title": "Ajustes de la hermandad",
@@ -117,7 +162,8 @@
     "rankLabel": "Nombre",
     "rankStatus": "Estado",
     "guildMaster": "0 (maestro)",
-    "saveRanks": "Guardar rangos"
+    "saveRanks": "Guardar rangos",
+    "name": "Nombre"
   },
   "character": {
     "summary": "Nivel {level}",
@@ -133,7 +179,11 @@
     "active": "Activa",
     "loadoutCode": "Código de talentos",
     "copy": "Copiar",
-    "trees": { "class": "Clase", "spec": "Especialización", "hero": "Héroe" },
+    "trees": {
+      "class": "Clase",
+      "spec": "Especialización",
+      "hero": "Héroe"
+    },
     "stats": "Estadísticas",
     "professions": "Profesiones",
     "reputations": "Reputaciones",
@@ -213,6 +263,71 @@
     "refresh_cooldown": "Este personaje se actualizó hace poco. Espera un par de minutos.",
     "invalid_main": "No se puede vincular a ese main.",
     "main_is_alt": "Ese personaje ya es alter de otro; vincúlalo a su main.",
-    "no_hidden_status_configured": "El perfil de juego no define un estado oculto."
+    "no_hidden_status_configured": "El perfil de juego no define un estado oculto.",
+    "name_from_game": "El nombre de un roster vinculado viene de la hermandad del juego.",
+    "custom_roster_has_no_ranks": "Los rosters libres no tienen rangos.",
+    "not_your_characters": "Solo puedes añadir tus propios personajes.",
+    "unknown_class": "Clase desconocida.",
+    "unknown_spec": "Esa especialización no es de esa clase.",
+    "entry_already_linked": "Esta entrada ya está vinculada a un personaje real.",
+    "character_already_in_roster": "Ese personaje ya está en el roster.",
+    "invite_not_found": "Invitación no encontrada.",
+    "invite_expired": "La invitación ha caducado o no tiene más usos.",
+    "member_not_found": "Ese usuario no es miembro.",
+    "cannot_change_owner": "No se puede cambiar el rol del propietario.",
+    "cannot_remove_owner": "El propietario no puede salir ni ser quitado."
+  },
+  "createRoster": {
+    "title": "Crear roster libre",
+    "help": "Sin hermandad: para raids entre hermandades, grupos de amigos o para planificar Forever antes del lanzamiento. Invita a la gente con un enlace.",
+    "region": "Región",
+    "name": "Nombre del roster",
+    "submit": "Crear roster",
+    "submitting": "Creando…"
+  },
+  "composition": {
+    "title": "Composición",
+    "raiders": "{count, plural, =0 {Sin raiders} one {# raider} other {# raiders}}",
+    "plannedCount": "{count, plural, one {# planificado} other {# planificados}}",
+    "includePlanned": "Incluir planificados",
+    "categories": {
+      "buff": "Bufos",
+      "debuff": "Debufos",
+      "utility": "Utilidad"
+    },
+    "covered": "cubierto",
+    "missing": "falta",
+    "plannedProviders": "{count, plural, one {# de ellos planificado} other {# de ellos planificados}}",
+    "plannedFootnote": "* Incluye personajes planificados. Cuenta los mains con estado de raid; la lista de bufos se configura en el perfil de juego."
+  },
+  "members": {
+    "title": "Miembros e invitaciones",
+    "help": "Los miembros ven el roster y añaden sus personajes; los oficiales lo gestionan. En hermandades vinculadas, los oficiales también se detectan por rango.",
+    "role": "Rol",
+    "leave": "Salir del roster",
+    "remove": "Quitar a {name}",
+    "confirmLeave": "¿Salir de este roster?",
+    "confirmRemove": "¿Quitar a {name} del roster?",
+    "inviteTitle": "Nuevo enlace de invitación",
+    "days": "Caduca en (días)",
+    "maxUses": "Usos máximos",
+    "unlimited": "Sin límite",
+    "createInvite": "Crear enlace",
+    "inviteLink": "Enlace de invitación",
+    "copy": "Copiar",
+    "inviteOnce": "Copia el enlace ahora: por seguridad no se puede volver a mostrar.",
+    "activeInvites": "Invitaciones activas",
+    "expires": "caduca {when}",
+    "uses": "usado {uses}/{max}",
+    "revoke": "Revocar"
+  },
+  "invite": {
+    "youAreInvited": "Te han invitado a",
+    "asRole": "como {role}",
+    "alreadyIn": "Ya estás en este roster: abrirlo",
+    "expired": "Esta invitación ha caducado o ya no tiene usos.",
+    "loginFirst": "Inicia sesión con Battle.net para unirte.",
+    "accept": "Unirme al roster",
+    "joining": "Uniéndote…"
   }
 }

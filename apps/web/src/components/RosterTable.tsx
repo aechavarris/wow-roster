@@ -6,7 +6,7 @@ import { Fragment, useMemo, useState } from "react";
 import { Link, useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
 import { characterPath, classColor, className, roleOf, specName, statusOf } from "@/lib/game";
-import type { PublicConfig, RosterCharacter, RosterPlayer } from "@/lib/types";
+import type { PublicConfig, RosterCharacter, RosterPlayer, ViewerRole } from "@/lib/types";
 
 type Profile = PublicConfig["profile"];
 type SortKey = "name" | "class" | "role" | "status" | "itemLevel" | "level" | "rank";
@@ -15,17 +15,19 @@ interface Props {
   guildId: string;
   players: RosterPlayer[];
   profile: Profile;
-  canEdit: boolean;
+  viewerRole: ViewerRole;
+  viewerUserId: string | null;
   hasRealms: boolean;
 }
 
 const AUTO = "__auto__";
 
-export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: Props) {
+export function RosterTable({ guildId, players, profile, viewerRole, viewerUserId, hasRealms }: Props) {
   const t = useTranslations("roster");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
   const router = useRouter();
+  const isOfficer = viewerRole === "OWNER" || viewerRole === "OFFICER";
 
   const visibleStatuses = profile.rosterStatuses.filter((s) => !s.hidden).map((s) => s.key);
   const [search, setSearch] = useState("");
@@ -42,7 +44,7 @@ export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: P
       statuses.has(c.status) &&
       (!role || c.role === role) &&
       (!classId || String(c.classId) === classId) &&
-      (!term || c.name.toLowerCase().includes(term));
+      (!term || c.name.toLowerCase().includes(term) || (c.playerName ?? "").toLowerCase().includes(term));
     const value = (c: RosterCharacter): string | number => {
       switch (sort.key) {
         case "class": return className(profile, c.classId, locale);
@@ -63,19 +65,6 @@ export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: P
       });
   }, [players, search, statuses, role, classId, showAlts, sort, profile, locale]);
 
-  // Composition summary counts only players whose main is in a raiding status.
-  const summary = useMemo(() => {
-    const raiding = new Set(profile.rosterStatuses.filter((s) => s.raiding).map((s) => s.key));
-    const mains = players.map((p) => p.main).filter((c) => raiding.has(c.status));
-    const byRole = new Map<string, number>();
-    const byClass = new Map<number, number>();
-    for (const c of mains) {
-      if (c.role) byRole.set(c.role, (byRole.get(c.role) ?? 0) + 1);
-      if (c.classId != null) byClass.set(c.classId, (byClass.get(c.classId) ?? 0) + 1);
-    }
-    return { total: mains.length, byRole, byClass };
-  }, [players, profile]);
-
   const mainOptions = useMemo(
     () => players.filter((p) => !p.claimed).map((p) => p.main).sort((a, b) => a.name.localeCompare(b.name)),
     [players],
@@ -86,19 +75,23 @@ export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: P
     try {
       await action();
       router.refresh();
+      return true;
     } catch (err) {
       setError(err instanceof ApiError && tErrors.has(err.code) ? tErrors(err.code) : tErrors("unknown_error"));
+      return false;
     }
   }
 
-  const updateEntry = (entryId: string, body: Record<string, unknown>) =>
-    mutate(() => apiSend("PATCH", `/guilds/${guildId}/roster/${entryId}`, body));
+  const actions: RowActions = {
+    update: (entryId, body) => mutate(() => apiSend("PATCH", `/guilds/${guildId}/roster/${entryId}`, body)),
+    remove: (entryId) => mutate(() => apiSend("DELETE", `/guilds/${guildId}/roster/${entryId}`)),
+    link: (entryId, realm, name) => mutate(() => apiSend("POST", `/guilds/${guildId}/roster/${entryId}/link`, { realm, name })),
+  };
 
-  const toggleSort = (key: SortKey) =>
-    setSort((s) => ({ key, dir: s.key === key ? ((s.dir * -1) as 1 | -1) : 1 }));
+  const toggleSort = (key: SortKey) => setSort((s) => ({ key, dir: s.key === key ? ((s.dir * -1) as 1 | -1) : 1 }));
 
-  const header = (key: SortKey, label: string, className = "") => (
-    <th className={`px-2 py-2 font-medium ${className}`} aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
+  const header = (key: SortKey, label: string, extra = "") => (
+    <th className={`px-2 py-2 font-medium ${extra}`} aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
       <button type="button" onClick={() => toggleSort(key)} className="hover:text-accent">
         {label}
         {sort.key === key ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
@@ -106,27 +99,20 @@ export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: P
     </th>
   );
 
+  const rowProps = (c: RosterCharacter, player: RosterPlayer) => ({
+    character: c,
+    profile,
+    hasRealms,
+    isOfficer,
+    // Members edit their own planned entries; officers edit everything.
+    canEditPlanning: isOfficer || (c.planned && c.userId !== null && c.userId === viewerUserId),
+    canRemove: isOfficer || ((c.source === "manual" || c.source === "planned") && c.userId !== null && c.userId === viewerUserId),
+    mainOptions: player.claimed ? [] : mainOptions.filter((m) => m.entryId !== c.entryId),
+    actions,
+  });
+
   return (
     <div className="space-y-4">
-      <div className="card flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <span className="font-medium">{t("raiders", { count: summary.total })}</span>
-        {profile.roles.map((r) => (
-          <span key={r.key} className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
-            {localize(r.name, locale)}: <strong>{summary.byRole.get(r.key) ?? 0}</strong>
-          </span>
-        ))}
-        <span className="flex flex-wrap gap-2">
-          {profile.classes
-            .filter((c) => summary.byClass.has(c.id))
-            .map((c) => (
-              <span key={c.id} className="badge bg-surface-2" style={{ color: c.color }}>
-                {localize(c.name, locale)} {summary.byClass.get(c.id)}
-              </span>
-            ))}
-        </span>
-      </div>
-
       <div className="card flex flex-wrap items-end gap-3">
         <div className="min-w-48 flex-1">
           <label className="label" htmlFor="roster-search">{t("search")}</label>
@@ -184,7 +170,7 @@ export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: P
       {error && <p className="text-sm text-danger" role="alert">{error}</p>}
 
       <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
               {header("name", t("columns.name"))}
@@ -195,97 +181,125 @@ export function RosterTable({ guildId, players, profile, canEdit, hasRealms }: P
               {header("level", t("columns.level"), "text-right")}
               {header("rank", t("columns.rank"), "text-right")}
               <th className="px-2 py-2 font-medium">{t("columns.updated")}</th>
-              {canEdit && <th className="px-2 py-2 font-medium">{t("columns.actions")}</th>}
+              {viewerRole && <th className="px-2 py-2 font-medium">{t("columns.actions")}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-surface">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={canEdit ? 9 : 8} className="px-2 py-6 text-center text-muted">{t("empty")}</td>
+                <td colSpan={viewerRole ? 9 : 8} className="px-2 py-6 text-center text-muted">{t("empty")}</td>
               </tr>
             )}
             {filtered.map((player) => (
               <Fragment key={player.key}>
-                <Row
-                  character={player.main}
-                  altCount={player.alts.length}
-                  profile={profile}
-                  canEdit={canEdit}
-                  mainOptions={player.claimed ? [] : mainOptions.filter((m) => m.entryId !== player.main.entryId)}
-                  onUpdate={updateEntry}
-                  onRemove={(entryId) => mutate(() => apiSend("DELETE", `/guilds/${guildId}/roster/${entryId}`))}
-                />
+                <Row {...rowProps(player.main, player)} altCount={player.alts.length} showActions={viewerRole !== null} />
                 {showAlts &&
-                  player.alts.map((alt) => (
-                    <Row
-                      key={alt.entryId}
-                      character={alt}
-                      isAlt
-                      profile={profile}
-                      canEdit={canEdit}
-                      mainOptions={player.claimed ? [] : mainOptions.filter((m) => m.entryId !== alt.entryId)}
-                      onUpdate={updateEntry}
-                      onRemove={(entryId) => mutate(() => apiSend("DELETE", `/guilds/${guildId}/roster/${entryId}`))}
-                    />
-                  ))}
+                  player.alts.map((alt) => <Row key={alt.entryId} {...rowProps(alt, player)} isAlt showActions={viewerRole !== null} />)}
               </Fragment>
             ))}
           </tbody>
         </table>
       </div>
-
-      {canEdit && <AddCharacterForm guildId={guildId} hasRealms={hasRealms} onDone={mutate} />}
     </div>
   );
+}
+
+interface RowActions {
+  update: (entryId: string, body: Record<string, unknown>) => Promise<boolean>;
+  remove: (entryId: string) => Promise<boolean>;
+  link: (entryId: string, realm: string, name: string) => Promise<boolean>;
 }
 
 interface RowProps {
   character: RosterCharacter;
   profile: Profile;
-  canEdit: boolean;
+  hasRealms: boolean;
+  isOfficer: boolean;
+  canEditPlanning: boolean;
+  canRemove: boolean;
+  showActions: boolean;
   isAlt?: boolean;
   altCount?: number;
   mainOptions: RosterCharacter[];
-  onUpdate: (entryId: string, body: Record<string, unknown>) => void;
-  onRemove: (entryId: string) => void;
+  actions: RowActions;
 }
 
-function Row({ character: c, profile, canEdit, isAlt, altCount = 0, mainOptions, onUpdate, onRemove }: RowProps) {
+function Row({ character: c, profile, hasRealms, isOfficer, canEditPlanning, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
   const t = useTranslations("roster");
   const locale = useLocale();
   const format = useFormatter();
   const role = roleOf(profile, c.role);
   const status = statusOf(profile, c.status);
+  const gameClass = profile.classes.find((g) => g.id === c.classId);
+  const color = classColor(profile, c.classId);
 
   return (
-    <tr className={isAlt ? "bg-surface-2/50 text-xs" : ""}>
+    <tr className={`${isAlt ? "bg-surface-2/50 text-xs" : ""} ${c.planned ? "bg-accent/5" : ""}`}>
       <td className="px-2 py-1.5">
-        <div className={`flex items-center gap-2 ${isAlt ? "pl-6" : ""}`}>
+        <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${isAlt ? "pl-6" : ""}`}>
           {c.avatar && !isAlt ? (
             // eslint-disable-next-line @next/next/no-img-element -- Blizzard renders are already sized thumbnails.
             <img src={c.avatar} alt="" width={24} height={24} className="rounded" />
+          ) : c.planned ? (
+            <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded border border-dashed border-border text-xs text-muted">
+              ?
+            </span>
           ) : null}
-          <Link href={characterPath(c)} className="font-medium hover:underline" style={{ color: classColor(profile, c.classId) }}>
-            {c.name}
-          </Link>
+          {c.planned || !c.region || !c.realm ? (
+            <span className="font-medium italic" style={{ color }}>{c.name}</span>
+          ) : (
+            <Link href={characterPath({ region: c.region, realm: c.realm, name: c.name })} className="font-medium hover:underline" style={{ color }}>
+              {c.name}
+            </Link>
+          )}
           {c.claimed && <span title={t("claimed")} className="text-accent">✓</span>}
           {altCount > 0 && <span className="text-xs text-muted">+{altCount}</span>}
+          {c.planned && <span className="badge border border-dashed border-accent/60 text-accent">{t("planned")}</span>}
           {c.source === "manual" && <span className="badge bg-surface-2 text-muted">{t("manual")}</span>}
+          {c.playerName && c.playerName !== c.name && <span className="text-xs text-muted">· {c.playerName}</span>}
           {c.note && <span title={c.note} className="cursor-help text-muted">✎</span>}
         </div>
       </td>
       <td className="px-2 py-1.5 text-muted">
-        {specName(profile, c.classId, c.specKey, locale)} {className(profile, c.classId, locale)}
+        {c.planned && canEditPlanning ? (
+          <div className="flex gap-1">
+            <select
+              aria-label={t("columns.class")}
+              className="input w-auto py-0.5"
+              value={c.classId ?? ""}
+              onChange={(e) => actions.update(c.entryId, { plannedClassId: Number(e.target.value) })}
+            >
+              {profile.classes.map((g) => (
+                <option key={g.id} value={g.id}>{localize(g.name, locale)}</option>
+              ))}
+            </select>
+            <select
+              aria-label={t("spec")}
+              className="input w-auto py-0.5"
+              value={c.specKey ?? ""}
+              onChange={(e) => actions.update(c.entryId, { plannedSpec: e.target.value || null })}
+            >
+              <option value="">{t("anySpec")}</option>
+              {gameClass?.specs.map((s) => (
+                <option key={s.key} value={s.key}>{localize(s.name, locale)}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <>
+            {specName(profile, c.classId, c.specKey, locale)} {className(profile, c.classId, locale)}
+          </>
+        )}
       </td>
       <td className="px-2 py-1.5">
-        {canEdit ? (
+        {isOfficer || canEditPlanning ? (
           <select
             aria-label={t("columns.role")}
             className="input w-auto py-0.5"
             value={c.roleOverridden ? (c.role ?? AUTO) : AUTO}
-            onChange={(e) => onUpdate(c.entryId, { role: e.target.value === AUTO ? null : e.target.value })}
+            onChange={(e) => actions.update(c.entryId, { role: e.target.value === AUTO ? null : e.target.value })}
           >
-            <option value={AUTO}>{t("auto", { value: role ? localize(role.name, locale) : "—" })}</option>
+            <option value={AUTO}>{t("auto", { value: role && !c.roleOverridden ? localize(role.name, locale) : "—" })}</option>
             {profile.roles.map((r) => (
               <option key={r.key} value={r.key}>{localize(r.name, locale)}</option>
             ))}
@@ -300,14 +314,14 @@ function Row({ character: c, profile, canEdit, isAlt, altCount = 0, mainOptions,
         )}
       </td>
       <td className="px-2 py-1.5">
-        {canEdit ? (
+        {isOfficer ? (
           <select
             aria-label={t("columns.status")}
             className="input w-auto py-0.5"
             value={c.statusOverridden ? c.status : AUTO}
-            onChange={(e) => onUpdate(c.entryId, { status: e.target.value === AUTO ? null : e.target.value })}
+            onChange={(e) => actions.update(c.entryId, { status: e.target.value === AUTO ? null : e.target.value })}
           >
-            <option value={AUTO}>{t("byRank", { value: status ? localize(status.name, locale) : c.status })}</option>
+            <option value={AUTO}>{t(c.guildRank != null ? "byRank" : "byDefault", { value: status ? localize(status.name, locale) : c.status })}</option>
             {profile.rosterStatuses.map((s) => (
               <option key={s.key} value={s.key}>{localize(s.name, locale)}</option>
             ))}
@@ -319,10 +333,12 @@ function Row({ character: c, profile, canEdit, isAlt, altCount = 0, mainOptions,
         )}
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums">{c.itemLevel ? Math.round(c.itemLevel) : "—"}</td>
-      <td className="px-2 py-1.5 text-right tabular-nums">{c.level}</td>
+      <td className="px-2 py-1.5 text-right tabular-nums">{c.planned ? "—" : c.level}</td>
       <td className="px-2 py-1.5 text-right tabular-nums">{c.guildRank ?? "—"}</td>
       <td className="px-2 py-1.5 text-xs text-muted">
-        {c.syncError ? (
+        {c.planned ? (
+          t("notInGameYet")
+        ) : c.syncError ? (
           <span className="text-danger">{t("syncError")}</span>
         ) : c.lastSyncedAt ? (
           format.relativeTime(new Date(c.lastSyncedAt))
@@ -330,15 +346,16 @@ function Row({ character: c, profile, canEdit, isAlt, altCount = 0, mainOptions,
           t("pending")
         )}
       </td>
-      {canEdit && (
+      {showActions && (
         <td className="px-2 py-1.5">
           <div className="flex items-center gap-1">
-            {mainOptions.length > 0 && !c.claimed && (
+            {c.planned && canEditPlanning && <LinkForm hasRealms={hasRealms} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
+            {isOfficer && mainOptions.length > 0 && !c.claimed && (
               <select
                 aria-label={t("linkMain")}
-                className="input w-32 py-0.5"
+                className="input w-28 py-0.5"
                 value=""
-                onChange={(e) => onUpdate(c.entryId, { mainEntryId: e.target.value === AUTO ? null : e.target.value })}
+                onChange={(e) => actions.update(c.entryId, { mainEntryId: e.target.value === AUTO ? null : e.target.value })}
               >
                 <option value="">{t("linkMain")}</option>
                 {isAlt && <option value={AUTO}>{t("unlink")}</option>}
@@ -347,29 +364,35 @@ function Row({ character: c, profile, canEdit, isAlt, altCount = 0, mainOptions,
                 ))}
               </select>
             )}
-            <button
-              type="button"
-              className="btn px-2 py-0.5"
-              title={t("editNote")}
-              onClick={() => {
-                const note = window.prompt(t("editNote"), c.note ?? "");
-                if (note !== null) onUpdate(c.entryId, { note: note.trim() || null });
-              }}
-            >
-              ✎
-            </button>
-            <button
-              type="button"
-              className="btn px-2 py-0.5"
-              title={c.source === "manual" ? t("remove") : t("hide")}
-              onClick={() => {
-                if (window.confirm(c.source === "manual" ? t("confirmRemove", { name: c.name }) : t("confirmHide", { name: c.name }))) {
-                  onRemove(c.entryId);
-                }
-              }}
-            >
-              ✕
-            </button>
+            {(isOfficer || canEditPlanning) && (
+              <button
+                type="button"
+                className="btn px-2 py-0.5"
+                title={t("editNote")}
+                aria-label={t("editNote")}
+                onClick={() => {
+                  const note = window.prompt(t("editNote"), c.note ?? "");
+                  if (note !== null) void actions.update(c.entryId, { note: note.trim() || null });
+                }}
+              >
+                ✎
+              </button>
+            )}
+            {canRemove && (
+              <button
+                type="button"
+                className="btn px-2 py-0.5"
+                title={c.source === "guild" ? t("hide") : t("remove")}
+                aria-label={c.source === "guild" ? t("hide") : t("remove")}
+                onClick={() => {
+                  if (window.confirm(c.source === "guild" ? t("confirmHide", { name: c.name }) : t("confirmRemove", { name: c.name }))) {
+                    void actions.remove(c.entryId);
+                  }
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
         </td>
       )}
@@ -377,41 +400,37 @@ function Row({ character: c, profile, canEdit, isAlt, altCount = 0, mainOptions,
   );
 }
 
-function AddCharacterForm({
-  guildId,
-  hasRealms,
-  onDone,
-}: {
-  guildId: string;
-  hasRealms: boolean;
-  onDone: (action: () => Promise<unknown>) => Promise<void>;
-}) {
+/** Inline form that links a planned entry to the real character once it exists. */
+function LinkForm({ hasRealms, onLink }: { hasRealms: boolean; onLink: (realm: string, name: string) => Promise<boolean> }) {
   const t = useTranslations("roster");
+  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  if (!open) {
+    return (
+      <button type="button" className="btn px-2 py-0.5 text-xs" onClick={() => setOpen(true)} title={t("linkHelp")}>
+        {t("link")}
+      </button>
+    );
+  }
   return (
     <form
-      className="card flex flex-wrap items-end gap-3"
+      className="flex items-center gap-1"
       onSubmit={async (event) => {
         event.preventDefault();
-        const form = event.currentTarget;
-        const data = new FormData(form);
+        const data = new FormData(event.currentTarget);
         setPending(true);
-        await onDone(() => apiSend("POST", `/guilds/${guildId}/roster`, { realm: data.get("realm"), name: data.get("name") }));
+        const ok = await onLink(String(data.get("realm")), String(data.get("name")));
         setPending(false);
-        form.reset();
+        if (ok) setOpen(false);
       }}
     >
-      <h3 className="heading w-full">{t("addTitle")}</h3>
-      <div>
-        <label className="label" htmlFor="add-realm">{hasRealms ? t("realm") : t("ruleset")}</label>
-        <input id="add-realm" name="realm" required className="input" />
-      </div>
-      <div>
-        <label className="label" htmlFor="add-name">{t("name")}</label>
-        <input id="add-name" name="name" required className="input" />
-      </div>
-      <button type="submit" className="btn btn-primary" disabled={pending}>
-        {pending ? t("adding") : t("add")}
+      <input name="realm" required placeholder={hasRealms ? t("realm") : t("ruleset")} aria-label={hasRealms ? t("realm") : t("ruleset")} className="input w-24 py-0.5" />
+      <input name="name" required placeholder={t("name")} aria-label={t("name")} className="input w-24 py-0.5" />
+      <button type="submit" className="btn btn-primary px-2 py-0.5" disabled={pending}>
+        {pending ? "…" : t("link")}
+      </button>
+      <button type="button" className="btn px-2 py-0.5" onClick={() => setOpen(false)} aria-label={t("cancel")}>
+        ✕
       </button>
     </form>
   );

@@ -134,7 +134,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   calls.length = 0;
   await prisma.$executeRawUnsafe(
-    'TRUNCATE "RosterEntry", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User", "StaticCache" CASCADE',
+    'TRUNCATE "RosterInvite", "RosterEntry", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User", "StaticCache" CASCADE',
   );
 });
 
@@ -266,6 +266,76 @@ describe("guilds", () => {
       payload: { syncIntervalMinutes: 5 },
     });
     expect(response.statusCode).toBe(400);
+  });
+});
+
+describe("custom rosters and planned characters", () => {
+  const send = (method: "POST" | "PATCH" | "PUT" | "DELETE", url: string, session: string | null, payload?: object) =>
+    app.inject({ method, url, payload, cookies: session ? { wr_session: session } : {} });
+  const roster = async (id: string) =>
+    (await app.inject({ method: "GET", url: `/api/guilds/${id}/roster` })).json().players as {
+      main: { entryId: string; name: string; planned: boolean; classId: number; specKey: string | null; role: string; userId: string | null; characterId: string | null };
+      alts: unknown[];
+    }[];
+
+  it("plans a roster without a guild, invites a member and links a planned entry to a real character", async () => {
+    const owner = await login(1001);
+    const created = await send("POST", "/api/rosters", owner, { name: "Equipo Forever", region: "eu" });
+    expect(created.statusCode).toBe(201);
+    const { guild } = created.json();
+    expect(guild).toMatchObject({ kind: "custom", name: "Equipo Forever", realm: null, slug: null });
+    expect(calls).toContain(`schedule:${guild.id}:60`);
+
+    // The owner plans entries for other players.
+    const tank = await send("POST", `/api/guilds/${guild.id}/roster/planned`, owner, {
+      classId: 1,
+      specKey: "protection",
+      playerName: "Patxi",
+      plannedName: "Tanque principal",
+    });
+    expect(tank.statusCode).toBe(201);
+    expect((await send("POST", `/api/guilds/${guild.id}/roster/planned`, owner, { classId: 8, specKey: "protection" })).statusCode).toBe(400);
+    let players = await roster(guild.id);
+    expect(players[0]!.main).toMatchObject({ name: "Tanque principal", planned: true, classId: 1, specKey: "protection", role: "tank" });
+
+    // Ranks only exist for guild-linked rosters.
+    expect((await send("PUT", `/api/guilds/${guild.id}/ranks`, owner, [{ rank: 0, status: "raider" }])).statusCode).toBe(400);
+
+    // A member joins through an invite link.
+    expect((await send("POST", `/api/guilds/${guild.id}/invites`, null, { role: "MEMBER" })).statusCode).toBe(401);
+    const invite = (await send("POST", `/api/guilds/${guild.id}/invites`, owner, { role: "MEMBER", maxUses: 1 })).json();
+    expect(invite.url).toBe(`http://localhost:3000/invite/${invite.token}`);
+    const preview = (await app.inject({ method: "GET", url: `/api/invites/${invite.token}` })).json();
+    expect(preview).toMatchObject({ roster: { name: "Equipo Forever", kind: "custom" }, role: "MEMBER", usable: true, currentRole: null });
+    const member = await login(2002);
+    expect((await send("POST", `/api/invites/${invite.token}/accept`, member)).json()).toMatchObject({ guildId: guild.id, role: "MEMBER" });
+    expect((await send("POST", `/api/invites/${invite.token}/accept`, await login(3003))).statusCode).toBe(410);
+
+    // Members plan only for themselves and cannot manage other entries or invites.
+    const mine = (await send("POST", `/api/guilds/${guild.id}/roster/planned`, member, { classId: 5, specKey: "holy", forSelf: false })).json().entry;
+    expect(mine).toMatchObject({ playerName: "Player", status: null });
+    expect(mine.userId).not.toBeNull();
+    expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${mine.id}`, member, { plannedSpec: "shadow" })).statusCode).toBe(200);
+    expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${mine.id}`, member, { status: "bench" })).statusCode).toBe(403);
+    expect((await send("DELETE", `/api/guilds/${guild.id}/roster/${tank.json().entry.id}`, member)).statusCode).toBe(403);
+    expect((await send("POST", `/api/guilds/${guild.id}/invites`, member, { role: "MEMBER" })).statusCode).toBe(403);
+    players = await roster(guild.id);
+    expect(players.find((p) => p.main.userId === mine.userId)!.main).toMatchObject({ specKey: "shadow", role: "rdps" });
+
+    // When the character exists in the game, the planned entry is linked to it.
+    const linked = await send("POST", `/api/guilds/${guild.id}/roster/${tank.json().entry.id}/link`, owner, { realm: "Los Errantes", name: "Garrosh" });
+    expect(linked.statusCode).toBe(200);
+    players = await roster(guild.id);
+    expect(players.find((p) => p.main.name === "Garrosh")!.main).toMatchObject({ planned: false, classId: 1, specKey: "protection" });
+
+    // Syncing a custom roster refreshes its characters without guild API calls.
+    const { staleCharacterIds } = await syncGuild(core, guild.id);
+    expect(staleCharacterIds).toEqual([]);
+
+    // Custom rosters can be renamed; the member list shows both users.
+    expect((await send("PATCH", `/api/guilds/${guild.id}`, owner, { name: "Forever 20" })).json().guild.name).toBe("Forever 20");
+    const members = (await app.inject({ method: "GET", url: `/api/guilds/${guild.id}/members`, cookies: { wr_session: owner } })).json().members;
+    expect(members.map((m: { role: string }) => m.role)).toEqual(["OWNER", "MEMBER"]);
   });
 });
 

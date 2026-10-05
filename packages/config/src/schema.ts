@@ -90,6 +90,19 @@ export const statSectionSchema = z.object({
   entries: z.array(statEntrySchema),
 });
 
+/**
+ * A raid buff, debuff or utility and who can bring it. Providers name a class and, when the
+ * effect needs a specialization (talent), the specs that bring it.
+ */
+export const buffSchema = z.object({
+  key: z.string(),
+  name: localizedSchema,
+  category: z.enum(["buff", "debuff", "utility"]),
+  providers: z.array(z.object({ classKey: z.string(), specs: z.array(z.string()).optional() })).min(1),
+  note: z.string().optional(),
+});
+
+export type Buff = z.infer<typeof buffSchema>;
 export type StatEntry = z.infer<typeof statEntrySchema>;
 export type StatSection = z.infer<typeof statSectionSchema>;
 
@@ -106,6 +119,8 @@ export const gameProfileSchema = z.object({
   raids: z.array(raidSchema),
   rosterStatuses: z.array(rosterStatusSchema),
   statPanel: z.array(statSectionSchema).default([]),
+  /** Raid composition coverage; replaced as a whole when a profile extends another. */
+  buffs: z.array(buffSchema).default([]),
   sync: z.object({
     defaultIntervalMinutes: z.number().int().positive(),
     minIntervalMinutes: z.number().int().positive(),

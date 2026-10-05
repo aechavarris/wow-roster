@@ -20,19 +20,39 @@ const nameKey = (name: string) => name.trim().toLowerCase();
 const isStale = (lastSyncedAt: Date | null, intervalMinutes: number) =>
   !lastSyncedAt || Date.now() - lastSyncedAt.getTime() >= intervalMinutes * 60_000;
 
+async function staleRosterCharacters(ctx: CoreContext, guildId: string, intervalMinutes: number) {
+  // Planned entries have no character to sync.
+  const roster = await ctx.prisma.rosterEntry.findMany({
+    where: { guildId, characterId: { not: null } },
+    select: { character: { select: { id: true, lastSyncedAt: true } } },
+  });
+  return roster
+    .flatMap((e) => (e.character ? [e.character] : []))
+    .filter((c) => isStale(c.lastSyncedAt, intervalMinutes))
+    .map((c) => c.id);
+}
+
 /**
- * Mirrors the in-game guild roster: upserts members above the guild's minimum level,
- * detaches characters that left, and returns the characters whose details are stale.
+ * Refreshes a roster. Guild-linked rosters mirror the in-game guild: members above the minimum
+ * level are upserted and characters that left are detached. Custom rosters have no in-game
+ * guild, so only their characters are refreshed. Returns the characters whose details are stale.
  */
 export async function syncGuild(ctx: CoreContext, guildId: string): Promise<{ staleCharacterIds: string[] }> {
   const { prisma, profile } = ctx;
   const guild = await prisma.guild.findUniqueOrThrow({ where: { id: guildId }, include: { ranks: true } });
+
+  if (guild.kind !== "guild" || !guild.realm || !guild.slug) {
+    await prisma.guild.update({ where: { id: guildId }, data: { lastSyncedAt: new Date(), syncError: null } });
+    return { staleCharacterIds: await staleRosterCharacters(ctx, guildId, guild.syncIntervalMinutes) };
+  }
+  const realm = guild.realm;
+  const slug = guild.slug;
   const client = ctx.blizzard(guild.region);
 
   try {
     const [info, members] = await Promise.all([
-      client.getGuild(guild.realm, guild.slug),
-      client.getGuildRoster(guild.realm, guild.slug),
+      client.getGuild(realm, slug),
+      client.getGuildRoster(realm, slug),
     ]);
 
     const knownRanks = new Set(guild.ranks.map((r) => r.rank));
@@ -93,15 +113,7 @@ export async function syncGuild(ctx: CoreContext, guildId: string): Promise<{ st
       },
     });
 
-    const roster = await prisma.rosterEntry.findMany({
-      where: { guildId },
-      select: { character: { select: { id: true, lastSyncedAt: true } } },
-    });
-    return {
-      staleCharacterIds: roster
-        .filter((e) => isStale(e.character.lastSyncedAt, guild.syncIntervalMinutes))
-        .map((e) => e.character.id),
-    };
+    return { staleCharacterIds: await staleRosterCharacters(ctx, guildId, guild.syncIntervalMinutes) };
   } catch (error) {
     const message = error instanceof BlizzardApiError ? `blizzard_${error.status}` : String(error);
     await prisma.guild.update({ where: { id: guildId }, data: { syncError: message } });

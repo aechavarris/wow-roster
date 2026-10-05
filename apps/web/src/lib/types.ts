@@ -1,5 +1,5 @@
 import type { CharacterProfile } from "@wow/blizzard";
-import type { GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
+import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
 
@@ -16,6 +16,7 @@ export interface PublicConfig {
     raids: { key: string; name: Localized; size: number; enabled: boolean }[];
     rosterStatuses: RosterStatus[];
     statPanel: StatSection[];
+    buffs: Buff[];
     sync: { defaultIntervalMinutes: number; minIntervalMinutes: number; defaultMinLevel: number };
   };
   regions: string[];
@@ -24,6 +25,9 @@ export interface PublicConfig {
 }
 
 export type ViewerRole = "OWNER" | "OFFICER" | "MEMBER" | null;
+
+/** "guild" rosters mirror an in-game guild; "custom" ones have no guild. */
+export type RosterKind = "guild" | "custom";
 
 export interface MeResponse {
   user: { id: string; battletag: string; locale: string } | null;
@@ -41,14 +45,15 @@ export interface MeResponse {
     lastSyncedAt: string | null;
     guild: { id: string; name: string } | null;
   }[];
-  guilds?: { id: string; name: string; realm: string; region: string; role: ViewerRole }[];
+  guilds?: { id: string; kind: RosterKind; name: string; realm: string | null; region: string; role: ViewerRole }[];
 }
 
 export interface Guild {
   id: string;
+  kind: RosterKind;
   region: string;
-  realm: string;
-  slug: string;
+  realm: string | null;
+  slug: string | null;
   name: string;
   faction: string | null;
   public: boolean;
@@ -73,10 +78,14 @@ export interface GuildResponse {
 
 export interface RosterCharacter {
   entryId: string;
-  characterId: string;
-  region: string;
-  realm: string;
+  /** Null for planned entries that do not exist in the game yet. */
+  characterId: string | null;
+  planned: boolean;
+  region: string | null;
+  realm: string | null;
   name: string;
+  playerName: string | null;
+  userId: string | null;
   level: number;
   classId: number | null;
   specKey: string | null;
@@ -122,4 +131,18 @@ export interface CharacterDetail {
   claimed: boolean;
   guild: { id: string; name: string } | null;
   profile: Omit<CharacterProfile, "summary"> | null;
+}
+
+export interface RosterMember {
+  userId: string;
+  battletag: string;
+  role: Exclude<ViewerRole, null>;
+}
+
+export interface RosterInvite {
+  id: string;
+  role: "OFFICER" | "MEMBER";
+  expiresAt: string;
+  uses: number;
+  maxUses: number | null;
 }

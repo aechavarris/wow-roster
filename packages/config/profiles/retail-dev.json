@@ -11,6 +11,22 @@
     "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations"]
   },
   "wowheadDomain": "",
+  "buffs": [
+    { "key": "fortitude", "category": "buff", "name": { "en": "Power Word: Fortitude", "es": "Palabra de poder: entereza" }, "providers": [{ "classKey": "priest" }] },
+    { "key": "arcane-intellect", "category": "buff", "name": { "en": "Arcane Intellect", "es": "Intelecto Arcano" }, "providers": [{ "classKey": "mage" }] },
+    { "key": "mark-of-the-wild", "category": "buff", "name": { "en": "Mark of the Wild", "es": "Marca de lo Salvaje" }, "providers": [{ "classKey": "druid" }] },
+    { "key": "battle-shout", "category": "buff", "name": { "en": "Battle Shout", "es": "Grito de batalla" }, "providers": [{ "classKey": "warrior" }] },
+    { "key": "skyfury", "category": "buff", "name": { "en": "Skyfury", "es": "Furia celeste" }, "providers": [{ "classKey": "shaman" }] },
+    { "key": "blessing-of-the-bronze", "category": "buff", "name": { "en": "Blessing of the Bronze", "es": "Bendición del Bronce" }, "providers": [{ "classKey": "evoker" }] },
+    { "key": "devotion-aura", "category": "buff", "name": { "en": "Devotion Aura", "es": "Aura de devoción" }, "providers": [{ "classKey": "paladin" }] },
+    { "key": "mystic-touch", "category": "debuff", "name": { "en": "Mystic Touch", "es": "Toque místico" }, "providers": [{ "classKey": "monk" }] },
+    { "key": "chaos-brand", "category": "debuff", "name": { "en": "Chaos Brand", "es": "Marca del caos" }, "providers": [{ "classKey": "demon-hunter" }] },
+    { "key": "hunters-mark", "category": "debuff", "name": { "en": "Hunter's Mark", "es": "Marca del cazador" }, "providers": [{ "classKey": "hunter" }] },
+    { "key": "bloodlust", "category": "utility", "name": { "en": "Bloodlust / Heroism", "es": "Ansia de sangre / Heroísmo" }, "providers": [{ "classKey": "shaman" }, { "classKey": "mage" }, { "classKey": "hunter" }, { "classKey": "evoker" }] },
+    { "key": "battle-res", "category": "utility", "name": { "en": "Combat resurrection", "es": "Resurrección en combate" }, "providers": [{ "classKey": "druid" }, { "classKey": "death-knight" }, { "classKey": "warlock" }, { "classKey": "paladin" }] },
+    { "key": "power-infusion", "category": "utility", "name": { "en": "Power Infusion", "es": "Infusión de poder" }, "providers": [{ "classKey": "priest" }] },
+    { "key": "innervate", "category": "utility", "name": { "en": "Innervate", "es": "Estimular" }, "providers": [{ "classKey": "druid" }] }
+  ],
   "statPanel": [
     {
       "key": "attributes", "name": { "en": "Attributes", "es": "Atributos" },

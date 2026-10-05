@@ -14,17 +14,32 @@
     "heroText": "Sync your guild with Blizzard's armory, group mains and alts per player, and see the gear, talents and professions of your whole roster in one place.",
     "loginDisabled": "Sign-in is not configured: the Blizzard API credentials are missing.",
     "features": {
-      "roster": { "title": "Roster", "text": "Statuses from guild ranks, roles from specs, and officer overrides." },
-      "armory": { "title": "Armory", "text": "Gear, enchants, talents for both specs, stats, professions and reputations." },
-      "sheet": { "title": "Audit sheet", "text": "Coming soon: configurable rules, weekly history and an optional Google Sheet." }
+      "roster": {
+        "title": "Roster",
+        "text": "Statuses from guild ranks, roles from specs, and officer overrides."
+      },
+      "armory": {
+        "title": "Armory",
+        "text": "Gear, enchants, talents for both specs, stats, professions and reputations."
+      },
+      "sheet": {
+        "title": "Audit sheet",
+        "text": "Coming soon: configurable rules, weekly history and an optional Google Sheet."
+      }
     },
-    "myGuilds": "My guilds",
-    "noGuilds": "You are not in any registered guild yet. Register yours or ask an officer to do it.",
-    "roles": { "OWNER": "Owner", "OFFICER": "Officer", "MEMBER": "Member" }
+    "myGuilds": "My rosters",
+    "noGuilds": "You are not in any roster yet. Create a custom one, link your guild or ask for an invite.",
+    "roles": {
+      "OWNER": "Owner",
+      "OFFICER": "Officer",
+      "MEMBER": "Member"
+    },
+    "kindCustom": "Custom",
+    "kindGuild": "Guild"
   },
   "guildRegister": {
-    "title": "Register a guild",
-    "help": "You need a character with an officer rank in the guild.",
+    "title": "Link a guild",
+    "help": "Creates a roster synced with your in-game guild. You need a character with an officer rank.",
     "region": "Region",
     "realm": "Realm",
     "ruleset": "Ruleset",
@@ -49,14 +64,20 @@
     "setMain": "Set as main"
   },
   "guild": {
-    "faction": { "HORDE": "Horde", "ALLIANCE": "Alliance", "NEUTRAL": "Neutral" },
+    "faction": {
+      "HORDE": "Horde",
+      "ALLIANCE": "Alliance",
+      "NEUTRAL": "Neutral"
+    },
     "lastSync": "synced {when}",
     "neverSynced": "waiting for first sync",
     "syncError": "Last sync failed: {error}",
     "settings": "Settings",
     "syncNow": "Sync now",
     "syncQueued": "Queued",
-    "syncFailed": "Could not queue"
+    "syncFailed": "Could not queue",
+    "customRoster": "Custom roster",
+    "linkedRoster": "linked to the guild"
   },
   "roster": {
     "raiders": "{count, plural, =0 {No raiders} one {# raider} other {# raiders}}",
@@ -96,7 +117,31 @@
     "ruleset": "Ruleset",
     "name": "Name",
     "add": "Add",
-    "adding": "Looking up…"
+    "adding": "Looking up…",
+    "planned": "planned",
+    "spec": "Specialization",
+    "anySpec": "Undecided",
+    "byDefault": "Default ({value})",
+    "notInGameYet": "not created yet",
+    "link": "Link",
+    "linkHelp": "Link this entry to the real character once it exists in the game",
+    "cancel": "Cancel",
+    "planTitle": "Plan a character",
+    "planHelp": "For characters that do not exist yet (e.g. your Forever roster before launch). Link them to the real character later.",
+    "plannedName": "Name (optional)",
+    "plannedNamePlaceholder": "e.g. the name you plan to use",
+    "playerName": "Player",
+    "note": "Note",
+    "forMe": "It's mine",
+    "plannedForYou": "It will be added under your name.",
+    "planSubmit": "Add planned",
+    "plannedAdded": "Planned character added.",
+    "myTitle": "Add my characters",
+    "myAdd": "{count, plural, =0 {Add} one {Add # character} other {Add # characters}}",
+    "myAdded": "Characters added; they will sync in a few seconds.",
+    "realAdded": "Character added.",
+    "addHelp": "Any existing character in {region}, from this guild or another.",
+    "roleFromSpec": "From the spec"
   },
   "settings": {
     "title": "Guild settings",
@@ -117,7 +162,8 @@
     "rankLabel": "Name",
     "rankStatus": "Status",
     "guildMaster": "0 (guild master)",
-    "saveRanks": "Save ranks"
+    "saveRanks": "Save ranks",
+    "name": "Name"
   },
   "character": {
     "summary": "Level {level}",
@@ -133,7 +179,11 @@
     "active": "Active",
     "loadoutCode": "Talent code",
     "copy": "Copy",
-    "trees": { "class": "Class", "spec": "Specialization", "hero": "Hero" },
+    "trees": {
+      "class": "Class",
+      "spec": "Specialization",
+      "hero": "Hero"
+    },
     "stats": "Statistics",
     "professions": "Professions",
     "reputations": "Reputations",
@@ -213,6 +263,71 @@
     "refresh_cooldown": "This character was refreshed recently. Wait a couple of minutes.",
     "invalid_main": "Can't link to that main.",
     "main_is_alt": "That character is already an alt; link to its main instead.",
-    "no_hidden_status_configured": "The game profile defines no hidden status."
+    "no_hidden_status_configured": "The game profile defines no hidden status.",
+    "name_from_game": "A linked roster takes its name from the in-game guild.",
+    "custom_roster_has_no_ranks": "Custom rosters have no ranks.",
+    "not_your_characters": "You can only add your own characters.",
+    "unknown_class": "Unknown class.",
+    "unknown_spec": "That specialization does not belong to that class.",
+    "entry_already_linked": "This entry is already linked to a real character.",
+    "character_already_in_roster": "That character is already in the roster.",
+    "invite_not_found": "Invite not found.",
+    "invite_expired": "The invite has expired or has no uses left.",
+    "member_not_found": "That user is not a member.",
+    "cannot_change_owner": "The owner's role cannot be changed.",
+    "cannot_remove_owner": "The owner cannot leave or be removed."
+  },
+  "createRoster": {
+    "title": "Create a custom roster",
+    "help": "No guild needed: for cross-guild raids, groups of friends or planning Forever before launch. Invite people with a link.",
+    "region": "Region",
+    "name": "Roster name",
+    "submit": "Create roster",
+    "submitting": "Creating…"
+  },
+  "composition": {
+    "title": "Composition",
+    "raiders": "{count, plural, =0 {No raiders} one {# raider} other {# raiders}}",
+    "plannedCount": "{count, plural, one {# planned} other {# planned}}",
+    "includePlanned": "Include planned",
+    "categories": {
+      "buff": "Buffs",
+      "debuff": "Debuffs",
+      "utility": "Utility"
+    },
+    "covered": "covered",
+    "missing": "missing",
+    "plannedProviders": "{count, plural, one {# of them planned} other {# of them planned}}",
+    "plannedFootnote": "* Includes planned characters. Counts mains with a raiding status; the buff list is configured in the game profile."
+  },
+  "members": {
+    "title": "Members and invites",
+    "help": "Members see the roster and add their characters; officers manage it. In linked guilds, officers are also detected by rank.",
+    "role": "Role",
+    "leave": "Leave roster",
+    "remove": "Remove {name}",
+    "confirmLeave": "Leave this roster?",
+    "confirmRemove": "Remove {name} from the roster?",
+    "inviteTitle": "New invite link",
+    "days": "Expires in (days)",
+    "maxUses": "Max uses",
+    "unlimited": "Unlimited",
+    "createInvite": "Create link",
+    "inviteLink": "Invite link",
+    "copy": "Copy",
+    "inviteOnce": "Copy the link now: for security it cannot be shown again.",
+    "activeInvites": "Active invites",
+    "expires": "expires {when}",
+    "uses": "used {uses}/{max}",
+    "revoke": "Revoke"
+  },
+  "invite": {
+    "youAreInvited": "You have been invited to",
+    "asRole": "as {role}",
+    "alreadyIn": "You are already in this roster: open it",
+    "expired": "This invite has expired or has no uses left.",
+    "loginFirst": "Sign in with Battle.net to join.",
+    "accept": "Join the roster",
+    "joining": "Joining…"
   }
 }

@@ -18,6 +18,7 @@ model User {
   sessions    Session[]
   characters  Character[]
   memberships GuildMembership[]
+  plannedEntries RosterEntry[]
 }
 
 /// The id is a SHA-256 hash of the session token stored in the cookie.
@@ -31,12 +32,16 @@ model Session {
   @@index([userId])
 }
 
-/// A guild registered in the app. `realm` is the realm slug, or the ruleset key for realmless games.
+/// A roster in the app (shown as "roster" in the UI). kind "guild" mirrors an in-game guild
+/// (realm/slug set, members synced from its roster); kind "custom" has no in-game guild and its
+/// characters are added by officers or by the players themselves.
+/// `realm` is the realm slug, or the ruleset key for realmless games.
 model Guild {
   id                  String            @id @default(cuid())
+  kind                String            @default("guild")
   region              String
-  realm               String
-  slug                String
+  realm               String?
+  slug                String?
   name                String
   faction             String?
   blizzardId          Int?
@@ -53,8 +58,24 @@ model Guild {
   memberships         GuildMembership[]
   roster              RosterEntry[]
   characters          Character[]
+  invites             RosterInvite[]
 
   @@unique([region, realm, slug])
+}
+
+/// Link that grants a role in a roster. The id is a SHA-256 hash of the token in the URL.
+model RosterInvite {
+  id          String    @id
+  guildId     String
+  guild       Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  role        GuildRole
+  createdById String
+  expiresAt   DateTime
+  maxUses     Int?
+  uses        Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([guildId])
 }
 
 /// Maps an in-game guild rank to a roster status key from the game profile.
@@ -139,10 +160,19 @@ model RosterEntry {
   id          String        @id @default(cuid())
   guildId     String
   guild       Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  characterId String
-  character   Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  /// "guild" when it comes from the in-game roster, "manual" when an officer added it.
+  /// The game character; null for planned entries that do not exist in the game yet.
+  characterId String?
+  character   Character?    @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// "guild" when it comes from the in-game roster, "manual" when added by hand, "planned" before it exists.
   source      String
+  /// Planned entries: what the character will be. Linking a real character keeps these as history.
+  plannedName    String?
+  plannedClassId Int?
+  plannedSpec    String?
+  /// Who will play the entry: a free-text name and/or the app user (groups it with their characters).
+  playerName     String?
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   /// Overrides the status derived from the guild rank.
   status      String?
   /// Overrides the role derived from the spec.

@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LoginButton } from "@/components/AuthButtons";
 import { CharacterSearch } from "@/components/CharacterSearch";
+import { CreateRosterForm } from "@/components/CreateRosterForm";
 import { GuildRegisterForm } from "@/components/GuildRegisterForm";
 import { MyCharacters } from "@/components/MyCharacters";
 import { Link } from "@/i18n/routing";
@@ -40,12 +41,16 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           {me.guilds && me.guilds.length > 0 ? (
             <ul className="divide-y divide-border">
               {me.guilds.map((g) => (
-                <li key={g.id} className="flex items-center justify-between py-2">
-                  <Link href={`/guild/${g.id}`} className="font-medium hover:text-accent">
-                    {g.name}
-                  </Link>
+                <li key={g.id} className="flex items-center justify-between gap-2 py-2">
+                  <span className="flex items-center gap-2">
+                    <Link href={`/guild/${g.id}`} className="font-medium hover:text-accent">
+                      {g.name}
+                    </Link>
+                    <span className="badge bg-surface-2 text-muted">{t(g.kind === "custom" ? "kindCustom" : "kindGuild")}</span>
+                  </span>
                   <span className="text-xs text-muted">
-                    {g.realm} · {g.region.toUpperCase()} {g.role ? `· ${t(`roles.${g.role}`)}` : ""}
+                    {g.realm ? `${g.realm} · ` : ""}
+                    {g.region.toUpperCase()} {g.role ? `· ${t(`roles.${g.role}`)}` : ""}
                   </span>
                 </li>
               ))}
@@ -57,6 +62,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <MyCharacters characters={me.characters ?? []} profile={config.profile} />
       </section>
       <aside className="space-y-6">
+        <CreateRosterForm regions={config.regions} defaultRegion={config.defaultRegion} />
         <GuildRegisterForm regions={config.regions} defaultRegion={config.defaultRegion} hasRealms={config.profile.hasRealms} />
         <CharacterSearch regions={config.regions} defaultRegion={config.defaultRegion} hasRealms={config.profile.hasRealms} />
       </aside>

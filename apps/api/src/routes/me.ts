@@ -38,7 +38,14 @@ export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
     ]);
     const guilds = await prisma.guild.findMany({ where: { id: { in: [...guildIds] } }, orderBy: { name: "asc" } });
     const guildsWithRole = await Promise.all(
-      guilds.map(async (g) => ({ id: g.id, name: g.name, realm: g.realm, region: g.region, role: await guildRole(prisma, g, user) })),
+      guilds.map(async (g) => ({
+        id: g.id,
+        kind: g.kind,
+        name: g.name,
+        realm: g.realm,
+        region: g.region,
+        role: await guildRole(prisma, g, user),
+      })),
     );
 
     return {

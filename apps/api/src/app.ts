@@ -8,6 +8,7 @@ import { HttpError } from "./errors";
 import { authRoutes } from "./routes/auth";
 import { characterRoutes } from "./routes/characters";
 import { guildRoutes } from "./routes/guilds";
+import { memberRoutes } from "./routes/members";
 import { meRoutes } from "./routes/me";
 import { metaRoutes } from "./routes/meta";
 import { SESSION_COOKIE, findSessionUser } from "./session";
@@ -50,6 +51,7 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean } = {}
       await authRoutes(api, deps);
       await meRoutes(api, deps);
       await guildRoutes(api, deps);
+      await memberRoutes(api, deps);
       await characterRoutes(api, deps);
     },
     { prefix: "/api" },

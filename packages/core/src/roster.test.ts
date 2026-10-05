@@ -73,6 +73,49 @@ describe("buildRoster", () => {
   });
 });
 
+describe("planned entries", () => {
+  const ranks: { rank: number; status: string }[] = [];
+  const planned = (id: string, extra: Partial<RosterInputEntry> = {}): RosterInputEntry => ({
+    id,
+    source: "planned",
+    status: null,
+    role: null,
+    note: null,
+    mainEntryId: null,
+    character: null,
+    ...extra,
+  });
+
+  it("uses the planned class and spec for name, role and spec", () => {
+    const [player] = buildRoster(profile, ranks, [planned("p1", { plannedName: "Futuro tanque", plannedClassId: 1, plannedSpec: "protection", playerName: "Patxi" })]);
+    expect(player!.main).toMatchObject({
+      planned: true,
+      characterId: null,
+      name: "Futuro tanque",
+      playerName: "Patxi",
+      classId: 1,
+      specKey: "protection",
+      role: "tank",
+      status: "raider",
+    });
+  });
+
+  it("groups a user's planned entries with their real characters", () => {
+    const players = buildRoster(profile, ranks, [
+      planned("p1", { plannedClassId: 5, plannedSpec: "holy", userId: "u1", playerName: "Ana" }),
+      entry("Real", { character: { ownerId: "u1", isMain: true } }),
+    ]);
+    expect(players).toHaveLength(1);
+    expect(players[0]!.main.name).toBe("Real");
+    expect(players[0]!.alts[0]).toMatchObject({ planned: true, name: "Ana", userId: "u1" });
+  });
+
+  it("ignores a planned spec that does not belong to the class", () => {
+    const [player] = buildRoster(profile, ranks, [planned("p1", { plannedClassId: 8, plannedSpec: "protection" })]);
+    expect(player!.main).toMatchObject({ classId: 8, specKey: null, role: null, name: "?" });
+  });
+});
+
 describe("defaultStatusForRank", () => {
   it("maps high ranks to raiding and low ranks to social", () => {
     expect(defaultStatusForRank(profile, 0)).toBe("raider");
