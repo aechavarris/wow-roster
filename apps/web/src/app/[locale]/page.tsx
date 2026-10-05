@@ -4,16 +4,20 @@ import { CharacterSearch } from "@/components/CharacterSearch";
 import { CreateRosterForm } from "@/components/CreateRosterForm";
 import { GuildRegisterForm } from "@/components/GuildRegisterForm";
 import { MyCharacters } from "@/components/MyCharacters";
+import { PublishedRosters } from "@/components/PublishedRosters";
 import { VersionBadge } from "@/components/VersionSelect";
 import { Link } from "@/i18n/routing";
-import { getConfig, getMe } from "@/lib/api";
+import { apiGet, getConfig, getMe } from "@/lib/api";
 import { versionOf } from "@/lib/game";
+import type { PublishedRoster } from "@/lib/types";
 
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
   const [config, me] = await Promise.all([getConfig(), getMe()]);
+  // Published rosters are only listed for signed-in users.
+  const published = me.user ? ((await apiGet<{ rosters: PublishedRoster[] }>("/rosters/published"))?.rosters ?? []) : [];
   // Linking a guild or searching needs the version's API; the default version goes first.
   const withApi = config.versions
     .filter((v) => v.apiAvailable)
@@ -66,6 +70,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             <p className="text-sm text-muted">{t("noGuilds")}</p>
           )}
         </div>
+        <PublishedRosters rosters={published} config={config} />
         <MyCharacters characters={me.characters ?? []} config={config} />
       </section>
       <aside className="space-y-6">

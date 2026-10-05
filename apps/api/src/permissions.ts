@@ -31,12 +31,16 @@ export function atLeast(role: ViewerRole, required: Exclude<ViewerRole, null>) {
   return role !== null && RANKING[role] >= RANKING[required];
 }
 
-/** Loads a guild the viewer may see, or throws 404 (private guilds are hidden from outsiders). */
+/**
+ * Loads a guild the viewer may see, or throws 404 (private guilds are hidden from outsiders).
+ * Public rosters are visible to everyone; published ones to every signed-in user.
+ */
 export async function loadVisibleGuild(prisma: PrismaClient, guildId: string, user: User | null) {
   const guild = await prisma.guild.findUnique({ where: { id: guildId } });
   if (!guild) throw notFound("guild_not_found");
   const role = await guildRole(prisma, guild, user);
-  if (!guild.public && role === null) throw notFound("guild_not_found");
+  const visible = guild.public || role !== null || (guild.published && user !== null);
+  if (!visible) throw notFound("guild_not_found");
   return { guild, role };
 }
 

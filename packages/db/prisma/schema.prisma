@@ -48,6 +48,8 @@ model Guild {
   faction             String?
   blizzardId          Int?
   public              Boolean           @default(true)
+  /// Listed for every signed-in user, who can propose characters; the owner accepts or rejects them.
+  published           Boolean           @default(false)
   syncIntervalMinutes Int
   minLevel            Int
   /// Users owning a character at this in-game rank or lower (0 = guild master) are officers in the app.
@@ -63,6 +65,7 @@ model Guild {
   invites             RosterInvite[]
 
   @@unique([gameVersion, region, realm, slug])
+  @@index([published])
 }
 
 /// Link that grants a role in a roster. The id is a SHA-256 hash of the token in the URL.
@@ -182,6 +185,8 @@ model RosterEntry {
   /// Overrides the role derived from the spec.
   role        String?
   note        String?
+  /// Proposed by a signed-in non-member of a published roster; hidden from the roster until the owner accepts it.
+  pending     Boolean       @default(false)
   /// Officer-defined main for characters without a verified owner.
   mainEntryId String?
   mainEntry   RosterEntry?  @relation("RosterAlts", fields: [mainEntryId], references: [id], onDelete: SetNull)
@@ -190,4 +195,5 @@ model RosterEntry {
   updatedAt   DateTime      @updatedAt
 
   @@unique([guildId, characterId])
+  @@index([guildId, pending])
 }

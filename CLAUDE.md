@@ -53,7 +53,7 @@ Use these; do not reintroduce Classic Era assumptions. Sources were official Bli
 
 ### Feature plan
 
-Phases: (1) Docker, CI/CD, login, guilds, roster, character sheet — **done**; then custom rosters, invites, planned characters, composition, visual character sheet, game versions — **done**. Next: (2) audit sheet with configurable rules, weekly history, optional Google Sheet like wowaudit; (3) calendar with Discord bot, sign-ups, attendance; (4) raid composition/assignments with MRT note export, loot (MS > OS + roll only, Gargul/RCLootCouncil import/export); (5) Warcraft Logs, professions, guild bank, requirements. Out of scope for now: recruitment, public API, generic notifications. A small companion addon will export what the API lacks (bank, professions, attunements).
+Phases: (1) Docker, CI/CD, login, guilds, roster, character sheet — **done**; then custom rosters, invites, planned characters, composition, visual character sheet, game versions, published rosters — **done**. Next: (2) audit sheet with configurable rules, weekly history, optional Google Sheet like wowaudit; (3) calendar with Discord bot, sign-ups, attendance; (4) raid composition/assignments with MRT note export, loot (MS > OS + roll only, Gargul/RCLootCouncil import/export); (5) Warcraft Logs, professions, guild bank, requirements. Out of scope for now: recruitment, public API, generic notifications. A small companion addon will export what the API lacks (bank, professions, attunements).
 
 ## Architecture
 
@@ -70,7 +70,7 @@ packages/db      Prisma 7 schema, migrations, seed (PostgreSQL). Client generate
 deploy/          Caddyfile, Tailscale serve config, home .env template.
 ```
 
-Data model essentials (`packages/db/prisma/schema.prisma`): `Guild` is any roster (`kind` = `guild` linked to an in-game guild, or `custom`), with `gameVersion`. `RosterEntry` links a roster to a real `Character` or holds a **planned** character (`plannedClassId`, `plannedSpec`, `plannedName`, `playerName`, `userId`). `GuildMembership` roles: OWNER > OFFICER > MEMBER (officers of linked guilds are also detected by in-game rank). `RosterInvite` stores hashed invite tokens. `StaticCache` keys are `<gameVersion>:<region>:...`.
+Data model essentials (`packages/db/prisma/schema.prisma`): `Guild` is any roster (`kind` = `guild` linked to an in-game guild, or `custom`), with `gameVersion`. `RosterEntry` links a roster to a real `Character` or holds a **planned** character (`plannedClassId`, `plannedSpec`, `plannedName`, `playerName`, `userId`). Published rosters (`Guild.published`, set by the owner only) are listed for and visible to every signed-in user; a non-member's entries are created with `RosterEntry.pending = true` (max 10 per user and roster), stay out of the roster and composition, and only the **owner** accepts them (the author then becomes a MEMBER) or rejects them; the author can withdraw them. Members still add entries directly. `GuildMembership` roles: OWNER > OFFICER > MEMBER (officers of linked guilds are also detected by in-game rank). `RosterInvite` stores hashed invite tokens. `StaticCache` keys are `<gameVersion>:<region>:...`.
 
 Web routes: `/[locale]` home, `/[locale]/guild/[id]` roster (+ `/settings`), `/[locale]/character/[version]/[region]/[realm]/[name]`, `/[locale]/invite/[token]`. API under `/api`, e.g. `/api/characters/:version/:region/:realm/:name`, `/api/talent-trees/:version/:region/:treeId/:specId`, `/api/config` (all versions, no namespaces).
 

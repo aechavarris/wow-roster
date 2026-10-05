@@ -77,7 +77,8 @@
     "syncQueued": "En cola",
     "syncFailed": "No se pudo encolar",
     "customRoster": "Roster libre",
-    "linkedRoster": "vinculado a la hermandad"
+    "linkedRoster": "vinculado a la hermandad",
+    "published": "Publicado"
   },
   "roster": {
     "raiders": "{count, plural, =0 {Sin raiders} one {# raider} other {# raiders}}",
@@ -142,7 +143,9 @@
     "realAdded": "Personaje añadido.",
     "addHelp": "Cualquier personaje existente en {region}, de esta hermandad o de otra.",
     "roleFromSpec": "Según la especialización",
-    "noApiYet": "Esta versión todavía no tiene API pública de Blizzard: de momento el roster solo admite personajes planificados. Cuando se publique, podrás vincularlos con los reales."
+    "noApiYet": "Esta versión todavía no tiene API pública de Blizzard: de momento el roster solo admite personajes planificados. Cuando se publique, podrás vincularlos con los reales.",
+    "proposeHelp": "Este roster está publicado. Puedes proponer tus personajes o planificar uno: quedarán pendientes hasta que el propietario los acepte.",
+    "proposalSent": "Propuesta enviada: el propietario tiene que aceptarla."
   },
   "settings": {
     "title": "Ajustes de la hermandad",
@@ -282,7 +285,9 @@
     "game_version_from_guild": "Un roster vinculado usa la versión de su hermandad y no se puede cambiar.",
     "game_version_has_characters": "El roster tiene personajes reales: quítalos antes de cambiar la versión.",
     "unknown_role": "Rol desconocido.",
-    "unknown_status": "Estado desconocido."
+    "unknown_status": "Estado desconocido.",
+    "entry_pending": "Esta entrada está pendiente: el propietario tiene que aceptarla antes.",
+    "too_many_pending": "Tienes demasiadas propuestas pendientes en este roster. Espera a que el propietario las revise."
   },
   "createRoster": {
     "title": "Crear roster libre",
@@ -349,5 +354,33 @@
     "changed": "Versión cambiada.",
     "save": "Cambiar versión",
     "saving": "Guardando…"
+  },
+  "pending": {
+    "titleOwner": "{count, plural, one {# solicitud pendiente} other {# solicitudes pendientes}}",
+    "titleMine": "{count, plural, one {Tu propuesta pendiente} other {Tus # propuestas pendientes}}",
+    "helpOwner": "Personajes propuestos por otros usuarios. No cuentan en el roster ni en la composición hasta que los aceptes; al aceptar, su autor pasa a ser miembro.",
+    "helpMine": "{count, plural, one {El propietario del roster tiene que aceptarla. Mientras tanto puedes retirarla.} other {El propietario del roster tiene que aceptarlas. Mientras tanto puedes retirarlas.}}",
+    "planned": "planificado",
+    "level": "nivel {level}",
+    "by": "propuesto por {name}",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "withdraw": "Retirar",
+    "confirmReject": "¿Rechazar la propuesta de {name}?",
+    "confirmWithdraw": "¿Retirar tu propuesta de {name}?"
+  },
+  "publish": {
+    "title": "Publicación",
+    "help": "Un roster publicado aparece en la lista de rosters publicados: cualquier usuario con sesión de Battle.net puede verlo y proponer personajes, que quedan pendientes hasta que los aceptes.",
+    "label": "Publicar este roster"
+  },
+  "published": {
+    "title": "Rosters publicados",
+    "help": "Ábrelos para ver su composición y proponer tus personajes; el propietario decide si los acepta.",
+    "filter": "Versión",
+    "all": "Todas",
+    "empty": "Todavía no hay rosters publicados.",
+    "entries": "{count, plural, one {# personaje} other {# personajes}}",
+    "by": "de {name}"
   }
 }
