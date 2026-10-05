@@ -1,13 +1,17 @@
 import { BlizzardApiError } from "@wow/blizzard";
 import { REGIONS, blizzardSlug } from "@wow/config";
-import { buildRoster, defaultStatusForRank, gameVersion, nameKey, syncCharacter } from "@wow/core";
+import { buildRoster, defaultStatusForRank, gameVersion, nameKey, syncCharacter, toCharacterView } from "@wow/core";
+import type { User } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AppDeps } from "../deps";
 import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from "../errors";
-import { atLeast, loadVisibleGuild, requireGuildRole } from "../permissions";
+import { atLeast, loadVisibleGuild, requireGuildRole, type ViewerRole } from "../permissions";
 
 const idParams = z.object({ id: z.string() });
+
+/** Pending proposals a non-member can have in one published roster, to keep the owner's queue manageable. */
+const MAX_PENDING_PER_USER = 10;
 
 export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
   const { prisma, versions, core, queue, env } = deps;
@@ -28,6 +32,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     name: guild.name,
     faction: guild.faction,
     public: guild.public,
+    published: guild.published,
     syncIntervalMinutes: guild.syncIntervalMinutes,
     minLevel: guild.minLevel,
     officerMaxRank: guild.officerMaxRank,
@@ -144,6 +149,8 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         name: z.string().trim().min(1).max(60).optional(),
         /** Only the owner changes it, and only on custom rosters without real characters. */
         gameVersion: versionField.optional(),
+        /** Only the owner publishes: signed-in users can then see the roster and propose characters. */
+        published: z.boolean().optional(),
         public: z.boolean().optional(),
         syncIntervalMinutes: z.number().int().min(profile.sync.minIntervalMinutes).max(24 * 60).optional(),
         minLevel: z.number().int().min(1).max(profile.maxLevel).optional(),
@@ -151,6 +158,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       })
       .parse(request.body);
     if (body.name !== undefined && guild.kind === "guild") throw new HttpError(400, "name_from_game");
+    if (body.published !== undefined && body.published !== guild.published && role !== "OWNER") throw forbidden();
     if (body.gameVersion !== undefined && body.gameVersion !== guild.gameVersion) {
       if (role !== "OWNER") throw forbidden();
       // A linked roster mirrors a guild that exists in one game version.
@@ -196,14 +204,19 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     return { ranks: await prisma.guildRank.findMany({ where: { guildId: id }, orderBy: { rank: "asc" } }) };
   });
 
+  /**
+   * Roster players (accepted entries only) plus pending proposals: the owner sees every proposal,
+   * anyone else only their own.
+   */
   app.get("/guilds/:id/roster", async (request) => {
     const { id } = idParams.parse(request.params);
-    const { guild } = await loadVisibleGuild(prisma, id, request.user);
+    const { guild, role } = await loadVisibleGuild(prisma, id, request.user);
     const [ranks, entries] = await Promise.all([
       prisma.guildRank.findMany({ where: { guildId: id } }),
       prisma.rosterEntry.findMany({
         where: { guildId: id },
         include: {
+          user: { select: { battletag: true } },
           character: {
             select: {
               id: true,
@@ -228,13 +241,58 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         },
       }),
     ]);
-    const players = buildRoster(
-      rules(guild),
-      ranks,
-      entries.map((e) => ({ ...e, character: e.character && { ...e.character, avatar: e.character.avatarUrl } })),
-    );
-    return { players };
+    const inputs = entries.map((e) => ({ ...e, character: e.character && { ...e.character, avatar: e.character.avatarUrl } }));
+    const players = buildRoster(rules(guild), ranks, inputs.filter((e) => !e.pending));
+    const rankStatus = new Map(ranks.map((r) => [r.rank, r.status]));
+    const pending = inputs
+      .filter((e) => e.pending && (role === "OWNER" || (request.user !== null && e.userId === request.user.id)))
+      .map((e) => ({
+        ...toCharacterView(rules(guild), rankStatus, e),
+        submittedBy: e.user?.battletag ?? null,
+        submittedAt: e.createdAt,
+      }));
+    return { players, pending };
   });
+
+  /** Published rosters for signed-in users, newest first; optionally of one game version. */
+  app.get("/rosters/published", async (request) => {
+    if (!request.user) throw unauthorized();
+    const query = z.object({ gameVersion: versionField.optional() }).parse(request.query);
+    const rosters = await prisma.guild.findMany({
+      where: { published: true, ...(query.gameVersion ? { gameVersion: query.gameVersion } : {}) },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+      include: {
+        memberships: { where: { role: "OWNER" }, select: { user: { select: { battletag: true } } } },
+        _count: { select: { roster: { where: { pending: false } } } },
+      },
+    });
+    return {
+      rosters: rosters.map((g) => ({
+        id: g.id,
+        kind: g.kind,
+        gameVersion: g.gameVersion,
+        name: g.name,
+        region: g.region,
+        realm: g.realm,
+        owner: g.memberships[0]?.user.battletag.split("#")[0] ?? null,
+        entries: g._count.roster,
+      })),
+    };
+  });
+
+  /**
+   * Who may add entries: members add directly; on a published roster any signed-in user may
+   * propose entries, which stay pending until the owner accepts them.
+   */
+  async function contributor(guildId: string, user: User | null) {
+    if (!user) throw unauthorized();
+    const { guild, role } = await loadVisibleGuild(prisma, guildId, user);
+    if (atLeast(role, "MEMBER")) return { guild, role, pending: false };
+    if (!guild.published) throw forbidden();
+    const open = await prisma.rosterEntry.count({ where: { guildId, pending: true, userId: user.id } });
+    return { guild, role: null as ViewerRole, pending: true, slots: MAX_PENDING_PER_USER - open };
+  }
 
   /**
    * Finds a character of the roster's game version, looking it up in that version's API (and
@@ -282,28 +340,31 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
   app.post("/guilds/:id/roster/mine", async (request, reply) => {
     const { id } = idParams.parse(request.params);
     const user = request.user;
-    const { guild } = await requireGuildRole(prisma, id, user, "MEMBER");
+    const { guild, pending, slots } = await contributor(id, user);
     const body = z.object({ characterIds: z.array(z.string()).min(1).max(50) }).parse(request.body);
+    if (pending && body.characterIds.length > slots!) throw new HttpError(429, "too_many_pending");
     const owned = await prisma.character.findMany({
       where: { id: { in: body.characterIds }, ownerId: user!.id, gameVersion: guild.gameVersion, region: guild.region },
       select: { id: true },
     });
     if (owned.length !== body.characterIds.length) throw new HttpError(400, "not_your_characters");
     await prisma.rosterEntry.createMany({
-      data: owned.map((c) => ({ guildId: id, characterId: c.id, source: "manual" })),
+      data: owned.map((c) => ({ guildId: id, characterId: c.id, source: "manual", userId: user!.id, pending })),
       skipDuplicates: true,
     });
     await queue.syncCharacters(owned.map((c) => c.id));
-    return reply.status(201).send({ added: owned.length });
+    return reply.status(201).send({ added: owned.length, pending });
   });
 
   /**
    * Adds a character that does not exist in the game yet, to plan a roster ahead of time.
-   * Officers can plan for anyone; members plan their own entries.
+   * Officers can plan for anyone; members plan their own entries; non-members of a published
+   * roster propose their own entries, pending the owner's approval.
    */
   app.post("/guilds/:id/roster/planned", async (request, reply) => {
     const { id } = idParams.parse(request.params);
-    const { guild, role } = await requireGuildRole(prisma, id, request.user, "MEMBER");
+    const { guild, role, pending, slots } = await contributor(id, request.user);
+    if (pending && slots! < 1) throw new HttpError(429, "too_many_pending");
     const body = z
       .object({
         classId: z.number().int(),
@@ -334,6 +395,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         role: body.role ?? null,
         note: body.note ?? null,
         status: officer ? (body.status ?? null) : null,
+        pending,
       },
     });
     return reply.status(201).send({ entry });
@@ -346,6 +408,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     const body = z.object({ realm: z.string().min(1), name: z.string().min(1) }).parse(request.body);
     const entry = await prisma.rosterEntry.findFirst({ where: { id: entryId, guildId: id } });
     if (!entry) throw notFound("roster_entry_not_found");
+    if (entry.pending) throw new HttpError(400, "entry_pending");
     if (entry.characterId) throw new HttpError(400, "entry_already_linked");
     if (!atLeast(role, "OFFICER") && entry.userId !== request.user!.id) throw forbidden();
     const character = await findOrSyncCharacter(guild, body.realm, body.name);
@@ -383,6 +446,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
 
     const entry = await prisma.rosterEntry.findFirst({ where: { id: entryId, guildId: id } });
     if (!entry) throw notFound("roster_entry_not_found");
+    if (entry.pending) throw new HttpError(400, "entry_pending");
     const officer = atLeast(viewerRole, "OFFICER");
     if (!officer) {
       const ownPlanned = entry.userId === request.user!.id && !entry.characterId;
@@ -412,12 +476,20 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
    */
   app.delete("/guilds/:id/roster/:entryId", async (request) => {
     const { id, entryId } = z.object({ id: z.string(), entryId: z.string() }).parse(request.params);
-    const { guild, role } = await requireGuildRole(prisma, id, request.user, "MEMBER");
+    if (!request.user) throw unauthorized();
+    const { guild, role } = await loadVisibleGuild(prisma, id, request.user);
     const entry = await prisma.rosterEntry.findFirst({
       where: { id: entryId, guildId: id },
       include: { character: { select: { ownerId: true } } },
     });
     if (!entry) throw notFound("roster_entry_not_found");
+    // A pending proposal is rejected by the owner or withdrawn by whoever proposed it.
+    if (entry.pending) {
+      if (role !== "OWNER" && entry.userId !== request.user.id) throw forbidden();
+      await prisma.rosterEntry.delete({ where: { id: entryId } });
+      return { removed: true };
+    }
+    if (!atLeast(role, "MEMBER")) throw forbidden();
     const removable = entry.source === "manual" || entry.source === "planned";
     const own = (entry.character?.ownerId ?? entry.userId) === request.user!.id;
     if (!atLeast(role, "OFFICER") && !(removable && own)) throw forbidden();
@@ -429,6 +501,27 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     if (!hidden) throw new HttpError(400, "no_hidden_status_configured");
     await prisma.rosterEntry.update({ where: { id: entryId }, data: { status: hidden.key } });
     return { removed: false, status: hidden.key };
+  });
+
+  /** The owner accepts a proposal: it joins the roster and its author becomes a member. */
+  app.post("/guilds/:id/roster/:entryId/approve", async (request) => {
+    const { id, entryId } = z.object({ id: z.string(), entryId: z.string() }).parse(request.params);
+    await requireGuildRole(prisma, id, request.user, "OWNER");
+    const entry = await prisma.rosterEntry.findFirst({ where: { id: entryId, guildId: id, pending: true } });
+    if (!entry) throw notFound("roster_entry_not_found");
+    await prisma.$transaction([
+      prisma.rosterEntry.update({ where: { id: entryId }, data: { pending: false } }),
+      ...(entry.userId
+        ? [
+            prisma.guildMembership.upsert({
+              where: { userId_guildId: { userId: entry.userId, guildId: id } },
+              create: { userId: entry.userId, guildId: id, role: "MEMBER" },
+              update: {},
+            }),
+          ]
+        : []),
+    ]);
+    return { approved: true };
   });
 
   app.post("/guilds/:id/sync", async (request) => {

@@ -446,3 +446,80 @@ describe("game versions", () => {
     expect((await app.inject({ method: "GET", url: "/api/characters/forever/eu/x/Garrosh", cookies: { wr_session: owner } })).statusCode).toBe(409);
   });
 });
+
+describe("published rosters", () => {
+  const send = (method: "GET" | "POST" | "PATCH" | "DELETE", url: string, session: string | null, payload?: object) =>
+    app.inject({ method, url, payload, cookies: session ? { wr_session: session } : {} });
+  type Pending = { entryId: string; name: string; submittedBy: string | null };
+
+  it("lets signed-in users propose characters that stay pending until the owner accepts them", async () => {
+    const owner = await login(1001);
+    const roster = (await send("POST", "/api/rosters", owner, { name: "Abierto", gameVersion: "retail", region: "eu", public: false })).json().guild;
+    const stranger = await login(3003);
+
+    // Private and unpublished: invisible to outsiders, and they cannot propose anything.
+    expect((await send("GET", `/api/guilds/${roster.id}/roster`, stranger)).statusCode).toBe(404);
+    // Only the owner publishes.
+    const invite = (await send("POST", `/api/guilds/${roster.id}/invites`, owner, { role: "OFFICER" })).json();
+    const officer = await login(2002);
+    await send("POST", `/api/invites/${invite.token}/accept`, officer);
+    expect((await send("PATCH", `/api/guilds/${roster.id}`, officer, { published: true })).statusCode).toBe(403);
+    expect((await send("PATCH", `/api/guilds/${roster.id}`, owner, { published: true })).json().guild.published).toBe(true);
+
+    // Listed for signed-in users only.
+    expect((await send("GET", "/api/rosters/published", null)).statusCode).toBe(401);
+    const listed = (await send("GET", "/api/rosters/published?gameVersion=retail", stranger)).json().rosters;
+    expect(listed).toEqual([expect.objectContaining({ id: roster.id, name: "Abierto", owner: "Player", entries: 0 })]);
+    expect((await send("GET", "/api/rosters/published?gameVersion=classic-era", stranger)).json().rosters).toEqual([]);
+
+    // A stranger proposes: pending, not in the roster, and cannot edit it.
+    const proposal = await send("POST", `/api/guilds/${roster.id}/roster/planned`, stranger, { classId: 2, specKey: "holy", status: "raider" });
+    expect(proposal.statusCode).toBe(201);
+    expect(proposal.json().entry).toMatchObject({ pending: true, status: null });
+    const strangerView = (await send("GET", `/api/guilds/${roster.id}/roster`, stranger)).json();
+    expect(strangerView.players).toEqual([]);
+    expect(strangerView.pending.map((p: Pending) => p.submittedBy)).toEqual(["Player#3003"]);
+    const entryId = strangerView.pending[0].entryId as string;
+    expect((await send("PATCH", `/api/guilds/${roster.id}/roster/${entryId}`, stranger, { note: "hola" })).statusCode).toBe(403);
+
+    // Others only see their own proposals; the owner sees all of them.
+    const other = await login(4004);
+    expect((await send("GET", `/api/guilds/${roster.id}/roster`, other)).json().pending).toEqual([]);
+    expect((await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json().pending).toHaveLength(1);
+    // Officers cannot accept nor reject; strangers cannot touch others' proposals.
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/${entryId}/approve`, officer)).statusCode).toBe(403);
+    expect((await send("DELETE", `/api/guilds/${roster.id}/roster/${entryId}`, officer)).statusCode).toBe(403);
+    expect((await send("DELETE", `/api/guilds/${roster.id}/roster/${entryId}`, other)).statusCode).toBe(403);
+
+    // Accepting adds it to the roster and makes the author a member.
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/${entryId}/approve`, owner)).statusCode).toBe(200);
+    const after = (await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json();
+    expect(after.pending).toEqual([]);
+    expect(after.players[0].main).toMatchObject({ classId: 2, specKey: "holy", planned: true });
+    const members = (await send("GET", `/api/guilds/${roster.id}/members`, owner)).json().members;
+    expect(members.find((m: { battletag: string }) => m.battletag === "Player#3003")?.role).toBe("MEMBER");
+    // As a member now, the next entries go straight in.
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, stranger, { classId: 8 })).json().entry.pending).toBe(false);
+  });
+
+  it("lets the owner reject and the author withdraw, and caps pending proposals", async () => {
+    const owner = await login(1001);
+    const roster = (await send("POST", "/api/rosters", owner, { name: "Cola", gameVersion: "retail", region: "eu" })).json().guild;
+    await send("PATCH", `/api/guilds/${roster.id}`, owner, { published: true });
+    const stranger = await login(3003);
+
+    for (let i = 0; i < 10; i++) {
+      expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, stranger, { classId: 1 })).statusCode).toBe(201);
+    }
+    const capped = await send("POST", `/api/guilds/${roster.id}/roster/planned`, stranger, { classId: 1 });
+    expect(capped.statusCode).toBe(429);
+    expect(capped.json().error).toBe("too_many_pending");
+
+    const pending = (await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json().pending as Pending[];
+    expect((await send("DELETE", `/api/guilds/${roster.id}/roster/${pending[0]!.entryId}`, owner)).statusCode).toBe(200);
+    expect((await send("DELETE", `/api/guilds/${roster.id}/roster/${pending[1]!.entryId}`, stranger)).statusCode).toBe(200);
+    expect((await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json().pending).toHaveLength(8);
+    // The author never became a member.
+    expect((await send("GET", `/api/guilds/${roster.id}/members`, owner)).json().members).toHaveLength(1);
+  });
+});

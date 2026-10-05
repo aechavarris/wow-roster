@@ -67,6 +67,8 @@ export interface Guild {
   name: string;
   faction: string | null;
   public: boolean;
+  /** Listed for signed-in users, who can propose characters for the owner to accept. */
+  published: boolean;
   syncIntervalMinutes: number;
   minLevel: number;
   officerMaxRank: number;
@@ -157,4 +159,27 @@ export interface RosterInvite {
   expiresAt: string;
   uses: number;
   maxUses: number | null;
+}
+
+/** A proposal on a published roster, waiting for the owner. */
+export interface PendingEntry extends RosterCharacter {
+  submittedBy: string | null;
+  submittedAt: string;
+}
+
+export interface RosterResponse {
+  players: RosterPlayer[];
+  /** Every proposal for the owner; only the viewer's own for anyone else. */
+  pending: PendingEntry[];
+}
+
+export interface PublishedRoster {
+  id: string;
+  kind: RosterKind;
+  gameVersion: string;
+  name: string;
+  region: string;
+  realm: string | null;
+  owner: string | null;
+  entries: number;
 }

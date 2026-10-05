@@ -17,22 +17,24 @@ interface Props {
   viewerRole: ViewerRole;
   /** The viewer's characters (same region) that are not in the roster yet. */
   myCharacters: NonNullable<MeResponse["characters"]>;
+  /** Signed-in non-member of a published roster: entries are sent as proposals for the owner. */
+  proposing?: boolean;
 }
 
 /** Ways to add people to a roster: planned characters, the viewer's own characters, any game character. */
-export function RosterTools({ guildId, region, profile, viewerRole, myCharacters }: Props) {
+export function RosterTools({ guildId, region, profile, viewerRole, myCharacters, proposing = false }: Props) {
   const t = useTranslations("roster");
   const tErrors = useTranslations("errors");
   const router = useRouter();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const isOfficer = viewerRole === "OWNER" || viewerRole === "OFFICER";
-  if (!viewerRole) return null;
+  if (!viewerRole && !proposing) return null;
 
   async function run(action: () => Promise<unknown>, success: string) {
     setMessage(null);
     try {
       await action();
-      setMessage({ ok: true, text: success });
+      setMessage({ ok: true, text: proposing ? t("proposalSent") : success });
       router.refresh();
       return true;
     } catch (err) {
@@ -43,6 +45,7 @@ export function RosterTools({ guildId, region, profile, viewerRole, myCharacters
 
   return (
     <div className="space-y-3">
+      {proposing && <p className="card border-accent/50 text-sm">{t("proposeHelp")}</p>}
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <PlannedForm guildId={guildId} profile={profile} isOfficer={isOfficer} run={run} />
         {profile.apiAvailable ? (
