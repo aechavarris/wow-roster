@@ -63,6 +63,13 @@ services:
     environment:
       <<: *app-env
       API_PORT: 4000
+    # /api/health also pings the database.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
@@ -81,6 +88,13 @@ services:
     environment:
       API_INTERNAL_URL: http://api:4000
     depends_on: [api]
+    # A static route, so the web is not marked unhealthy just because the API is down.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/icon.svg || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   pgdata:
