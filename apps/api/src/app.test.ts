@@ -556,6 +556,26 @@ describe("meta and session", () => {
     expect((await app.inject({ method: "GET", url: "/api/health" })).json()).toEqual({ ok: true });
   });
 
+  it("reports unhealthy when the database is unreachable, so the container gets restarted", async () => {
+    const deadPrisma = createPrismaClient("postgresql://wow:wow@127.0.0.1:1/nothing");
+    const broken = await buildApp({
+      env: { DATABASE_URL: "unused", REDIS_URL: "redis://unused", BLIZZARD_CLIENT_ID: "id", BLIZZARD_CLIENT_SECRET: "secret", BLIZZARD_REGION: "eu", PUBLIC_URL: "http://localhost:3000", API_PORT: 0 },
+      prisma: deadPrisma,
+      versions,
+      core: { ...core, prisma: deadPrisma },
+      queue,
+      oauth: { authorizeUrl: () => "https://oauth.example", login: async () => ({ user: { id: 1, battletag: "x" }, accessToken: "t" }) },
+    });
+    try {
+      const response = await broken.inject({ method: "GET", url: "/api/health" });
+      expect(response.statusCode).toBe(503);
+      expect(response.json()).toEqual({ ok: false, error: "database_unavailable" });
+    } finally {
+      await broken.close();
+      await deadPrisma.$disconnect();
+    }
+  });
+
   it("starts the Battle.net login with a state cookie and only same-site redirects", async () => {
     const start = await app.inject({ method: "GET", url: "/api/auth/login?region=us&redirect=/en/guild/1" });
     expect(start.statusCode).toBe(302);

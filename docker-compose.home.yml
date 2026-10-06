@@ -16,15 +16,52 @@ services:
       TS_STATE_DIR: /var/lib/tailscale
       TS_USERSPACE: "true"
       TS_SERVE_CONFIG: /config/serve.json
+      # /healthz on this port answers 200 only while the node is connected to the tailnet.
+      TS_ENABLE_HEALTH_CHECK: "true"
+      TS_LOCAL_ADDR_PORT: 127.0.0.1:9002
     volumes:
       - tailscale_state:/var/lib/tailscale
       - ./deploy/tailscale-serve.json:/config/serve.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9002/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    labels: [autoheal=true]
 
   caddy:
     # No host ports: traffic only arrives through the Tailscale Funnel, which proxies to
     # http://caddy:80 over the Docker network. Caddy does not share Tailscale's network
     # namespace on purpose: restarting the tailscale container would leave it unreachable.
     ports: !reset []
+    # Goes through Caddy to the API, so it fails if either is stuck.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels: [autoheal=true]
+
+  api:
+    labels: [autoheal=true]
+
+  web:
+    labels: [autoheal=true]
+
+  # Docker only reports unhealthy containers, it never restarts them. After the PC wakes from
+  # sleep the Tailscale connection or the app's sockets can be dead while the processes still
+  # run: this restarts any container labelled autoheal=true once its healthcheck fails.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: 30
+      AUTOHEAL_START_PERIOD: 120
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   tailscale_state:

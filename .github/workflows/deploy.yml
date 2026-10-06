@@ -133,7 +133,7 @@ jobs:
           }
           "RECREATE_SERVICES=$($changed -join ' ')" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           Copy-Item docker-compose.prod.yml, docker-compose.home.yml $env:DEPLOY_PATH -Force
-          Copy-Item deploy\Caddyfile, deploy\tailscale-serve.json "$env:DEPLOY_PATH\deploy" -Force
+          Copy-Item deploy\Caddyfile, deploy\tailscale-serve.json, deploy\home-resume.ps1, deploy\register-resume-task.ps1 "$env:DEPLOY_PATH\deploy" -Force
       - name: Roll out
         run: |
           $ErrorActionPreference = 'Stop'

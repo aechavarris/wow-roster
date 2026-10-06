@@ -127,5 +127,6 @@ Production currently runs on the **owner's Windows PC** (`DEPLOY_TARGET=home` re
 - **Tailscale Funnel** publishes the site at `https://wow-roster.tail3d07cb.ts.net` (no router ports, HTTPS by Tailscale). Funnel needs the `funnel` node attribute in the tailnet policy (`nodeAttrs`). Funnel proxies to `http://caddy:80`; Caddy routes `/api` to the API and the rest to the web.
 - Caddy and Tailscale read their mounted config only at start; the deploy job recreates them when `deploy/Caddyfile` or `deploy/tailscale-serve.json` change.
 - Disable key expiry for the `wow-roster` machine in the Tailscale admin console, or it logs out after 180 days.
+- **Sleep/resume**: after the PC sleeps, the Tailscale tunnel and open sockets can die while containers keep running. `tailscale`, `caddy`, `api` and `web` have healthchecks (`/api/health` also pings the database), and the `autoheal` container restarts any `autoheal=true` container that turns unhealthy (Docker alone never does). A scheduled task (`deploy/register-resume-task.ps1`, run once on the PC) runs `deploy/home-resume.ps1` on every resume: it waits for Docker, runs `up -d` and restarts `tailscale`; it logs to `C:\wow-roster-prod\resume.log`.
 
 A VPS deploy over SSH (`DEPLOY_HOST` secrets, Caddy with automatic HTTPS on a domain) is still supported; see README.

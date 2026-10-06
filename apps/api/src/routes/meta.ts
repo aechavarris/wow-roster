@@ -25,8 +25,19 @@ const publicVersion = (v: GameProfile) => ({
   sync: v.sync,
 });
 
-export async function metaRoutes(app: FastifyInstance, { versions, env }: AppDeps) {
-  app.get("/health", async () => ({ ok: true }));
+export async function metaRoutes(app: FastifyInstance, { versions, env, prisma }: AppDeps) {
+  /**
+   * Used by the container healthcheck. It also pings the database, so an API whose connections
+   * died (e.g. after the host slept) reports unhealthy and gets restarted instead of serving errors.
+   */
+  app.get("/health", async (_request, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return { ok: true };
+    } catch {
+      return reply.status(503).send({ ok: false, error: "database_unavailable" });
+    }
+  });
 
   /** Public game configuration the web app renders from (no secrets). */
   app.get("/config", async () => ({
