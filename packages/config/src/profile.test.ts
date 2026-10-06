@@ -106,3 +106,15 @@ describe("professions", () => {
     expect(resolveProfile("progression").professions.find((p) => p.key === "mining")?.maxSkill).toBe(600);
   });
 });
+
+describe("WoW: Forever", () => {
+  it("only has the nine original classes, with Classic specs", () => {
+    const forever = resolveProfile("forever");
+    expect(forever.classes.map((c) => c.key).sort()).toEqual(
+      ["druid", "hunter", "mage", "paladin", "priest", "rogue", "shaman", "warlock", "warrior"],
+    );
+    // No Death Knight (6), Monk (10), Demon Hunter (12) or Evoker (13).
+    expect(forever.classes.some((c) => [6, 10, 12, 13].includes(c.id))).toBe(false);
+    expect(forever.classes.find((c) => c.key === "rogue")?.specs.map((s) => s.key)).toContain("combat");
+  });
+});

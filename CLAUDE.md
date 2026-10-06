@@ -47,7 +47,7 @@ Use these; do not reintroduce Classic Era assumptions. Sources were official Bli
 - **World buffs do not work in raids** → no world-buff tracking. Consumable checks stay (configurable list).
 - Talents: 3 trees per class with a new milestone at 16 points. **Dual spec** from level 40.
 - Many buffs become baseline (Kings, Divine Spirit, Battle Shout…); Fear Ward for every priest race. Buff lists are configurable per version.
-- Paladins and shamans in both factions. Hit and crit merged (fan sites). Tier sets 2/3/4/5/6 pieces (datamining). No gems.
+- Only the **nine original classes** (no Death Knight, Monk, Demon Hunter or Evoker), confirmed by the owner. Paladins and shamans in both factions. Hit and crit merged (fan sites). Tier sets 2/3/4/5/6 pieces (datamining). No gems.
 - New: account-wide Legacy points, camps, optional transmog. Addons will be restricted (interrupt trackers more limited) → export plain-text notes, do not depend on addons.
 - **The Forever API namespace is not public** (forum thread unanswered). That is why development uses the other versions' APIs.
 
@@ -100,8 +100,8 @@ pnpm typecheck; pnpm test; pnpm build
 
 - TypeScript strict; validate all input with zod; API errors are `HttpError(status, code)` and the web shows `errors.<code>` translations.
 - Every UI string goes in `apps/web/messages/es.json` **and** `en.json` with the same keys.
-- Game data and rules belong in the profiles, not in components. Profiles can `extends` another and override arrays by key (`roles`, `classes`, `raidSizes`, `raids`, `rosterStatuses`, `professions`); `statPanel` and `buffs` are replaced whole.
-- Professions differ per version: each profile lists its own (`professions`, Blizzard profession ids, `maxSkill` cap, `maxPrimaryProfessions`). Retail reads them from the API, one tier per expansion (the headline is the highest tier id). Classic APIs have none, so the character's owner enters them (`Character.manualProfessions`, `PUT /api/characters/:id/professions`), validated against the version's catalog. `packages/config/src/composition.test.ts` checks every buff provider references a real class/spec of its version.
+- Game data and rules belong in the profiles, not in components. Profiles can `extends` another and override arrays by key (`roles`, `classes`, `raidSizes`, `raids`, `rosterStatuses`, `professions`); `statPanel` and `buffs` are replaced whole. `packages/config/src/composition.test.ts` checks every buff provider references a real class/spec of its version.
+- Professions differ per version: each profile lists its own (`professions`, Blizzard profession ids, `maxSkill` cap, `maxPrimaryProfessions`). Retail reads them from the API, one tier per expansion (the headline is the highest tier id). Classic APIs have none, so the character's owner enters them (`Character.manualProfessions`, `PUT /api/characters/:id/professions`), validated against the version's catalog.
 - Match the surrounding style: JSDoc comments that explain *why*, no Prettier config (hand-formatted, ~130 columns).
 - Next.js 16 differs from older versions (async `params`/`cookies()`, `proxy.ts` instead of middleware, Turbopack). Read `apps/web/AGENTS.md` and the docs in `node_modules/next/dist/docs/` before writing web code.
 - Class colors on text use `classText(color)` + the `text-class` class so yellow/white stay readable in the light theme.
