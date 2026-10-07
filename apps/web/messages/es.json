@@ -457,7 +457,20 @@
     "thisWeek": "semana: {count}× · {key}",
     "weeklyKeys": "Llaves esta semana",
     "totalClears": "{count} en Mítica (total)",
-    "raiderIoCredit": "Llaves: Raider.IO."
+    "raiderIoCredit": "Llaves: Raider.IO.",
+    "expandAll": "Desplegar todo",
+    "collapseAll": "Plegar todo",
+    "expand": "Ver detalles de {name}",
+    "collapse": "Ocultar detalles de {name}",
+    "currentRaid": "Raid actual",
+    "gear": "Equipo",
+    "noMythicPlus": "Sin llaves esta temporada.",
+    "noKeysThisWeek": "semana: sin llaves",
+    "cleared": "Con progreso (de {total})",
+    "bestPerRaid": "Mejor dificultad por raid",
+    "bestPerDungeon": "Mejor dificultad por mazmorra",
+    "primaries": "Profesiones",
+    "reputationsLegend": "Pulsa un personaje para ver todas sus reputaciones."
   },
   "weekly": {
     "title": "Auditoría semanal",

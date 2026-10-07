@@ -2,15 +2,12 @@
 
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
-import { Link, useRouter } from "@/i18n/routing";
-import { characterPath, classColor, classText } from "@/lib/game";
+import { useRouter } from "@/i18n/routing";
 import { tr } from "@/lib/text";
-import type { GameVersion, RosterCharacter, WeekInstance, WeeklyResponse } from "@/lib/types";
+import type { GameVersion, WeekInstance, WeeklyResponse } from "@/lib/types";
+import { Card, CardGrid, DetailRow, ExpandAllButton, ExpandProvider, Facts, LG, MD, SM, Table, Td, Th, useExpandedRows, type CharacterRow } from "./ui/CharacterTable";
 
-export interface WeeklyRow {
-  character: RosterCharacter;
-  alt: boolean;
-}
+export type WeeklyRow = CharacterRow;
 
 const DIFFICULTY_SHORT: Record<string, string> = { LFR: "LFR", NORMAL: "N", HEROIC: "H", MYTHIC: "M", MYTHIC_KEYSTONE: "M+" };
 
@@ -25,6 +22,7 @@ export function WeeklyAudit({ guildId, version, rows, weekly }: { guildId: strin
   const [tab, setTab] = useState<"week" | "history">("week");
   const [showAlts, setShowAlts] = useState(true);
   const shown = rows.filter((r) => showAlts || !r.alt);
+  const { value: expand, allOpen, toggleAll } = useExpandedRows(shown);
   const weekLabel = (iso: string) =>
     `${format.dateTime(new Date(iso), { day: "numeric", month: "short" })}${iso === weekly.current ? ` · ${t("currentWeek")}` : ""}`;
 
@@ -62,6 +60,7 @@ export function WeeklyAudit({ guildId, version, rows, weekly }: { guildId: strin
               </select>
             </label>
           )}
+          <ExpandAllButton allOpen={allOpen} onClick={toggleAll} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={showAlts} onChange={(e) => setShowAlts(e.target.checked)} />
             {t("showAlts")}
@@ -71,41 +70,13 @@ export function WeeklyAudit({ guildId, version, rows, weekly }: { guildId: strin
       {shown.length === 0 ? (
         <p className="card text-sm text-muted">{t("empty")}</p>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          {tab === "week" ? <WeekTable version={version} rows={shown} weekly={weekly} /> : <HistoryTable version={version} rows={shown} weekly={weekly} weekLabel={weekLabel} />}
-        </div>
+        <ExpandProvider value={expand}>
+          <div className="card p-0">
+            {tab === "week" ? <WeekTable version={version} rows={shown} weekly={weekly} /> : <HistoryTable version={version} rows={shown} weekly={weekly} weekLabel={weekLabel} />}
+          </div>
+        </ExpandProvider>
       )}
     </div>
-  );
-}
-
-const Th = ({ children, className = "" }: { children?: ReactNode; className?: string }) => (
-  <th className={`whitespace-nowrap px-3 py-2 font-medium ${className}`}>{children}</th>
-);
-const Td = ({ children, className = "", title }: { children?: ReactNode; className?: string; title?: string }) => (
-  <td className={`px-3 py-1.5 align-top ${className}`} title={title}>
-    {children}
-  </td>
-);
-
-function NameCell({ version, row }: { version: GameVersion; row: WeeklyRow }) {
-  const c = row.character;
-  const name = (
-    <span className="text-class font-medium" style={classText(classColor(version, c.classId))}>
-      {c.name}
-    </span>
-  );
-  return (
-    <td className="sticky left-0 z-10 whitespace-nowrap bg-surface px-3 py-1.5 align-top">
-      {row.alt && <span className="mr-1 text-muted">↳</span>}
-      {c.gameVersion && c.region && c.realm ? (
-        <Link href={characterPath({ gameVersion: c.gameVersion, region: c.region, realm: c.realm, name: c.name })} className="hover:underline">
-          {name}
-        </Link>
-      ) : (
-        name
-      )}
-    </td>
   );
 }
 
@@ -137,109 +108,150 @@ function Vault({ unlocked, thresholds, count }: { unlocked: number; thresholds: 
   );
 }
 
-function WeekTable({ version, rows, weekly }: { version: GameVersion; rows: WeeklyRow[]; weekly: WeeklyResponse }) {
-  const t = useTranslations("weekly");
+/** This week's Mythic+ runs, highest first; over-time runs in grey. */
+function Runs({ runs }: { runs: WeeklyResponse["characters"][string]["activity"]["mythicPlus"] }) {
   const locale = useLocale();
-  const format = useFormatter();
-  const has = (e: string) => version.characterEndpoints.includes(e);
+  if (runs.length === 0) return <span className="text-muted">—</span>;
   return (
-    <>
-      {/* Not min-w-max: the Mythic+ list wraps so the other columns stay on screen. */}
-      <table className="w-full border-collapse text-sm">
-        <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
-          <tr>
-            <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
-            <Th>{t("itemLevel")}</Th>
-            {weekly.vault && <Th>{t("vaultRaid")}</Th>}
-            {weekly.vault && has("mythicPlus") && <Th>{t("vaultDungeons")}</Th>}
-            {has("raids") && <Th>{t("raidBosses")}</Th>}
-            {has("mythicPlus") && <Th>{t("mythicPlus")}</Th>}
-            {has("dungeons") && <Th>{t("dungeonBosses")}</Th>}
-            <Th>{t("updated")}</Th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((row) => {
-            const week = row.character.characterId ? weekly.characters[row.character.characterId] : undefined;
-            return (
-              <tr key={row.character.entryId}>
-                <NameCell version={version} row={row} />
-                <Td className="tabular-nums">{week?.itemLevel ?? "—"}</Td>
-                {weekly.vault && (
-                  <Td>{week?.vault ? <Vault unlocked={week.vault.raid} thresholds={weekly.vault.raid} count={week.vault.bosses} /> : "—"}</Td>
-                )}
-                {weekly.vault && has("mythicPlus") && (
-                  <Td>
-                    {week?.vault ? <Vault unlocked={week.vault.dungeons} thresholds={weekly.vault.dungeons} count={week.vault.runs} /> : "—"}
-                  </Td>
-                )}
-                {has("raids") && <Td>{week ? <Instances list={week.activity.raids} /> : <span className="text-muted">{t("noData")}</span>}</Td>}
-                {has("mythicPlus") && (
-                  <Td className="min-w-56 text-xs">
-                    {week && week.activity.mythicPlus.length > 0
-                      ? week.activity.mythicPlus.map((run, i) => (
-                          <span key={i} className={`mr-2 inline-block whitespace-nowrap ${run.timed ? "" : "text-muted"}`}>
-                            +{run.level} {tr(run.dungeon, locale)}
-                            {run.timed ? " ✓" : ""}
-                          </span>
-                        ))
-                      : "—"}
-                  </Td>
-                )}
-                {has("dungeons") && <Td>{week ? <Instances list={week.activity.dungeons} /> : "—"}</Td>}
-                <Td className="whitespace-nowrap text-muted">{week ? format.relativeTime(new Date(week.updatedAt)) : "—"}</Td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <p className="border-t border-border px-3 py-2 text-xs text-muted">{t(weekly.vault ? "legendVault" : "legend")}</p>
-    </>
+    <span className="flex flex-wrap gap-x-2">
+      {[...runs]
+        .sort((a, b) => b.level - a.level)
+        .map((run, i) => (
+          <span key={i} className={`whitespace-nowrap ${run.timed ? "" : "text-muted"}`}>
+            +{run.level} {tr(run.dungeon, locale)}
+            {run.timed ? " ✓" : ""}
+          </span>
+        ))}
+    </span>
   );
 }
+
+function WeekTable({ version, rows, weekly }: { version: GameVersion; rows: WeeklyRow[]; weekly: WeeklyResponse }) {
+  const t = useTranslations("weekly");
+  const format = useFormatter();
+  const has = (e: string) => version.characterEndpoints.includes(e);
+  const vaultDungeons = weekly.vault && has("mythicPlus");
+  const span = 1 + 1 + (weekly.vault ? 1 : 0) + (vaultDungeons ? 1 : 0) + (has("raids") ? 1 : 0) + (has("mythicPlus") ? 1 : 0) + (has("dungeons") ? 1 : 0) + 1;
+  return (
+    <Table
+      head={
+        <>
+          <Th>{t("character")}</Th>
+          <Th className={SM}>{t("itemLevel")}</Th>
+          {weekly.vault && <Th>{t("vaultRaid")}</Th>}
+          {vaultDungeons && <Th>{t("vaultDungeons")}</Th>}
+          {has("raids") && <Th className={MD}>{t("raidBosses")}</Th>}
+          {has("mythicPlus") && <Th className={LG}>{t("mythicPlus")}</Th>}
+          {has("dungeons") && <Th className={LG}>{t("dungeonBosses")}</Th>}
+          <Th className={LG}>{t("updated")}</Th>
+        </>
+      }
+      footer={t(weekly.vault ? "legendVault" : "legend")}
+    >
+      {rows.map((row) => {
+        const week = row.character.characterId ? weekly.characters[row.character.characterId] : undefined;
+        const noData = <span className="text-muted">{t("noData")}</span>;
+        const raidVault = week?.vault && weekly.vault ? <Vault unlocked={week.vault.raid} thresholds={weekly.vault.raid} count={week.vault.bosses} /> : "—";
+        const dungeonVault =
+          week?.vault && weekly.vault ? <Vault unlocked={week.vault.dungeons} thresholds={weekly.vault.dungeons} count={week.vault.runs} /> : "—";
+        const updated = week ? format.relativeTime(new Date(week.updatedAt)) : "—";
+        return (
+          <DetailRow
+            key={row.character.entryId}
+            version={version}
+            row={row}
+            span={span}
+            cells={
+              <>
+                <Td className={`${SM} tabular-nums`}>{week?.itemLevel ?? "—"}</Td>
+                {weekly.vault && <Td>{raidVault}</Td>}
+                {vaultDungeons && <Td>{dungeonVault}</Td>}
+                {has("raids") && <Td className={MD}>{week ? <Instances list={week.activity.raids} /> : noData}</Td>}
+                {has("mythicPlus") && <Td className={`${LG} text-xs`}>{week ? <Runs runs={week.activity.mythicPlus} /> : "—"}</Td>}
+                {has("dungeons") && <Td className={LG}>{week ? <Instances list={week.activity.dungeons} /> : "—"}</Td>}
+                <Td className={`${LG} text-muted`}>{updated}</Td>
+              </>
+            }
+            detail={
+              !week ? (
+                noData
+              ) : (
+                <Facts
+                  items={[
+                    [t("itemLevel"), week.itemLevel ?? "—"],
+                    ...(weekly.vault ? ([[t("vaultRaid"), raidVault]] as [ReactNode, ReactNode][]) : []),
+                    ...(vaultDungeons ? ([[t("vaultDungeons"), dungeonVault]] as [ReactNode, ReactNode][]) : []),
+                    ...(has("raids") ? ([[t("raidBosses"), <Instances key="r" list={week.activity.raids} />]] as [ReactNode, ReactNode][]) : []),
+                    ...(has("mythicPlus") ? ([[t("mythicPlus"), <Runs key="m" runs={week.activity.mythicPlus} />]] as [ReactNode, ReactNode][]) : []),
+                    ...(has("dungeons") ? ([[t("dungeonBosses"), <Instances key="d" list={week.activity.dungeons} />]] as [ReactNode, ReactNode][]) : []),
+                    [t("updated"), updated],
+                  ]}
+                />
+              )
+            }
+          />
+        );
+      })}
+    </Table>
+  );
+}
+
+/** Columns for the latest weeks only (more on wider screens); every stored week is in the character's panel. */
+const HISTORY_COLUMNS = ["", SM, MD, LG];
 
 function HistoryTable({ version, rows, weekly, weekLabel }: { version: GameVersion; rows: WeeklyRow[]; weekly: WeeklyResponse; weekLabel: (iso: string) => string }) {
   const t = useTranslations("weekly");
   const has = (e: string) => version.characterEndpoints.includes(e);
+  const columns = weekly.weeks.slice(0, HISTORY_COLUMNS.length);
+  const summary = (h: WeeklyResponse["history"][string][number] | undefined) =>
+    h ? (
+      <>
+        {has("raids") && <span className="mr-2">{t("bossesShort", { count: h.bosses })}</span>}
+        {has("mythicPlus") && <span className="mr-2">{t("runsShort", { count: h.runs })}</span>}
+        {h.itemLevel != null && <span className="text-xs text-muted">{t("ilvlShort", { value: Math.round(h.itemLevel) })}</span>}
+      </>
+    ) : (
+      <span className="text-muted">—</span>
+    );
   return (
-    <>
-      <table className="w-full min-w-max border-collapse text-sm">
-        <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
-          <tr>
-            <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
-            {weekly.weeks.map((w) => (
-              <Th key={w}>{weekLabel(w)}</Th>
+    <Table
+      head={
+        <>
+          <Th>{t("character")}</Th>
+          {columns.map((w, i) => (
+            <Th key={w} className={HISTORY_COLUMNS[i]}>
+              {weekLabel(w)}
+            </Th>
+          ))}
+        </>
+      }
+      footer={t("historyLegend")}
+    >
+      {rows.map((row) => {
+        const byWeek = new Map((weekly.history[row.character.characterId ?? ""] ?? []).map((h) => [h.weekStart, h]));
+        return (
+          <DetailRow
+            key={row.character.entryId}
+            version={version}
+            row={row}
+            span={1 + columns.length}
+            cells={columns.map((w, i) => (
+              <Td key={w} className={`${HISTORY_COLUMNS[i]} tabular-nums`}>
+                {summary(byWeek.get(w))}
+              </Td>
             ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((row) => {
-            const byWeek = new Map((weekly.history[row.character.characterId ?? ""] ?? []).map((h) => [h.weekStart, h]));
-            return (
-              <tr key={row.character.entryId}>
-                <NameCell version={version} row={row} />
-                {weekly.weeks.map((w) => {
-                  const h = byWeek.get(w);
-                  return (
-                    <Td key={w} className="whitespace-nowrap tabular-nums">
-                      {h ? (
-                        <>
-                          {has("raids") && <span className="mr-2">{t("bossesShort", { count: h.bosses })}</span>}
-                          {has("mythicPlus") && <span className="mr-2">{t("runsShort", { count: h.runs })}</span>}
-                          {h.itemLevel != null && <span className="text-xs text-muted">{t("ilvlShort", { value: Math.round(h.itemLevel) })}</span>}
-                        </>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </Td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <p className="border-t border-border px-3 py-2 text-xs text-muted">{t("historyLegend")}</p>
-    </>
+            detail={
+              <CardGrid>
+                {weekly.weeks.map((w) => (
+                  <Card key={w} title={weekLabel(w)}>
+                    {summary(byWeek.get(w))}
+                  </Card>
+                ))}
+              </CardGrid>
+            }
+          />
+        );
+      })}
+    </Table>
   );
 }
