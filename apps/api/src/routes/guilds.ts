@@ -1,6 +1,6 @@
 import { BlizzardApiError } from "@wow/blizzard";
 import { REGIONS, blizzardSlug } from "@wow/config";
-import { buildRoster, defaultStatusForRank, gameVersion, nameKey, syncCharacter, toCharacterView } from "@wow/core";
+import { buildRoster, defaultStatusForRank, fitsGameVersion, gameVersion, nameKey, syncCharacter, toCharacterView } from "@wow/core";
 import type { User } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -343,10 +343,20 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     const { guild, pending, slots } = await contributor(id, user);
     const body = z.object({ characterIds: z.array(z.string()).min(1).max(50) }).parse(request.body);
     if (pending && body.characterIds.length > slots!) throw new HttpError(429, "too_many_pending");
-    const owned = await prisma.character.findMany({
-      where: { id: { in: body.characterIds }, ownerId: user!.id, gameVersion: guild.gameVersion, region: guild.region },
-      select: { id: true },
-    });
+    // Only the user's characters of this roster's game version, and only ones that exist there:
+    // a character the version's API does not know (sync "not_found") or does not fit is refused.
+    const owned = (
+      await prisma.character.findMany({
+        where: {
+          id: { in: body.characterIds },
+          ownerId: user!.id,
+          gameVersion: guild.gameVersion,
+          region: guild.region,
+          OR: [{ syncError: null }, { syncError: { not: "not_found" } }],
+        },
+        select: { id: true, classId: true, level: true },
+      })
+    ).filter((c) => fitsGameVersion(rules(guild), c));
     if (owned.length !== body.characterIds.length) throw new HttpError(400, "not_your_characters");
     await prisma.rosterEntry.createMany({
       data: owned.map((c) => ({ guildId: id, characterId: c.id, source: "manual", userId: user!.id, pending })),

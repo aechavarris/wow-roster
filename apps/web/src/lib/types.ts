@@ -70,6 +70,8 @@ export interface MeResponse {
     isMain: boolean;
     avatarUrl: string | null;
     lastSyncedAt: string | null;
+    /** "not_found" when the version's API does not know the character. */
+    syncError: string | null;
     guild: { id: string; name: string } | null;
   }[];
   guilds?: { id: string; kind: RosterKind; gameVersion: string; name: string; realm: string | null; region: string; role: ViewerRole }[];
