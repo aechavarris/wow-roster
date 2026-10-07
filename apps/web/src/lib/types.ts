@@ -1,5 +1,5 @@
 import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, RaiderIoProfile, Reputation, StatValue } from "@wow/blizzard";
-import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
+import type { Buff, GameClass, GameRole, Localized, RaidSize, Requirement, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
 
@@ -16,6 +16,10 @@ export interface GameVersion {
   characterEndpoints: string[];
   /** Details sections the version hides although its API has the data. */
   hiddenDetails: string[];
+  /** What the details pages highlight: resistances column, raid reputations. */
+  details: { resistances: string[]; keyReputations: number[] };
+  /** Attunements tracked by hand, if the version has any. */
+  requirements: Requirement[];
   hasRealms: boolean;
   wowheadDomain: string;
   roles: GameRole[];
@@ -170,6 +174,7 @@ export interface CharacterDetail {
   guild: { id: string; name: string } | null;
   profile: Omit<CharacterProfile, "summary"> | null;
   manualProfessions: ManualProfession[] | null;
+  manualRequirements: string[] | null;
 }
 
 export interface RosterMember {
@@ -211,6 +216,8 @@ export interface CharacterDetails {
   raiderIo: RaiderIoProfile | null;
   statistics: Record<string, StatValue> | null;
   talents: TalentSummary[] | null;
+  /** Requirement keys the owner ticked (attunements). */
+  manualRequirements: string[] | null;
 }
 
 /** One talent setup of a character, summarized for the roster table (the full trees are on the character sheet). */

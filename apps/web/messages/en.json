@@ -221,7 +221,12 @@
     "noProfession": "None",
     "save": "Save",
     "cancel": "Cancel",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "requirements": "Attunements",
+    "requirementsHelp": "Ticked by the character's owner.",
+    "requirementsHelpOwner": "Tick the ones you have: Blizzard's API does not report them.",
+    "requirementDone": "Done",
+    "requirementMissing": "Missing"
   },
   "slots": {
     "HEAD": "Head",
@@ -307,7 +312,8 @@
     "too_many_primary_professions": "A character can only have two primary professions.",
     "professions_from_api": "In this game version professions come from Blizzard's API.",
     "confirm_name_mismatch": "The name does not match the roster's.",
-    "network_error": "Could not reach the server. Check your connection."
+    "network_error": "Could not reach the server. Check your connection.",
+    "unknown_requirement": "That requirement does not exist in this game version."
   },
   "createRoster": {
     "title": "Create a custom roster",
@@ -421,7 +427,8 @@
       "dungeons": "Dungeons",
       "raids": "Raids",
       "professions": "Professions",
-      "reputations": "Reputations"
+      "reputations": "Reputations",
+      "requirements": "Requirements"
     },
     "showAlts": "Show alts",
     "empty": "This roster has no real characters yet.",
@@ -468,13 +475,19 @@
     "bestPerRaid": "Best difficulty per raid",
     "bestPerDungeon": "Best difficulty per dungeon",
     "primaries": "Professions",
-    "reputationsLegend": "Click a character to see all its reputations.",
+    "reputationsLegend": "The first columns are the reputations this version's raids depend on. Click a character to see all of them.",
     "stats": "Stats",
     "talents": "Talents",
     "activeSpec": "active",
     "copyLoadout": "Copy talent loadout code",
     "noRole": "No role",
-    "summaryLegend": "Grouped by role and sorted by item level. Bars compare with the roster's best. Click a character for all its stats, talents and gear (hover each piece)."
+    "summaryLegend": "Grouped by role and sorted by item level. Bars compare with the roster's best. Click a character for all its stats, talents and gear (hover each piece).",
+    "resistances": "Resistances",
+    "otherFaction": "Other faction",
+    "requirementsDone": "Done",
+    "requirementDone": "Done",
+    "requirementMissing": "Missing",
+    "requirementsLegend": "Requirements are not in the API: each player ticks them on their character's sheet."
   },
   "weekly": {
     "title": "Weekly audit",

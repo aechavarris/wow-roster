@@ -123,3 +123,28 @@ describe("WoW: Forever", () => {
     expect(forever.classes.find((c) => c.key === "rogue")?.specs.map((s) => s.key)).toContain("combat");
   });
 });
+
+describe("details configuration", () => {
+  it("references only stat panel entries and raids that exist in each version", () => {
+    for (const id of ["forever", "classic-era", "anniversary", "progression", "retail"]) {
+      const profile = resolveProfile(id);
+      const entries = new Set(profile.statPanel.flatMap((s) => s.entries.map((e) => e.key)));
+      const used = [
+        ...profile.details.resistances,
+        ...profile.classes.flatMap((c) => [...(c.summaryStats ?? []), ...c.specs.flatMap((s) => s.summaryStats ?? [])]),
+      ];
+      expect(used.filter((key) => !entries.has(key)), id).toEqual([]);
+      const raids = new Set(profile.raids.map((r) => r.key));
+      expect(profile.requirements.filter((r) => r.raid && !raids.has(r.raid)).map((r) => r.key), id).toEqual([]);
+    }
+  });
+
+  it("gives Classic Era per-class key stats, resistances, raid reputations and attunements", () => {
+    const era = resolveProfile("classic-era");
+    expect(era.classes.find((c) => c.key === "mage")?.summaryStats).toEqual(["spell-hit", "spell-crit", "spell-power"]);
+    expect(era.classes.find((c) => c.key === "warrior")?.specs.find((s) => s.key === "protection")?.summaryStats).toContain("defense");
+    expect(era.details.resistances).toContain("fire");
+    expect(era.details.keyReputations).toContain(529);
+    expect(era.requirements.map((r) => r.key)).toEqual(["onyxia", "blackwing-lair", "naxxramas"]);
+  });
+});

@@ -13,6 +13,8 @@ const publicVersion = (v: GameProfile) => ({
   characterEndpoints: v.api.available ? v.api.characterEndpoints : [],
   /** Sections not shown even though the API provides the data (still synced: other sections may use it). */
   hiddenDetails: v.hiddenDetails,
+  details: v.details,
+  requirements: v.requirements.filter((r) => r.enabled),
   hasRealms: v.api.hasRealms,
   wowheadDomain: v.wowheadDomain,
   roles: v.roles,

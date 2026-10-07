@@ -23,21 +23,23 @@
       "id": 1,
       "key": "warrior",
       "color": "#C69B6D",
+      "summaryStats": ["melee-hit", "melee-crit", "attack-power"],
       "name": {"en": "Warrior", "es": "Guerrero"},
       "specs": [
         {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Arms"]},
         {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Fury"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"]}
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"]}
       ]
     },
     {
       "id": 2,
       "key": "paladin",
       "color": "#F48CBA",
+      "summaryStats": ["melee-hit", "melee-crit", "attack-power"],
       "name": {"en": "Paladin", "es": "Paladín"},
       "specs": [
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"]},
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"], "summaryStats": ["bonus-healing", "spell-crit", "mana-regen"]},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"]},
         {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Retribution"]}
       ]
     },
@@ -45,6 +47,7 @@
       "id": 3,
       "key": "hunter",
       "color": "#AAD372",
+      "summaryStats": ["ranged-hit", "ranged-crit", "ranged-attack-power"],
       "name": {"en": "Hunter", "es": "Cazador"},
       "specs": [
         {
@@ -62,6 +65,7 @@
       "id": 4,
       "key": "rogue",
       "color": "#FFF468",
+      "summaryStats": ["melee-hit", "melee-crit", "attack-power"],
       "name": {"en": "Rogue", "es": "Pícaro"},
       "specs": [
         {
@@ -79,21 +83,23 @@
       "id": 5,
       "key": "priest",
       "color": "#FFFFFF",
+      "summaryStats": ["bonus-healing", "spell-crit", "mana-regen"],
       "name": {"en": "Priest", "es": "Sacerdote"},
       "specs": [
         {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Discipline"]},
         {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"]},
-        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Shadow"]}
+        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Shadow"], "summaryStats": ["spell-hit", "spell-crit", "spell-power"]}
       ]
     },
     {
       "id": 7,
       "key": "shaman",
       "color": "#0070DD",
+      "summaryStats": ["bonus-healing", "spell-crit", "mana-regen"],
       "name": {"en": "Shaman", "es": "Chamán"},
       "specs": [
-        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Elemental"]},
-        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Enhancement"]},
+        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Elemental"], "summaryStats": ["spell-hit", "spell-crit", "spell-power"]},
+        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Enhancement"], "summaryStats": ["melee-hit", "melee-crit", "attack-power"]},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
@@ -107,6 +113,7 @@
       "id": 8,
       "key": "mage",
       "color": "#3FC7EB",
+      "summaryStats": ["spell-hit", "spell-crit", "spell-power"],
       "name": {"en": "Mage", "es": "Mago"},
       "specs": [
         {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Arcane"]},
@@ -118,6 +125,7 @@
       "id": 9,
       "key": "warlock",
       "color": "#8788EE",
+      "summaryStats": ["spell-hit", "spell-crit", "spell-power"],
       "name": {"en": "Warlock", "es": "Brujo"},
       "specs": [
         {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Affliction"]},
@@ -129,15 +137,17 @@
       "id": 11,
       "key": "druid",
       "color": "#FF7C0A",
+      "summaryStats": ["bonus-healing", "spell-crit", "mana-regen"],
       "name": {"en": "Druid", "es": "Druida"},
       "specs": [
-        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Balance"]},
+        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Balance"], "summaryStats": ["spell-hit", "spell-crit", "spell-power"]},
         {
           "key": "feral",
           "name": {"en": "Feral Combat", "es": "Combate feral"},
           "roles": ["mdps", "tank"],
           "blizzardIds": [],
-          "apiNames": ["Feral Combat", "Feral"]
+          "apiNames": ["Feral Combat", "Feral"],
+          "summaryStats": ["melee-hit", "melee-crit", "attack-power", "dodge"]
         },
         {
           "key": "restoration",
@@ -184,29 +194,29 @@
       "key": "melee",
       "name": {"en": "Melee", "es": "Cuerpo a cuerpo"},
       "entries": [
-        {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["attack_power"]},
-        {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["melee_hit"], "format": "percent"},
-        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["melee_crit"], "format": "percent"}
+        {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "short": {"en": "AP", "es": "PA"}, "stats": ["attack_power"]},
+        {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "short": {"en": "Melee hit", "es": "Golpe CaC"}, "stats": ["melee_hit"], "format": "percent"},
+        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "short": {"en": "Melee crit", "es": "Crít. CaC"}, "stats": ["melee_crit"], "format": "percent"}
       ]
     },
     {
       "key": "ranged",
       "name": {"en": "Ranged", "es": "A distancia"},
       "entries": [
-        {"key": "ranged-attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["ranged_attack_power"]},
-        {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["ranged_hit"], "format": "percent"},
-        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["ranged_crit"], "format": "percent"}
+        {"key": "ranged-attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "short": {"en": "Ranged AP", "es": "PA dist."}, "stats": ["ranged_attack_power"]},
+        {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "short": {"en": "Ranged hit", "es": "Golpe dist."}, "stats": ["ranged_hit"], "format": "percent"},
+        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "short": {"en": "Ranged crit", "es": "Crít. dist."}, "stats": ["ranged_crit"], "format": "percent"}
       ]
     },
     {
       "key": "spell",
       "name": {"en": "Spell", "es": "Hechizos"},
       "entries": [
-        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "stats": ["spell_power"]},
-        {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "stats": ["bonus_healing"]},
-        {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["spell_hit"], "format": "percent"},
-        {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["spell_crit"], "format": "percent"},
-        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "stats": ["mana_regen"]}
+        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "short": {"en": "Spell dmg", "es": "Daño hech."}, "stats": ["spell_power"]},
+        {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "short": {"en": "Healing", "es": "Sanación"}, "stats": ["bonus_healing"]},
+        {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "short": {"en": "Spell hit", "es": "Golpe hech."}, "stats": ["spell_hit"], "format": "percent"},
+        {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "short": {"en": "Spell crit", "es": "Crít. hech."}, "stats": ["spell_crit"], "format": "percent"},
+        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "short": {"en": "Mana regen", "es": "Reg. maná"}, "stats": ["mana_regen"]}
       ]
     },
     {
@@ -448,6 +458,12 @@
     {"id": 356, "key": "fishing", "name": {"en": "Fishing", "es": "Pesca"}, "kind": "secondary", "maxSkill": 300}
   ],
   "maxPrimaryProfessions": 2,
+  "details": {"resistances": ["fire", "nature", "frost", "shadow", "arcane"], "keyReputations": [749, 609, 910, 270, 529]},
+  "requirements": [
+    {"key": "onyxia", "name": {"en": "Onyxia's Lair attunement (Drakefire Amulet)", "es": "Acceso a la Guarida de Onyxia (amuleto)"}, "raid": "onyxias-lair"},
+    {"key": "blackwing-lair", "name": {"en": "Blackwing Lair access (Blackhand's Command)", "es": "Acceso a la Guarida Alanegra (Orden de Puño Negro)"}, "raid": "blackwing-lair"},
+    {"key": "naxxramas", "name": {"en": "Naxxramas attunement", "es": "Acceso a Naxxramas"}, "raid": "naxxramas"}
+  ],
   "weekly": {
     "reset": {"eu": {"day": 3, "hourUtc": 4}, "us": {"day": 2, "hourUtc": 15}, "kr": {"day": 3, "hourUtc": 23}, "tw": {"day": 3, "hourUtc": 23}}
   },

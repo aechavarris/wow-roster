@@ -6,6 +6,8 @@ type RawStat = number | { base?: number; effective?: number; value?: number; rat
 export interface StatRow {
   key: string;
   label: Localized;
+  /** Compact label for tables, when the profile gives one. */
+  short?: Localized;
   value: number;
   format: "number" | "percent";
   /** Rating behind a percentage, shown in the row tooltip like the game does. */
@@ -47,6 +49,7 @@ export function computeStatPanel(sections: StatSection[], stats: Record<string, 
         rows.push({
           key: entry.key,
           label: entry.labels?.[best.key] ?? entry.label,
+          short: entry.short,
           value: best.value,
           format: entry.format,
           rating: rating || undefined,

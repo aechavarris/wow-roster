@@ -1025,6 +1025,24 @@ describe("professions", () => {
     expect((await put([])).json().character.manualProfessions).toBeNull();
   });
 
+  it("lets owners tick the attunements of their character's game version", async () => {
+    const session = await login();
+    const user = await prisma.user.findFirstOrThrow({ where: { bnetId: 1001 } });
+    const character = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "mirage-raceway", name: "Atunado", nameKey: "atunado", ownerId: user.id },
+    });
+    const put = (requirements: string[], who = session) =>
+      app.inject({ method: "PUT", url: `/api/characters/${character.id}/requirements`, cookies: { wr_session: who }, payload: { requirements } });
+
+    const saved = await put(["onyxia", "naxxramas", "onyxia"]);
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().character.manualRequirements).toEqual(["onyxia", "naxxramas"]);
+    // Only the version's own requirements, and only the owner.
+    expect((await put(["black-temple"])).json().error).toBe("unknown_requirement");
+    expect((await put(["onyxia"], await login(2002))).statusCode).toBe(403);
+    expect((await put([])).json().character.manualRequirements).toBeNull();
+  });
+
   it("keeps API-provided professions read-only", async () => {
     const session = await login();
     const thrall = await prisma.character.findFirstOrThrow({ where: { gameVersion: "retail", nameKey: "thrall" } });

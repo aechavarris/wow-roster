@@ -6,7 +6,7 @@ import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { classColor, GAME_QUALITY_COLORS, specName, wowheadItemUrl } from "@/lib/game";
 import { tr } from "@/lib/text";
 import { ItemTooltip } from "./character/ItemTooltip";
-import { Card, CardGrid, DetailRow, ExpandAllButton, ExpandProvider, Facts, LG, MD, SM, Table, Td, Th, useExpandedRows } from "./ui/CharacterTable";
+import { Card, CardGrid, DetailRow, ExpandAllButton, ExpandProvider, Facts, LG, MD, SM, Table, Td, Th, useExpandedRows, XL } from "./ui/CharacterTable";
 import { GameTooltip } from "./ui/GameTooltip";
 import type { CharacterDetails, GameVersion, TalentSummary } from "@/lib/types";
 import type { CharacterRow } from "./ui/CharacterTable";
@@ -27,7 +27,7 @@ const difficultyRank = (d: string) => {
   return i === -1 ? DIFFICULTY_ORDER.length : i;
 };
 
-type TabKey = "summary" | "mythicPlus" | "dungeons" | "raids" | "professions" | "reputations";
+type TabKey = "summary" | "mythicPlus" | "dungeons" | "raids" | "professions" | "reputations" | "requirements";
 
 /**
  * Tabs come from the game version: each one appears only when the version's API provides that data
@@ -42,6 +42,7 @@ function tabsFor(version: GameVersion): TabKey[] {
   if (has("raids")) tabs.push("raids");
   if (version.apiProfessions || version.professions.length > 0) tabs.push("professions");
   if (has("reputations")) tabs.push("reputations");
+  if (version.requirements.length > 0) tabs.push("requirements");
   return tabs;
 }
 
@@ -106,6 +107,7 @@ export function RosterDetails({ version, rows, weekStart }: { version: GameVersi
             {tab === "raids" && <InstanceTable version={version} rows={shown} kind="raids" />}
             {tab === "professions" && <ProfessionsTable version={version} rows={shown} />}
             {tab === "reputations" && <ReputationsTable version={version} rows={shown} />}
+            {tab === "requirements" && <RequirementsTable version={version} rows={shown} />}
           </div>
         </ExpandProvider>
       )}
@@ -167,9 +169,24 @@ function groupByRole(version: GameVersion, rows: DetailsRow[], score: (row: Deta
 }
 
 /** Percent stats of the version's stat panel (crit, haste…), the ones worth comparing between players. */
-function keyStats(version: GameVersion, stats: CharacterDetails["statistics"]) {
+/**
+ * The stats worth comparing for a character: the ones its spec or class lists in the profile (spell hit and crit
+ * for a mage, defense for a protection warrior), or every percent stat when the profile lists none (retail).
+ */
+function keyStats(version: GameVersion, stats: CharacterDetails["statistics"], classId: number | null, specKey: string | null) {
   if (!stats) return [];
-  return computeStatPanel(version.statPanel, stats).flatMap((section) => section.rows.filter((row) => row.format === "percent"));
+  const rows = computeStatPanel(version.statPanel, stats).flatMap((section) => section.rows);
+  const gameClass = version.classes.find((c) => c.id === classId);
+  const wanted = gameClass?.specs.find((s) => s.key === specKey)?.summaryStats ?? gameClass?.summaryStats;
+  if (!wanted) return rows.filter((row) => row.format === "percent");
+  return wanted.flatMap((key) => rows.find((row) => row.key === key) ?? []);
+}
+
+/** The version's resistances column (Classic): each configured resistance and its value. */
+function resistances(version: GameVersion, stats: CharacterDetails["statistics"]) {
+  if (!stats || version.details.resistances.length === 0) return [];
+  const rows = computeStatPanel(version.statPanel, stats).flatMap((section) => section.rows);
+  return version.details.resistances.flatMap((key) => rows.find((row) => row.key === key) ?? []);
 }
 
 /** Talent setup in one line: spec and points per tree (Classic) or the active spec (retail loadouts). */
@@ -193,6 +210,7 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
   const hasMythic = shows("mythicPlus");
   const hasStats = version.characterEndpoints.includes("statistics");
   const hasTalents = version.characterEndpoints.includes("specializations");
+  const hasResistances = hasStats && version.details.resistances.length > 0;
   const current = latestInstances(rows.flatMap((r) => r.details?.raids ?? []));
   const when = (iso: string | null | undefined) => (iso ? format.relativeTime(new Date(iso)) : "—");
   const ilvl = (row: DetailsRow) => row.details?.equippedItemLevel ?? row.character.itemLevel ?? null;
@@ -201,7 +219,8 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
   const maxRating = Math.max(0, ...rows.map((r) => rating(r) ?? 0));
   const groups = groupByRole(version, rows, (r) => ilvl(r) ?? 0);
   const percent = (value: number) => `${format.number(value, { maximumFractionDigits: 1 })}%`;
-  const span = 3 + (hasMythic ? 1 : 0) + (hasRaids ? 1 : 0) + (hasStats ? 1 : 0) + (hasTalents ? 1 : 0);
+  const span = 3 + (hasMythic ? 1 : 0) + (hasRaids ? 1 : 0) + (hasStats ? 1 : 0) + (hasResistances ? 1 : 0) + (hasTalents ? 1 : 0);
+  const statValue = (s: { value: number; format: "number" | "percent" }) => (s.format === "percent" ? percent(s.value) : format.number(s.value));
   return (
     <Table
       head={
@@ -211,6 +230,7 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
           {hasMythic && <Th className={`${SM} w-40`}>{t("mythicRating")}</Th>}
           {hasRaids && <Th className={MD}>{t("currentRaid")}</Th>}
           {hasStats && <Th className={LG}>{t("stats")}</Th>}
+          {hasResistances && <Th className={LG}>{t("resistances")}</Th>}
           {hasTalents && <Th className={LG}>{t("talents")}</Th>}
           <Th className={LG}>{t("lastLogin")}</Th>
         </>
@@ -236,7 +256,8 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
               const d = row.details;
               const color = classColor(version, c.classId) ?? "var(--accent)";
               const raids = current.map((instance) => ({ instance, mode: bestMode(d?.raids?.find((r) => r.id === instance.id)) }));
-              const stats = keyStats(version, d?.statistics ?? null);
+              const stats = keyStats(version, d?.statistics ?? null, c.classId, c.specKey);
+              const resists = resistances(version, d?.statistics ?? null);
               const active = d?.talents?.find((s) => s.active) ?? d?.talents?.[0];
               const items = GEAR_SLOTS.flatMap((slot) => d?.equipment?.find((i) => i.slot === slot) ?? []);
               // The roster's spec comes from the summary; the active talent setup names it when that is missing.
@@ -281,11 +302,22 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
                             <div className="grid grid-cols-2 gap-x-3">
                               {stats.map((s) => (
                                 <span key={s.key} className="whitespace-nowrap">
-                                  <span className="text-muted">{tr(s.label, locale)}</span> {percent(s.value)}
+                                  <span className="text-muted">{tr(s.short ?? s.label, locale)}</span> {statValue(s)}
                                 </span>
                               ))}
                             </div>
                           )}
+                        </Td>
+                      )}
+                      {hasResistances && (
+                        <Td className={`${LG} text-xs tabular-nums`}>
+                          <div className="grid grid-cols-2 gap-x-3">
+                            {resists.map((r) => (
+                              <span key={r.key} className={`whitespace-nowrap ${r.value > 0 ? "" : "text-muted"}`}>
+                                <span className="text-muted">{tr(r.short ?? r.label, locale)}</span> {format.number(r.value)}
+                              </span>
+                            ))}
+                          </div>
                         </Td>
                       )}
                       {hasTalents && <Td className={`${LG} text-xs`}>{active ? talentLine(active) : <Missing reason={d?.missing.specializations} />}</Td>}
@@ -756,6 +788,23 @@ function ProfessionsTable({ version, rows }: { version: GameVersion; rows: Detai
   );
 }
 
+/** Reputation standing in a cell: the standing name (or renown level) and the progress within it. */
+function Standing({ rep }: { rep: NonNullable<CharacterDetails["reputations"]>[number] | undefined }) {
+  const t = useTranslations("details");
+  const locale = useLocale();
+  if (!rep) return <span className="text-muted">—</span>;
+  return (
+    <>
+      <span className="block">{tr(rep.standing, locale) || (rep.renownLevel != null ? t("renown", { level: rep.renownLevel }) : "—")}</span>
+      {rep.value != null && rep.max ? <span className="block text-xs text-muted tabular-nums">{`${rep.value}/${rep.max}`}</span> : null}
+    </>
+  );
+}
+
+/**
+ * Reputations: the version's key factions (the ones its raids depend on) as fixed columns, plus one more faction
+ * picked from a list of every faction in the roster; the panel under each character lists all of them.
+ */
 function ReputationsTable({ version, rows }: { version: GameVersion; rows: DetailsRow[] }) {
   const t = useTranslations("details");
   const locale = useLocale();
@@ -771,46 +820,62 @@ function ReputationsTable({ version, rows }: { version: GameVersion; rows: Detai
     }
     return [...counts.entries()].sort((a, b) => b[1].count - a[1].count || a[1].name.localeCompare(b[1].name));
   }, [rows, locale]);
-  const [faction, setFaction] = useState<number | undefined>(factions[0]?.[0]);
-  const standing = (rep: NonNullable<CharacterDetails["reputations"]>[number]) =>
-    tr(rep.standing, locale) || (rep.renownLevel != null ? t("renown", { level: rep.renownLevel }) : "—");
+  const keyFactions = version.details.keyReputations.flatMap((id) => {
+    const found = factions.find(([fid]) => fid === id);
+    return found ? [found] : [];
+  });
+  const others = factions.filter(([id]) => !version.details.keyReputations.includes(id));
+  const [faction, setFaction] = useState<number | undefined>(others[0]?.[0]);
+  // Key columns hide progressively on narrow screens; every faction is in the panel anyway.
+  const keyClass = (i: number) => (i === 0 ? "" : i === 1 ? SM : i === 2 ? MD : LG);
 
   if (factions.length === 0) return <p className="p-4 text-sm text-muted">{t("noReputations")}</p>;
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <label className="text-sm" htmlFor="rep-faction">{t("faction")}</label>
-        <select id="rep-faction" className="input w-auto max-w-full" value={faction ?? ""} onChange={(e) => setFaction(Number(e.target.value))}>
-          {factions.map(([id, { name, count }]) => (
-            <option key={id} value={id}>
-              {name} ({count})
-            </option>
-          ))}
-        </select>
-      </div>
+      {others.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+          <label className="text-sm" htmlFor="rep-faction">{t(keyFactions.length > 0 ? "otherFaction" : "faction")}</label>
+          <select id="rep-faction" className="input w-auto max-w-full" value={faction ?? ""} onChange={(e) => setFaction(Number(e.target.value))}>
+            {others.map(([id, { name, count }]) => (
+              <option key={id} value={id}>
+                {name} ({count})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <Table
         head={
           <>
             <Th>{t("character")}</Th>
-            <Th>{t("standing")}</Th>
-            <Th className={SM}>{t("progress")}</Th>
+            {keyFactions.map(([id, { name }], i) => (
+              <Th key={id} className={keyClass(i)}>
+                {name}
+              </Th>
+            ))}
+            {faction !== undefined && <Th className={keyFactions.length > 0 ? XL : ""}>{others.find(([id]) => id === faction)?.[1].name}</Th>}
           </>
         }
         footer={t("reputationsLegend")}
       >
         {rows.map((row) => {
           const reps = row.details?.reputations;
-          const rep = reps?.find((r) => r.factionId === faction);
+          const of = (id: number | undefined) => reps?.find((r) => r.factionId === id);
+          const missing = reps == null ? <Missing reason={row.details?.missing.reputations} /> : null;
           return (
             <DetailRow
               key={row.character.entryId}
               version={version}
               row={row}
-              span={3}
+              span={1 + keyFactions.length + (faction !== undefined ? 1 : 0)}
               cells={
                 <>
-                  <Td>{rep ? standing(rep) : reps == null ? <Missing reason={row.details?.missing.reputations} /> : "—"}</Td>
-                  <Td className={`${SM} tabular-nums text-muted`}>{rep?.value != null && rep.max ? `${rep.value}/${rep.max}` : ""}</Td>
+                  {keyFactions.map(([id], i) => (
+                    <Td key={id} className={keyClass(i)}>
+                      {missing ?? <Standing rep={of(id)} />}
+                    </Td>
+                  ))}
+                  {faction !== undefined && <Td className={keyFactions.length > 0 ? XL : ""}>{missing ?? <Standing rep={of(faction)} />}</Td>}
                 </>
               }
               detail={
@@ -819,11 +884,14 @@ function ReputationsTable({ version, rows }: { version: GameVersion; rows: Detai
                 ) : (
                   <CardGrid>
                     {[...reps]
-                      .sort((a, b) => tr(a.name, locale).localeCompare(tr(b.name, locale)))
+                      .sort(
+                        (a, b) =>
+                          Number(version.details.keyReputations.includes(b.factionId)) - Number(version.details.keyReputations.includes(a.factionId)) ||
+                          tr(a.name, locale).localeCompare(tr(b.name, locale)),
+                      )
                       .map((r) => (
                         <Card key={r.factionId} title={tr(r.name, locale)}>
-                          {standing(r)}
-                          {r.value != null && r.max ? ` · ${r.value}/${r.max}` : ""}
+                          <Standing rep={r} />
                         </Card>
                       ))}
                   </CardGrid>
@@ -834,5 +902,66 @@ function ReputationsTable({ version, rows }: { version: GameVersion; rows: Detai
         })}
       </Table>
     </div>
+  );
+}
+
+/** Attunements the owners ticked on their characters' sheets: one column per requirement of the version. */
+function RequirementsTable({ version, rows }: { version: GameVersion; rows: DetailsRow[] }) {
+  const t = useTranslations("details");
+  const locale = useLocale();
+  const reqs = version.requirements;
+  const raidName = (key?: string) => tr(version.raids.find((r) => r.key === key)?.name, locale);
+  const label = (r: (typeof reqs)[number]) => (r.raid ? raidName(r.raid) : tr(r.name, locale));
+  const mark = (has: boolean) => (
+    <span className={has ? "text-success" : "text-muted"} aria-label={t(has ? "requirementDone" : "requirementMissing")}>
+      {has ? "✓" : "✗"}
+    </span>
+  );
+  return (
+    <Table
+      head={
+        <>
+          <Th>{t("character")}</Th>
+          <Th>{t("requirementsDone")}</Th>
+          {reqs.map((r) => (
+            <Th key={r.key} className={SM}>
+              <span title={tr(r.name, locale)}>{label(r)}</span>
+            </Th>
+          ))}
+        </>
+      }
+      footer={t("requirementsLegend")}
+    >
+      {rows.map((row) => {
+        const done = new Set(row.details?.manualRequirements ?? []);
+        return (
+          <DetailRow
+            key={row.character.entryId}
+            version={version}
+            row={row}
+            span={2 + reqs.length}
+            cells={
+              <>
+                <Td className="tabular-nums">{`${reqs.filter((r) => done.has(r.key)).length}/${reqs.length}`}</Td>
+                {reqs.map((r) => (
+                  <Td key={r.key} className={SM}>
+                    {mark(done.has(r.key))}
+                  </Td>
+                ))}
+              </>
+            }
+            detail={
+              <ul className="space-y-1 text-sm">
+                {reqs.map((r) => (
+                  <li key={r.key} className="flex items-center gap-2">
+                    {mark(done.has(r.key))} {tr(r.name, locale)}
+                  </li>
+                ))}
+              </ul>
+            }
+          />
+        );
+      })}
+    </Table>
   );
 }
