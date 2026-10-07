@@ -457,7 +457,20 @@
     "thisWeek": "week: {count}× · {key}",
     "weeklyKeys": "Keys this week",
     "totalClears": "{count} on Mythic (total)",
-    "raiderIoCredit": "Keys: Raider.IO."
+    "raiderIoCredit": "Keys: Raider.IO.",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "expand": "Show details of {name}",
+    "collapse": "Hide details of {name}",
+    "currentRaid": "Current raid",
+    "gear": "Gear",
+    "noMythicPlus": "No keys this season.",
+    "noKeysThisWeek": "week: no keys",
+    "cleared": "With progress (of {total})",
+    "bestPerRaid": "Best difficulty per raid",
+    "bestPerDungeon": "Best difficulty per dungeon",
+    "primaries": "Professions",
+    "reputationsLegend": "Click a character to see all its reputations."
   },
   "weekly": {
     "title": "Weekly audit",

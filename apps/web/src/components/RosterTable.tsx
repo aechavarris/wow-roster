@@ -174,19 +174,20 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
 
       {error && <p className="text-sm text-danger" role="alert">{error}</p>}
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[820px] text-sm">
+      {/* No sideways scrolling: secondary columns hide on narrow screens and their data moves under the name. */}
+      <div className="rounded-lg border border-border">
+        <table className="w-full text-sm">
           <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
               {header("name", t("columns.name"))}
-              {header("class", t("columns.class"))}
+              {header("class", t("columns.class"), "hidden md:table-cell")}
               {header("role", t("columns.role"))}
               {header("status", t("columns.status"))}
-              {header("itemLevel", t("columns.itemLevel"), "text-right")}
-              {header("level", t("columns.level"), "text-right")}
-              {showRank && header("rank", t("columns.rank"), "text-right")}
-              <th className="px-2 py-2 font-medium">{t("columns.updated")}</th>
-              {viewerRole && <th className="px-2 py-2 font-medium">{t("columns.actions")}</th>}
+              {header("itemLevel", t("columns.itemLevel"), "hidden sm:table-cell text-right")}
+              {header("level", t("columns.level"), "hidden lg:table-cell text-right")}
+              {showRank && header("rank", t("columns.rank"), "hidden lg:table-cell text-right")}
+              <th className="hidden px-2 py-2 font-medium xl:table-cell">{t("columns.updated")}</th>
+              {viewerRole && <th className="hidden px-2 py-2 font-medium md:table-cell">{t("columns.actions")}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-surface">
@@ -239,10 +240,59 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
   const status = statusOf(profile, c.status);
   const gameClass = profile.classes.find((g) => g.id === c.classId);
   const color = classColor(profile, c.classId);
+  // Shown in their own column on wide screens and under the name on narrow ones, so the table never scrolls sideways.
+  const actionButtons = (
+    <div className="flex flex-wrap items-center gap-1">
+      {c.planned && canEditPlanning && canLink && <LinkForm hasRealms={hasRealms} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
+      {isOfficer && mainOptions.length > 0 && !c.claimed && (
+        <select
+          aria-label={t("linkMain")}
+          className="input w-24 py-0.5"
+          value=""
+          onChange={(e) => actions.update(c.entryId, { mainEntryId: e.target.value === AUTO ? null : e.target.value })}
+        >
+          <option value="">{t("linkMain")}</option>
+          {isAlt && <option value={AUTO}>{t("unlink")}</option>}
+          {mainOptions.map((m) => (
+            <option key={m.entryId} value={m.entryId}>{m.name}</option>
+          ))}
+        </select>
+      )}
+      {(isOfficer || canEditPlanning) && (
+        <button
+          type="button"
+          className="btn px-2 py-0.5"
+          title={t("editNote")}
+          aria-label={t("editNote")}
+          onClick={() => {
+            const note = window.prompt(t("editNote"), c.note ?? "");
+            if (note !== null) void actions.update(c.entryId, { note: note.trim() || null });
+          }}
+        >
+          ✎
+        </button>
+      )}
+      {canRemove && (
+        <button
+          type="button"
+          className="btn px-2 py-0.5"
+          title={c.source === "guild" ? t("hide") : t("remove")}
+          aria-label={c.source === "guild" ? t("hide") : t("remove")}
+          onClick={() => {
+            if (window.confirm(c.source === "guild" ? t("confirmHide", { name: c.name }) : t("confirmRemove", { name: c.name }))) {
+              void actions.remove(c.entryId);
+            }
+          }}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <tr className={`${isAlt ? "bg-surface-2/50 text-xs" : ""} ${c.planned ? "bg-accent/5" : ""}`}>
-      <td className="min-w-44 px-2 py-1.5">
+      <td className="px-2 py-1.5">
         <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${isAlt ? "pl-6" : ""}`}>
           {c.avatar && !isAlt ? (
             // eslint-disable-next-line @next/next/no-img-element -- Blizzard renders are already sized thumbnails.
@@ -266,8 +316,23 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
           {c.playerName && c.playerName !== c.name && <span className="text-xs text-muted">· {c.playerName}</span>}
           {c.note && <span title={c.note} className="cursor-help text-muted">✎</span>}
         </div>
+        {/* What the hidden columns show on wider screens. */}
+        <div className={`flex flex-wrap gap-x-2 text-xs text-muted xl:hidden ${isAlt ? "pl-6" : ""}`}>
+          <span className="md:hidden">
+            {specName(profile, c.classId, c.specKey, locale)} {className(profile, c.classId, locale)}
+          </span>
+          {!c.planned && (
+            <>
+              {c.itemLevel ? <span className="sm:hidden">{`${t("columns.itemLevel")} ${Math.round(c.itemLevel)}`}</span> : null}
+              <span className="lg:hidden">{`${t("columns.level")} ${c.level}`}</span>
+              {showRank && c.guildRank != null && <span className="lg:hidden">{`${t("columns.rank")} ${c.guildRank}`}</span>}
+              {c.syncError ? <span className="text-danger">{t("syncError")}</span> : c.lastSyncedAt ? <span>{format.relativeTime(new Date(c.lastSyncedAt))}</span> : null}
+            </>
+          )}
+        </div>
+        {showActions && <div className={`mt-1 md:hidden ${isAlt ? "pl-6" : ""}`}>{actionButtons}</div>}
       </td>
-      <td className="px-2 py-1.5 text-muted">
+      <td className="hidden px-2 py-1.5 text-muted md:table-cell">
         {c.planned && canEditPlanning ? (
           <div className="flex gap-1">
             <select
@@ -302,7 +367,7 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
         {isOfficer || canEditPlanning ? (
           <select
             aria-label={t("columns.role")}
-            className="input w-auto max-w-40 py-0.5"
+            className="input w-full max-w-40 py-0.5"
             value={c.roleOverridden ? (c.role ?? AUTO) : AUTO}
             onChange={(e) => actions.update(c.entryId, { role: e.target.value === AUTO ? null : e.target.value })}
           >
@@ -324,7 +389,7 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
         {isOfficer ? (
           <select
             aria-label={t("columns.status")}
-            className="input w-auto max-w-36 py-0.5"
+            className="input w-full max-w-36 py-0.5"
             value={c.statusOverridden ? c.status : AUTO}
             onChange={(e) => actions.update(c.entryId, { status: e.target.value === AUTO ? null : e.target.value })}
           >
@@ -339,10 +404,10 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
           </span>
         )}
       </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">{c.itemLevel ? Math.round(c.itemLevel) : "—"}</td>
-      <td className="px-2 py-1.5 text-right tabular-nums">{c.planned ? "—" : c.level}</td>
-      {showRank && <td className="px-2 py-1.5 text-right tabular-nums">{c.guildRank ?? "—"}</td>}
-      <td className="px-2 py-1.5 text-xs text-muted">
+      <td className="hidden px-2 py-1.5 text-right tabular-nums sm:table-cell">{c.itemLevel ? Math.round(c.itemLevel) : "—"}</td>
+      <td className="hidden px-2 py-1.5 text-right tabular-nums lg:table-cell">{c.planned ? "—" : c.level}</td>
+      {showRank && <td className="hidden px-2 py-1.5 text-right tabular-nums lg:table-cell">{c.guildRank ?? "—"}</td>}
+      <td className="hidden px-2 py-1.5 text-xs text-muted xl:table-cell">
         {c.planned ? (
           t("notInGameYet")
         ) : c.syncError ? (
@@ -353,56 +418,7 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
           t("pending")
         )}
       </td>
-      {showActions && (
-        <td className="px-2 py-1.5">
-          <div className="flex items-center gap-1">
-            {c.planned && canEditPlanning && canLink && <LinkForm hasRealms={hasRealms} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
-            {isOfficer && mainOptions.length > 0 && !c.claimed && (
-              <select
-                aria-label={t("linkMain")}
-                className="input w-24 py-0.5"
-                value=""
-                onChange={(e) => actions.update(c.entryId, { mainEntryId: e.target.value === AUTO ? null : e.target.value })}
-              >
-                <option value="">{t("linkMain")}</option>
-                {isAlt && <option value={AUTO}>{t("unlink")}</option>}
-                {mainOptions.map((m) => (
-                  <option key={m.entryId} value={m.entryId}>{m.name}</option>
-                ))}
-              </select>
-            )}
-            {(isOfficer || canEditPlanning) && (
-              <button
-                type="button"
-                className="btn px-2 py-0.5"
-                title={t("editNote")}
-                aria-label={t("editNote")}
-                onClick={() => {
-                  const note = window.prompt(t("editNote"), c.note ?? "");
-                  if (note !== null) void actions.update(c.entryId, { note: note.trim() || null });
-                }}
-              >
-                ✎
-              </button>
-            )}
-            {canRemove && (
-              <button
-                type="button"
-                className="btn px-2 py-0.5"
-                title={c.source === "guild" ? t("hide") : t("remove")}
-                aria-label={c.source === "guild" ? t("hide") : t("remove")}
-                onClick={() => {
-                  if (window.confirm(c.source === "guild" ? t("confirmHide", { name: c.name }) : t("confirmRemove", { name: c.name }))) {
-                    void actions.remove(c.entryId);
-                  }
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </td>
-      )}
+      {showActions && <td className="hidden px-2 py-1.5 md:table-cell">{actionButtons}</td>}
     </tr>
   );
 }

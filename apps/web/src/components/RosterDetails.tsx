@@ -1,19 +1,18 @@
 "use client";
 
-import type { InstanceMode, InstanceProgress } from "@wow/blizzard";
+import type { EquippedItem, InstanceMode, InstanceProgress } from "@wow/blizzard";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, type ReactNode } from "react";
-import { Link } from "@/i18n/routing";
-import { characterPath, classColor, classText, GAME_QUALITY_COLORS, specName, wowheadItemUrl } from "@/lib/game";
+import { GAME_QUALITY_COLORS, specName, wowheadItemUrl } from "@/lib/game";
 import { tr } from "@/lib/text";
 import { ItemTooltip } from "./character/ItemTooltip";
+import { Card, CardGrid, DetailRow, ExpandAllButton, ExpandProvider, Facts, LG, MD, SM, Table, Td, Th, useExpandedRows } from "./ui/CharacterTable";
 import { GameTooltip } from "./ui/GameTooltip";
-import type { CharacterDetails, GameVersion, RosterCharacter } from "@/lib/types";
+import type { CharacterDetails, GameVersion } from "@/lib/types";
+import type { CharacterRow } from "./ui/CharacterTable";
 import type { Localized } from "@wow/config";
 
-export interface DetailsRow {
-  character: RosterCharacter;
-  alt: boolean;
+export interface DetailsRow extends CharacterRow {
   details?: CharacterDetails;
 }
 
@@ -68,6 +67,7 @@ export function RosterDetails({ version, rows, weekStart }: { version: GameVersi
   const [tab, setTab] = useState<TabKey>("summary");
   const [showAlts, setShowAlts] = useState(true);
   const shown = rows.filter((r) => showAlts || !r.alt);
+  const { value: expand, allOpen, toggleAll } = useExpandedRows(shown);
 
   return (
     <div className="space-y-3">
@@ -86,73 +86,31 @@ export function RosterDetails({ version, rows, weekStart }: { version: GameVersi
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={showAlts} onChange={(e) => setShowAlts(e.target.checked)} />
-          {t("showAlts")}
-        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <ExpandAllButton allOpen={allOpen} onClick={toggleAll} />
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={showAlts} onChange={(e) => setShowAlts(e.target.checked)} />
+            {t("showAlts")}
+          </label>
+        </div>
       </div>
       {shown.length === 0 ? (
         <p className="card text-sm text-muted">{t("empty")}</p>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          {tab === "summary" && <SummaryTable version={version} rows={shown} />}
-          {tab === "gear" && <GearTable version={version} rows={shown} locale={locale} />}
-          {tab === "mythicPlus" && <MythicPlusTable version={version} rows={shown} weekStart={weekStart} />}
-          {tab === "dungeons" && <InstanceTable version={version} rows={shown} kind="dungeons" />}
-          {tab === "raids" && <InstanceTable version={version} rows={shown} kind="raids" />}
-          {tab === "professions" && <ProfessionsTable version={version} rows={shown} />}
-          {tab === "reputations" && <ReputationsTable version={version} rows={shown} />}
-        </div>
+        <ExpandProvider value={expand}>
+          {/* No sideways scrolling: tables keep a few columns and the rest opens under each character. */}
+          <div className="card p-0">
+            {tab === "summary" && <SummaryTable version={version} rows={shown} />}
+            {tab === "gear" && <GearTable version={version} rows={shown} locale={locale} />}
+            {tab === "mythicPlus" && <MythicPlusTable version={version} rows={shown} weekStart={weekStart} />}
+            {tab === "dungeons" && <InstanceTable version={version} rows={shown} kind="dungeons" />}
+            {tab === "raids" && <InstanceTable version={version} rows={shown} kind="raids" />}
+            {tab === "professions" && <ProfessionsTable version={version} rows={shown} />}
+            {tab === "reputations" && <ReputationsTable version={version} rows={shown} />}
+          </div>
+        </ExpandProvider>
       )}
     </div>
-  );
-}
-
-function Table({ head, children, footer }: { head: ReactNode; children: ReactNode; footer?: ReactNode }) {
-  return (
-    <>
-      <table className="w-full min-w-max border-collapse text-sm">
-        <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
-          <tr>{head}</tr>
-        </thead>
-        <tbody className="divide-y divide-border">{children}</tbody>
-      </table>
-      {footer && <div className="border-t border-border px-3 py-2 text-xs text-muted">{footer}</div>}
-    </>
-  );
-}
-
-const Th = ({ children, className = "" }: { children?: ReactNode; className?: string }) => (
-  <th className={`whitespace-nowrap px-3 py-2 font-medium ${className}`}>{children}</th>
-);
-const Td = ({ children, className = "", title, colSpan }: { children?: ReactNode; className?: string; title?: string; colSpan?: number }) => (
-  <td className={`whitespace-nowrap px-3 py-1.5 ${className}`} title={title} colSpan={colSpan}>
-    {children}
-  </td>
-);
-
-/** First column: the character, linked to its sheet, sticky while the table scrolls sideways. */
-function NameCell({ version, row }: { version: GameVersion; row: DetailsRow }) {
-  const c = row.character;
-  const name = (
-    <span className="text-class font-medium" style={classText(classColor(version, c.classId))}>
-      {c.name}
-    </span>
-  );
-  return (
-    <td className="sticky left-0 z-10 whitespace-nowrap bg-surface px-3 py-1.5">
-      {row.alt && <span className="mr-1 text-muted">↳</span>}
-      {c.gameVersion && c.region && c.realm ? (
-        <Link
-          href={characterPath({ gameVersion: c.gameVersion, region: c.region, realm: c.realm, name: c.name })}
-          className="hover:underline"
-        >
-          {name}
-        </Link>
-      ) : (
-        name
-      )}
-    </td>
   );
 }
 
@@ -160,6 +118,19 @@ const Missing = ({ reason }: { reason?: string }) => {
   const t = useTranslations("details");
   return <span className="text-muted" title={reason ? t("missingReason", { reason }) : undefined}>—</span>;
 };
+
+/** Best difficulty cleared in an instance, as "6/8 Heroic". */
+function modeLabel(mode: InstanceMode | undefined, locale: string) {
+  return mode ? `${mode.completed}/${mode.total} ${tr(mode.difficultyName, locale) || mode.difficulty}` : "—";
+}
+
+/** Every difficulty with kills in an instance, highest first, for detail cards. */
+function modeLines(instance: InstanceProgress | undefined, locale: string) {
+  return [...(instance?.modes ?? [])]
+    .filter((m) => m.completed > 0 && m.difficulty !== "UNKNOWN")
+    .sort((a, b) => difficultyRank(b.difficulty) - difficultyRank(a.difficulty))
+    .map((m) => <div key={m.difficulty}>{modeLabel(m, locale)}</div>);
+}
 
 function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRow[] }) {
   const t = useTranslations("details");
@@ -169,122 +140,172 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
   const hasMythic = version.characterEndpoints.includes("mythicPlus");
   const current = latestInstances(rows.flatMap((r) => r.details?.raids ?? []));
   const when = (iso: string | null | undefined) => (iso ? format.relativeTime(new Date(iso)) : "—");
+  const span = 4 + (hasMythic ? 1 : 0) + (hasRaids ? 1 : 0) + 2;
   return (
     <Table
       head={
         <>
-          <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
-          <Th>{t("level")}</Th>
-          <Th>{t("spec")}</Th>
+          <Th>{t("character")}</Th>
+          <Th className={SM}>{t("level")}</Th>
+          <Th className={MD}>{t("spec")}</Th>
           <Th>{t("itemLevel")}</Th>
           {hasMythic && <Th>{t("mythicRating")}</Th>}
-          {hasRaids && current.map((i) => <Th key={i.id ?? tr(i.name, locale)}>{tr(i.name, locale)}</Th>)}
-          <Th>{t("lastLogin")}</Th>
-          <Th>{t("synced")}</Th>
+          {hasRaids && <Th className={MD}>{t("currentRaid")}</Th>}
+          <Th className={LG}>{t("lastLogin")}</Th>
+          <Th className={LG}>{t("synced")}</Th>
         </>
       }
     >
       {rows.map((row) => {
         const c = row.character;
         const d = row.details;
+        const rating =
+          d?.mythicPlus?.rating != null ? (
+            <span style={{ color: d.mythicPlus.color }}>{Math.round(d.mythicPlus.rating)}</span>
+          ) : (
+            <Missing reason={d?.missing.mythicPlus} />
+          );
+        const raids = current.map((instance) => ({ instance, mode: bestMode(d?.raids?.find((r) => r.id === instance.id)) }));
+        const synced = d?.syncError === "not_found" ? t("notFound") : when(d?.lastSyncedAt ?? c.lastSyncedAt);
         return (
-          <tr key={c.entryId}>
-            <NameCell version={version} row={row} />
-            <Td>{d?.level ?? c.level}</Td>
-            <Td>{specName(version, c.classId, c.specKey, locale)}</Td>
-            <Td className="tabular-nums">{d?.equippedItemLevel ?? c.itemLevel ?? "—"}</Td>
-            {hasMythic && (
-              <Td className="tabular-nums">
-                {d?.mythicPlus?.rating != null ? (
-                  <span style={{ color: d.mythicPlus.color }}>{Math.round(d.mythicPlus.rating)}</span>
-                ) : (
-                  <Missing reason={d?.missing.mythicPlus} />
-                )}
-              </Td>
-            )}
-            {hasRaids &&
-              current.map((instance) => {
-                const mode = bestMode(d?.raids?.find((r) => r.id === instance.id));
-                return (
-                  <Td key={instance.id ?? tr(instance.name, locale)} className="tabular-nums">
-                    {mode ? `${mode.completed}/${mode.total} ${tr(mode.difficultyName, locale) || mode.difficulty}` : "—"}
+          <DetailRow
+            key={c.entryId}
+            version={version}
+            row={row}
+            span={span}
+            cells={
+              <>
+                <Td className={SM}>{d?.level ?? c.level}</Td>
+                <Td className={MD}>{specName(version, c.classId, c.specKey, locale)}</Td>
+                <Td className="tabular-nums">{d?.equippedItemLevel ?? c.itemLevel ?? "—"}</Td>
+                {hasMythic && <Td className="tabular-nums">{rating}</Td>}
+                {hasRaids && (
+                  <Td className={`${MD} tabular-nums`}>
+                    {raids.map(({ instance, mode }) => (
+                      <div key={instance.id ?? tr(instance.name, locale)}>
+                        <span className="text-muted">{tr(instance.name, locale)}:</span> {modeLabel(mode, locale)}
+                      </div>
+                    ))}
                   </Td>
-                );
-              })}
-            <Td className="text-muted">{when(d?.lastLoginAt)}</Td>
-            <Td className="text-muted">{d?.syncError === "not_found" ? t("notFound") : when(d?.lastSyncedAt ?? c.lastSyncedAt)}</Td>
-          </tr>
+                )}
+                <Td className={`${LG} text-muted`}>{when(d?.lastLoginAt)}</Td>
+                <Td className={`${LG} text-muted`}>{synced}</Td>
+              </>
+            }
+            detail={
+              <Facts
+                items={[
+                  [t("level"), d?.level ?? c.level ?? "—"],
+                  [t("spec"), specName(version, c.classId, c.specKey, locale) || "—"],
+                  [t("itemLevel"), d?.equippedItemLevel ?? c.itemLevel ?? "—"],
+                  ...(hasMythic ? ([[t("mythicRating"), rating]] as [ReactNode, ReactNode][]) : []),
+                  ...raids.map(({ instance, mode }): [ReactNode, ReactNode] => [tr(instance.name, locale), modeLabel(mode, locale)]),
+                  [t("lastLogin"), when(d?.lastLoginAt)],
+                  [t("synced"), synced],
+                ]}
+              />
+            }
+          />
         );
       })}
     </Table>
   );
 }
 
+/** One gear piece: icon and item level with the in-game tooltip, plus the Wowhead link. */
+function GearPiece({ version, item, locale, slotName, wide }: { version: GameVersion; item: EquippedItem; locale: string; slotName: string; wide?: boolean }) {
+  const t = useTranslations("details");
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1">
+      {/* Same in-game tooltip as the character sheet; the arrow opens the item on Wowhead. */}
+      <GameTooltip
+        label={`${slotName}: ${tr(item.name, locale)}`}
+        content={<ItemTooltip item={item} />}
+        className="inline-flex min-w-0 items-center gap-1 rounded text-left tabular-nums hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        style={{ color: GAME_QUALITY_COLORS[item.quality ?? ""] }}
+      >
+        {item.icon && (
+          // eslint-disable-next-line @next/next/no-img-element -- Blizzard icon CDN, already sized.
+          <img src={item.icon} alt="" width={wide ? 28 : 22} height={wide ? 28 : 22} className="shrink-0 rounded-sm" />
+        )}
+        {wide ? (
+          <span className="min-w-0">
+            <span className="block truncate">{tr(item.name, locale)}</span>
+            <span className="block text-xs text-muted">
+              {slotName} · {item.itemLevel ?? "?"}
+            </span>
+          </span>
+        ) : (
+          item.itemLevel ?? "?"
+        )}
+        {item.enchantments.length > 0 && <span className="text-success" aria-label={t("enchanted")}>✦</span>}
+        {item.gems.length > 0 && <span className="text-accent">◆{item.gems.length > 1 ? item.gems.length : ""}</span>}
+      </GameTooltip>
+      <a
+        href={wowheadItemUrl(version, locale, item)}
+        target="_blank"
+        rel="noreferrer"
+        className="text-xs text-muted hover:text-accent"
+        aria-label={t("wowhead", { name: tr(item.name, locale) })}
+        title={t("wowhead", { name: tr(item.name, locale) })}
+      >
+        ↗
+      </a>
+    </span>
+  );
+}
+
+/** Gear: every piece as an icon with its item level, wrapping in one cell; the detail panel names each piece. */
 function GearTable({ version, rows, locale }: { version: GameVersion; rows: DetailsRow[]; locale: string }) {
   const t = useTranslations("details");
   const tSlots = useTranslations("slots");
-  const slots = GEAR_SLOTS.filter((slot) => rows.some((r) => r.details?.equipment?.some((i) => i.slot === slot)));
+  const slotName = (slot: string) => (tSlots.has(slot) ? tSlots(slot) : slot);
   return (
     <Table
       head={
         <>
-          <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
+          <Th>{t("character")}</Th>
           <Th>{t("itemLevel")}</Th>
-          {slots.map((slot) => (
-            <Th key={slot}>{tSlots.has(slot) ? tSlots(slot) : slot}</Th>
-          ))}
+          <Th className={SM}>{t("gear")}</Th>
         </>
       }
       footer={t("gearLegend")}
     >
       {rows.map((row) => {
-        const items = new Map((row.details?.equipment ?? []).map((i) => [i.slot, i]));
+        const items = GEAR_SLOTS.flatMap((slot) => row.details?.equipment?.find((i) => i.slot === slot) ?? []);
+        const missing = row.details?.equipment == null ? <Missing reason={row.details?.missing.equipment} /> : null;
         return (
-          <tr key={row.character.entryId}>
-            <NameCell version={version} row={row} />
-            <Td className="tabular-nums font-medium">{row.details?.equippedItemLevel ?? "—"}</Td>
-            {row.details?.equipment == null ? (
-              <Td className="text-muted" colSpan={slots.length}>
-                <Missing reason={row.details?.missing.equipment} />
-              </Td>
-            ) : (
-              slots.map((slot) => {
-                const item = items.get(slot);
-                if (!item) return <Td key={slot} className="text-muted">—</Td>;
-                return (
-                  <Td key={slot}>
-                    <span className="inline-flex items-center gap-1">
-                      {/* Same in-game tooltip as the character sheet; the arrow opens the item on Wowhead. */}
-                      <GameTooltip
-                        label={`${tSlots.has(slot) ? tSlots(slot) : slot}: ${tr(item.name, locale)}`}
-                        content={<ItemTooltip item={item} />}
-                        className="inline-flex items-center gap-1 rounded tabular-nums hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                        style={{ color: GAME_QUALITY_COLORS[item.quality ?? ""] }}
-                      >
-                        {item.icon && (
-                          // eslint-disable-next-line @next/next/no-img-element -- Blizzard icon CDN, already sized.
-                          <img src={item.icon} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-sm" />
-                        )}
-                        {item.itemLevel ?? "?"}
-                        {item.enchantments.length > 0 && <span className="text-success" aria-label={t("enchanted")}>✦</span>}
-                        {item.gems.length > 0 && <span className="text-accent">◆{item.gems.length > 1 ? item.gems.length : ""}</span>}
-                      </GameTooltip>
-                      <a
-                        href={wowheadItemUrl(version, locale, item)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-muted hover:text-accent"
-                        aria-label={t("wowhead", { name: tr(item.name, locale) })}
-                        title={t("wowhead", { name: tr(item.name, locale) })}
-                      >
-                        ↗
-                      </a>
-                    </span>
-                  </Td>
-                );
-              })
-            )}
-          </tr>
+          <DetailRow
+            key={row.character.entryId}
+            version={version}
+            row={row}
+            span={3}
+            cells={
+              <>
+                <Td className="tabular-nums font-medium">{row.details?.equippedItemLevel ?? "—"}</Td>
+                <Td className={SM}>
+                  {missing ?? (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      {items.map((item) => (
+                        <GearPiece key={item.slot} version={version} item={item} locale={locale} slotName={slotName(item.slot)} />
+                      ))}
+                    </div>
+                  )}
+                </Td>
+              </>
+            }
+            detail={
+              missing ?? (
+                <CardGrid>
+                  {items.map((item) => (
+                    <div key={item.slot} className="min-w-0 rounded-md border border-border bg-surface px-2 py-1.5">
+                      <GearPiece version={version} item={item} locale={locale} slotName={slotName(item.slot)} wide />
+                    </div>
+                  ))}
+                </CardGrid>
+              )
+            }
+          />
         );
       })}
     </Table>
@@ -369,8 +390,8 @@ function mythicPlusCells(details: CharacterDetails | undefined, weekStart: numbe
 }
 
 /**
- * One column per Mythic+ dungeon of the season: the character's best key there, this week's runs (count and
- * highest) and how many times the dungeon was cleared on Mythic overall.
+ * Mythic+: rating, best key, timed dungeons and keys this week per character; the detail panel has one card per
+ * dungeon with its season best key, this week's keys and how many times it was cleared on Mythic overall.
  */
 function MythicPlusTable({ version, rows, weekStart }: { version: GameVersion; rows: DetailsRow[]; weekStart: string | null }) {
   const t = useTranslations("details");
@@ -379,7 +400,7 @@ function MythicPlusTable({ version, rows, weekStart }: { version: GameVersion; r
     const names = new Map<string, Localized>();
     const start = weekStart ? Date.parse(weekStart) : 0;
     const cells = new Map(rows.map((row) => [row.character.entryId, mythicPlusCells(row.details, start, names)]));
-    // Columns: dungeons with a key this season or this week, in any character.
+    // Dungeons with a key this season or this week, in any character.
     const keys = new Set([...cells.values()].flatMap((c) => [...c.season.keys(), ...c.week.keys()]));
     const dungeons = [...keys].sort((a, b) => tr(names.get(a), locale).localeCompare(tr(names.get(b), locale)));
     return { cells, dungeons, names };
@@ -390,14 +411,11 @@ function MythicPlusTable({ version, rows, weekStart }: { version: GameVersion; r
     <Table
       head={
         <>
-          <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
+          <Th>{t("character")}</Th>
           <Th>{t("mythicRating")}</Th>
-          <Th>{t("seasonBest")}</Th>
-          <Th>{t("dungeonsTimed")}</Th>
+          <Th className={SM}>{t("seasonBest")}</Th>
+          <Th className={MD}>{t("dungeonsTimed")}</Th>
           <Th>{t("weeklyKeys")}</Th>
-          {dungeons.map((d) => (
-            <Th key={d}>{tr(names.get(d), locale)}</Th>
-          ))}
         </>
       }
       footer={
@@ -411,40 +429,63 @@ function MythicPlusTable({ version, rows, weekStart }: { version: GameVersion; r
         const c = cells.get(row.character.entryId)!;
         const best = [...c.season.entries()].sort((a, b) => b[1].level - a[1].level)[0];
         return (
-          <tr key={row.character.entryId}>
-            <NameCell version={version} row={row} />
-            <Td className="tabular-nums">
-              {c.rating != null ? <span style={{ color: c.color }}>{Math.round(c.rating)}</span> : <Missing reason={row.details?.missing.mythicPlus} />}
-              {c.profileUrl && (
-                <a href={c.profileUrl} target="_blank" rel="noreferrer" className="ml-1 text-xs text-muted" title="Raider.IO">
-                  ↗
-                </a>
-              )}
-            </Td>
-            <Td className="tabular-nums">{best ? `${key(best[1])} ${tr(names.get(best[0]), locale)}` : "—"}</Td>
-            <Td className="tabular-nums">{c.season.size > 0 ? `${[...c.season.values()].filter((r) => r.timed).length}/${dungeons.length}` : "—"}</Td>
-            <Td className="tabular-nums">{row.details?.mythicPlus || row.details?.raiderIo ? c.weekRuns : "—"}</Td>
-            {dungeons.map((d) => {
-              const s = c.season.get(d);
-              const w = c.week.get(d) ?? [];
-              const total = c.total.get(d);
-              const top = [...w].sort((a, b) => b.level - a.level)[0];
-              return (
-                <Td key={d} className="tabular-nums" title={s?.rating != null ? t("runRating", { rating: Math.round(s.rating) }) : undefined}>
-                  <span className={s && !s.timed ? "text-muted" : ""}>{key(s) ?? "—"}</span>
-                  {top && <span className="block text-xs">{t("thisWeek", { count: w.length, key: key(top)! })}</span>}
-                  {total !== undefined && <span className="block text-xs text-muted">{t("totalClears", { count: total })}</span>}
+          <DetailRow
+            key={row.character.entryId}
+            version={version}
+            row={row}
+            span={5}
+            cells={
+              <>
+                <Td className="tabular-nums">
+                  {c.rating != null ? <span style={{ color: c.color }}>{Math.round(c.rating)}</span> : <Missing reason={row.details?.missing.mythicPlus} />}
+                  {c.profileUrl && (
+                    <a href={c.profileUrl} target="_blank" rel="noreferrer" className="ml-1 text-xs text-muted" title="Raider.IO">
+                      ↗
+                    </a>
+                  )}
                 </Td>
-              );
-            })}
-          </tr>
+                <Td className={`${SM} tabular-nums`}>{best ? `${key(best[1])} ${tr(names.get(best[0]), locale)}` : "—"}</Td>
+                <Td className={`${MD} tabular-nums`}>
+                  {c.season.size > 0 ? `${[...c.season.values()].filter((r) => r.timed).length}/${dungeons.length}` : "—"}
+                </Td>
+                <Td className="tabular-nums">{row.details?.mythicPlus || row.details?.raiderIo ? c.weekRuns : "—"}</Td>
+              </>
+            }
+            detail={
+              dungeons.length === 0 ? (
+                <p className="text-sm text-muted">{t("noMythicPlus")}</p>
+              ) : (
+                <CardGrid>
+                  {dungeons.map((d) => {
+                    const s = c.season.get(d);
+                    const w = c.week.get(d) ?? [];
+                    const total = c.total.get(d);
+                    const top = [...w].sort((a, b) => b.level - a.level)[0];
+                    return (
+                      <Card key={d} title={tr(names.get(d), locale)}>
+                        <div className={s && !s.timed ? "" : "text-text"}>
+                          {t("seasonBest")}: {key(s) ?? "—"}
+                          {s?.rating != null && ` (${t("runRating", { rating: Math.round(s.rating) })})`}
+                        </div>
+                        <div>{top ? t("thisWeek", { count: w.length, key: key(top)! }) : t("noKeysThisWeek")}</div>
+                        {total !== undefined && <div>{t("totalClears", { count: total })}</div>}
+                      </Card>
+                    );
+                  })}
+                </CardGrid>
+              )
+            }
+          />
         );
       })}
     </Table>
   );
 }
 
-/** Raids or dungeons: pick an instance (raids) or see every dungeon of an expansion, best difficulty cleared. */
+/**
+ * Raids or dungeons of one expansion: the best difficulty cleared in each instance, listed in one wrapping cell;
+ * the detail panel has a card per instance with every difficulty.
+ */
 function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: DetailsRow[]; kind: "raids" | "dungeons" }) {
   const t = useTranslations("details");
   const locale = useLocale();
@@ -470,7 +511,7 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
         <label className="text-sm" htmlFor={`${kind}-expansion`}>{t("expansion")}</label>
         <select
           id={`${kind}-expansion`}
-          className="input w-auto"
+          className="input w-auto max-w-full"
           value={expansion ?? ""}
           onChange={(e) => setExpansion(Number(e.target.value))}
         >
@@ -482,38 +523,58 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
       <Table
         head={
           <>
-            <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
-            {instances.map((i) => (
-              <Th key={i.id ?? tr(i.name, locale)}>{tr(i.name, locale)}</Th>
-            ))}
+            <Th>{t("character")}</Th>
+            <Th>{t("cleared", { total: instances.length })}</Th>
+            <Th className={SM}>{t(kind === "raids" ? "bestPerRaid" : "bestPerDungeon")}</Th>
           </>
         }
         footer={t("instanceLegend")}
       >
-        {rows.map((row) => (
-          <tr key={row.character.entryId}>
-            <NameCell version={version} row={row} />
-            {row.details?.[kind] == null ? (
-              <Td className="text-muted" colSpan={instances.length}>
-                <Missing reason={row.details?.missing[kind]} />
-              </Td>
-            ) : (
-              instances.map((instance) => {
-                const own = row.details?.[kind]?.find((i) => i.id === instance.id);
-                const mode = bestMode(own);
-                const title = own?.modes
-                  .filter((m) => m.completed > 0 && m.difficulty !== "UNKNOWN")
-                  .map((m) => `${tr(m.difficultyName, locale) || m.difficulty}: ${m.completed}/${m.total}`)
-                  .join("\n");
-                return (
-                  <Td key={instance.id ?? tr(instance.name, locale)} className="tabular-nums" title={title}>
-                    {mode ? `${mode.completed}/${mode.total} ${tr(mode.difficultyName, locale) || mode.difficulty}` : "—"}
+        {rows.map((row) => {
+          const own = (instance: InstanceProgress) => row.details?.[kind]?.find((i) => i.id === instance.id);
+          const best = instances.map((instance) => ({ instance, mode: bestMode(own(instance)) }));
+          const missing = row.details?.[kind] == null ? <Missing reason={row.details?.missing[kind]} /> : null;
+          return (
+            <DetailRow
+              key={row.character.entryId}
+              version={version}
+              row={row}
+              span={3}
+              cells={
+                <>
+                  <Td className="tabular-nums">{missing ?? `${best.filter((b) => b.mode).length}/${instances.length}`}</Td>
+                  <Td className={SM}>
+                    {missing ?? (
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                        {best
+                          .filter((b) => b.mode)
+                          .map(({ instance, mode }) => (
+                            <span key={instance.id ?? tr(instance.name, locale)} className="tabular-nums">
+                              <span className="text-muted">{tr(instance.name, locale)}:</span> {modeLabel(mode, locale)}
+                            </span>
+                          ))}
+                      </div>
+                    )}
                   </Td>
-                );
-              })
-            )}
-          </tr>
-        ))}
+                </>
+              }
+              detail={
+                missing ?? (
+                  <CardGrid>
+                    {instances.map((instance) => {
+                      const lines = modeLines(own(instance), locale);
+                      return (
+                        <Card key={instance.id ?? tr(instance.name, locale)} title={tr(instance.name, locale)}>
+                          {lines.length > 0 ? lines : "—"}
+                        </Card>
+                      );
+                    })}
+                  </CardGrid>
+                )
+              }
+            />
+          );
+        })}
       </Table>
     </div>
   );
@@ -524,16 +585,13 @@ function ProfessionsTable({ version, rows }: { version: GameVersion; rows: Detai
   const locale = useLocale();
   const nameOf = (id: number) => tr(version.professions.find((p) => p.id === id)?.name, locale);
   const kindOf = (id: number) => version.professions.find((p) => p.id === id)?.kind;
-  const slots = Array.from({ length: version.maxPrimaryProfessions }, (_, i) => i);
   return (
     <Table
       head={
         <>
-          <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
-          {slots.map((i) => (
-            <Th key={i}>{t("primary", { number: i + 1 })}</Th>
-          ))}
-          <Th>{t("secondary")}</Th>
+          <Th>{t("character")}</Th>
+          <Th>{t("primaries")}</Th>
+          <Th className={SM}>{t("secondary")}</Th>
         </>
       }
       footer={version.apiProfessions ? undefined : t("manualProfessions")}
@@ -547,6 +605,7 @@ function ProfessionsTable({ version, rows }: { version: GameVersion; rows: Detai
               skill: p.skill,
               max: p.maxSkill,
               tier: p.tiers.length > 1 ? tr(p.tiers[0]?.name, locale) : undefined,
+              tiers: p.tiers.map((tier) => `${tr(tier.name, locale)}: ${tier.skill ?? "?"}/${tier.maxSkill ?? "?"}`),
             }))
           : (row.details?.manualProfessions ?? []).map((m) => ({
               name: nameOf(m.id),
@@ -554,20 +613,40 @@ function ProfessionsTable({ version, rows }: { version: GameVersion; rows: Detai
               skill: m.skill ?? undefined,
               max: version.professions.find((p) => p.id === m.id)?.maxSkill,
               tier: undefined,
+              tiers: [] as string[],
             }));
         const primaries = list.filter((p) => !p.secondary);
         const secondaries = list.filter((p) => p.secondary);
         const label = (p: (typeof list)[number]) => `${p.name}${p.skill != null ? ` ${p.skill}/${p.max ?? "?"}` : ""}`;
         return (
-          <tr key={row.character.entryId}>
-            <NameCell version={version} row={row} />
-            {slots.map((i) => (
-              <Td key={i} title={primaries[i]?.tier}>
-                {primaries[i] ? label(primaries[i]) : "—"}
-              </Td>
-            ))}
-            <Td className="text-muted">{secondaries.map(label).join(" · ") || "—"}</Td>
-          </tr>
+          <DetailRow
+            key={row.character.entryId}
+            version={version}
+            row={row}
+            span={3}
+            cells={
+              <>
+                <Td>{primaries.map(label).join(" · ") || "—"}</Td>
+                <Td className={`${SM} text-muted`}>{secondaries.map(label).join(" · ") || "—"}</Td>
+              </>
+            }
+            detail={
+              list.length === 0 ? (
+                <p className="text-sm text-muted">—</p>
+              ) : (
+                <CardGrid>
+                  {list.map((p) => (
+                    <Card key={p.name} title={label(p)}>
+                      {p.secondary && <div>{t("secondary")}</div>}
+                      {p.tiers.map((line) => (
+                        <div key={line}>{line}</div>
+                      ))}
+                    </Card>
+                  ))}
+                </CardGrid>
+              )
+            }
+          />
         );
       })}
     </Table>
@@ -590,6 +669,8 @@ function ReputationsTable({ version, rows }: { version: GameVersion; rows: Detai
     return [...counts.entries()].sort((a, b) => b[1].count - a[1].count || a[1].name.localeCompare(b[1].name));
   }, [rows, locale]);
   const [faction, setFaction] = useState<number | undefined>(factions[0]?.[0]);
+  const standing = (rep: NonNullable<CharacterDetails["reputations"]>[number]) =>
+    tr(rep.standing, locale) || (rep.renownLevel != null ? t("renown", { level: rep.renownLevel }) : "—");
 
   if (factions.length === 0) return <p className="p-4 text-sm text-muted">{t("noReputations")}</p>;
   return (
@@ -607,28 +688,45 @@ function ReputationsTable({ version, rows }: { version: GameVersion; rows: Detai
       <Table
         head={
           <>
-            <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
+            <Th>{t("character")}</Th>
             <Th>{t("standing")}</Th>
-            <Th>{t("progress")}</Th>
+            <Th className={SM}>{t("progress")}</Th>
           </>
         }
+        footer={t("reputationsLegend")}
       >
         {rows.map((row) => {
-          const rep = row.details?.reputations?.find((r) => r.factionId === faction);
+          const reps = row.details?.reputations;
+          const rep = reps?.find((r) => r.factionId === faction);
           return (
-            <tr key={row.character.entryId}>
-              <NameCell version={version} row={row} />
-              <Td>
-                {rep ? (
-                  tr(rep.standing, locale) || (rep.renownLevel != null ? t("renown", { level: rep.renownLevel }) : "—")
-                ) : row.details?.reputations == null ? (
-                  <Missing reason={row.details?.missing.reputations} />
+            <DetailRow
+              key={row.character.entryId}
+              version={version}
+              row={row}
+              span={3}
+              cells={
+                <>
+                  <Td>{rep ? standing(rep) : reps == null ? <Missing reason={row.details?.missing.reputations} /> : "—"}</Td>
+                  <Td className={`${SM} tabular-nums text-muted`}>{rep?.value != null && rep.max ? `${rep.value}/${rep.max}` : ""}</Td>
+                </>
+              }
+              detail={
+                reps == null || reps.length === 0 ? (
+                  <p className="text-sm text-muted">—</p>
                 ) : (
-                  "—"
-                )}
-              </Td>
-              <Td className="tabular-nums text-muted">{rep?.value != null && rep.max ? `${rep.value}/${rep.max}` : ""}</Td>
-            </tr>
+                  <CardGrid>
+                    {[...reps]
+                      .sort((a, b) => tr(a.name, locale).localeCompare(tr(b.name, locale)))
+                      .map((r) => (
+                        <Card key={r.factionId} title={tr(r.name, locale)}>
+                          {standing(r)}
+                          {r.value != null && r.max ? ` · ${r.value}/${r.max}` : ""}
+                        </Card>
+                      ))}
+                  </CardGrid>
+                )
+              }
+            />
           );
         })}
       </Table>
