@@ -1,16 +1,17 @@
-import { SUPPORTED_LOCALES } from "@wow/config";
+import { SUPPORTED_LOCALES, versionOf } from "@wow/config";
+import { fitsGameVersion } from "@wow/core";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AppDeps } from "../deps";
 import { notFound, unauthorized } from "../errors";
 import { guildRole } from "../permissions";
 
-export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
+export async function meRoutes(app: FastifyInstance, { prisma, versions }: AppDeps) {
   app.get("/me", async (request) => {
     const user = request.user;
     if (!user) return { user: null };
 
-    const characters = await prisma.character.findMany({
+    const owned = await prisma.character.findMany({
       where: { ownerId: user.id },
       orderBy: [{ level: "desc" }, { name: "asc" }],
       select: {
@@ -26,9 +27,13 @@ export async function meRoutes(app: FastifyInstance, { prisma }: AppDeps) {
         isMain: true,
         avatarUrl: true,
         lastSyncedAt: true,
+        syncError: true,
         guild: { select: { id: true, name: true } },
       },
     });
+    // Rows claimed before login checked versions can hold a character of another game version
+    // (e.g. an Evoker under Classic Era): they are not shown, and the next login releases them.
+    const characters = owned.filter((c) => fitsGameVersion(versionOf(versions, c.gameVersion), c));
 
     // Guilds the user can open: explicit memberships plus registered guilds of their characters.
     const guildIds = new Set<string>([

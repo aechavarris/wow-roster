@@ -1,7 +1,7 @@
 import { resolveProfile } from "@wow/config";
 import { describe, expect, it } from "vitest";
 import { buildRoster, type RosterInputEntry } from "./roster";
-import { defaultStatusForRank } from "./sync";
+import { defaultStatusForRank, fitsGameVersion } from "./sync";
 
 const profile = resolveProfile("retail");
 
@@ -121,5 +121,16 @@ describe("defaultStatusForRank", () => {
   it("maps high ranks to raiding and low ranks to social", () => {
     expect(defaultStatusForRank(profile, 0)).toBe("raider");
     expect(defaultStatusForRank(profile, 7)).toBe("social");
+  });
+});
+
+describe("fitsGameVersion", () => {
+  it("accepts only classes of the version within its level cap", () => {
+    const era = resolveProfile("classic-era");
+    expect(fitsGameVersion(era, { classId: 7, level: 60 })).toBe(true);
+    expect(fitsGameVersion(era, { classId: 13, level: 60 })).toBe(false);
+    expect(fitsGameVersion(era, { classId: 1, level: 70 })).toBe(false);
+    expect(fitsGameVersion(resolveProfile("retail"), { classId: 13, level: 80 })).toBe(true);
+    expect(fitsGameVersion(era, { classId: null, level: 0 })).toBe(true);
   });
 });

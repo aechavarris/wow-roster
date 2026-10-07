@@ -89,6 +89,8 @@ const RETAIL_NAMESPACES = new Set(["profile-eu", "static-eu", "dynamic-eu"]);
 
 /** Paths that answer with an error status, to simulate Blizzard outages per endpoint. */
 const failingRoutes = new Map<string, number>();
+/** When true, the account endpoint answers with the same (retail) characters in every namespace. */
+let accountInEveryVersion = false;
 /** Every Blizzard path requested, to check what each API route costs. */
 const blizzardCalls: string[] = [];
 
@@ -98,6 +100,10 @@ const fakeFetch = (async (input: string | URL, init?: RequestInit) => {
   blizzardCalls.push(url.pathname);
   // The account characters belong to Battle.net user 1001; every other user has none.
   const userToken = new Headers(init?.headers).get("authorization")?.replace("Bearer ", "");
+  // Some tests make every namespace list the retail account, as Blizzard may do across game versions.
+  if (url.pathname === "/profile/user/wow" && accountInEveryVersion && userToken === "user-token-1001") {
+    return Response.json(blizzardRoutes["/profile/user/wow"]);
+  }
   if (url.pathname === "/profile/user/wow" && userToken !== "user-token-1001" && !failingRoutes.has(url.pathname)) {
     return Response.json({ wow_accounts: [] });
   }
@@ -169,6 +175,7 @@ beforeEach(async () => {
   calls.length = 0;
   blizzardCalls.length = 0;
   failingRoutes.clear();
+  accountInEveryVersion = false;
   await prisma.$executeRawUnsafe(
     'TRUNCATE "RosterInvite", "RosterEntry", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User", "StaticCache" CASCADE',
   );
@@ -997,5 +1004,62 @@ describe("professions", () => {
     });
     expect(response.json().error).toBe("professions_from_api");
     expect((await app.inject({ method: "PUT", url: `/api/characters/${thrall.id}/professions`, payload: { professions: [] } })).statusCode).toBe(401);
+  });
+});
+
+describe("characters stay in their own game version", () => {
+  it("does not claim characters that cannot exist in the version whose account endpoint listed them", async () => {
+    const account = blizzardRoutes["/profile/user/wow"];
+    blizzardRoutes["/profile/user/wow"] = {
+      wow_accounts: [
+        {
+          characters: [
+            { id: 1, name: "Thrall", level: 60, realm: { slug: "los-errantes" }, playable_class: { id: 7 } },
+            { id: 2, name: "Dracatxi", level: 80, realm: { slug: "los-errantes" }, playable_class: { id: 13 } },
+            { id: 3, name: "Arthas", level: 80, realm: { slug: "los-errantes" }, playable_class: { id: 6 } },
+          ],
+        },
+      ],
+    };
+    accountInEveryVersion = true;
+    try {
+      const session = await login();
+      const me = (await app.inject({ method: "GET", url: "/api/me", cookies: { wr_session: session } })).json();
+      const byVersion = (v: string) => me.characters.filter((c: { gameVersion: string }) => c.gameVersion === v).map((c: { name: string }) => c.name).sort();
+      expect(byVersion("retail")).toEqual(["Arthas", "Dracatxi", "Thrall"]);
+      // Classic Era has no Evokers, no Death Knights and caps at 60; MoP Classic has Death Knights but no Evokers.
+      expect(byVersion("classic-era")).toEqual(["Thrall"]);
+      expect(byVersion("anniversary")).toEqual(["Thrall"]);
+      expect(byVersion("progression")).toEqual(["Arthas", "Thrall"]);
+      expect(await prisma.character.count({ where: { gameVersion: "classic-era", nameKey: "dracatxi" } })).toBe(0);
+    } finally {
+      blizzardRoutes["/profile/user/wow"] = account;
+    }
+  });
+
+  it("hides and releases rows stored under the wrong version before this check existed", async () => {
+    const session = await login();
+    const user = await prisma.user.findFirstOrThrow({ where: { bnetId: 1001 } });
+    const evoker = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "los-errantes", name: "Dracatxi", nameKey: "dracatxi", classId: 13, level: 80, ownerId: user.id },
+    });
+    const me = (await app.inject({ method: "GET", url: "/api/me", cookies: { wr_session: session } })).json();
+    expect(me.characters.map((c: { id: string }) => c.id)).not.toContain(evoker.id);
+
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Era", gameVersion: "classic-era", region: "eu" } })).json().guild;
+    const add = (id: string) =>
+      app.inject({ method: "POST", url: `/api/guilds/${roster.id}/roster/mine`, cookies: { wr_session: session }, payload: { characterIds: [id] } });
+    expect((await add(evoker.id)).json().error).toBe("not_your_characters");
+
+    // A character the version's API did not find cannot be added either.
+    const ghost = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "los-errantes", name: "Fantasma", nameKey: "fantasma", classId: 1, level: 60, ownerId: user.id, syncError: "not_found" },
+    });
+    expect((await add(ghost.id)).json().error).toBe("not_your_characters");
+
+    // The next login that reads the Classic Era account (here it lists the retail characters) releases it.
+    accountInEveryVersion = true;
+    await login();
+    expect((await prisma.character.findUniqueOrThrow({ where: { id: evoker.id } })).ownerId).toBeNull();
   });
 });

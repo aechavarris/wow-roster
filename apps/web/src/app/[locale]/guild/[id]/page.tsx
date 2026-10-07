@@ -40,8 +40,14 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
   const inRoster = new Set(
     [...roster.players.flatMap((p) => [p.main, ...p.alts]), ...roster.pending].flatMap((c) => (c.characterId ? [c.characterId] : [])),
   );
+  // Only the viewer's characters of this roster's game version that its API actually found.
   const myCharacters = (me.characters ?? []).filter(
-    (c) => c.gameVersion === guild.gameVersion && c.region === guild.region && !inRoster.has(c.id) && c.level >= 10,
+    (c) =>
+      c.gameVersion === guild.gameVersion &&
+      c.region === guild.region &&
+      c.syncError !== "not_found" &&
+      !inRoster.has(c.id) &&
+      c.level >= 10,
   );
 
   return (

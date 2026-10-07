@@ -217,16 +217,27 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
  * Records the characters of a Battle.net account in one game version as owned by the user and
  * releases characters the account no longer has in that version and region.
  */
+/**
+ * Whether a character can belong to a game version: its class exists there and its level fits the cap.
+ * The account endpoint of one game version's namespace can list characters of other versions (an
+ * Evoker in Classic, a level 70 in Classic Era): those must not be stored under the wrong version.
+ */
+export function fitsGameVersion(profile: GameProfile, character: { classId?: number | null; level?: number | null }): boolean {
+  if (character.classId != null && !profile.classes.some((c) => c.id === character.classId)) return false;
+  return (character.level ?? 0) <= profile.maxLevel;
+}
+
 export async function claimAccountCharacters(
   ctx: CoreContext,
   userId: string,
   target: { version: string; region: string },
   characters: AccountCharacter[],
-): Promise<string[]> {
-  const { version: gameVersion, region } = target;
+): Promise<{ id: string; level: number }[]> {
+  const { version: versionId, region } = target;
+  const profile = gameVersion(ctx, versionId);
   const { prisma } = ctx;
-  const ids: string[] = [];
-  for (const c of characters) {
+  const claimed: { id: string; level: number }[] = [];
+  for (const c of characters.filter((c) => fitsGameVersion(profile, c))) {
     const fields = {
       blizzardId: c.blizzardId,
       level: c.level,
@@ -236,18 +247,19 @@ export async function claimAccountCharacters(
       ownerId: userId,
     };
     const character = await prisma.character.upsert({
-      where: { gameVersion_region_realm_nameKey: { gameVersion, region, realm: c.realmSlug, nameKey: nameKey(c.name) } },
-      create: { gameVersion, region, realm: c.realmSlug, name: c.name, nameKey: nameKey(c.name), ...fields },
+      where: { gameVersion_region_realm_nameKey: { gameVersion: versionId, region, realm: c.realmSlug, nameKey: nameKey(c.name) } },
+      create: { gameVersion: versionId, region, realm: c.realmSlug, name: c.name, nameKey: nameKey(c.name), ...fields },
       update: { name: c.name, ...fields },
       select: { id: true },
     });
-    ids.push(character.id);
+    claimed.push({ id: character.id, level: c.level });
   }
+  // Characters no longer on the account, or listed under a version they do not belong to, are released.
   await prisma.character.updateMany({
-    where: { ownerId: userId, gameVersion, region, id: { notIn: ids } },
+    where: { ownerId: userId, gameVersion: versionId, region, id: { notIn: claimed.map((c) => c.id) } },
     data: { ownerId: null, isMain: false },
   });
-  return ids;
+  return claimed;
 }
 
 export { nameKey };

@@ -49,9 +49,8 @@ export async function authRoutes(app: FastifyInstance, deps: AppDeps) {
     for (const version of versions.list.filter((v) => v.api.available)) {
       try {
         const characters = await core.blizzard(version.id, region).getAccountCharacters(accessToken);
-        const ids = await claimAccountCharacters(core, user.id, { version: version.id, region }, characters);
-        const toSync = characters
-          .map((c, i) => ({ level: c.level, id: ids[i]! }))
+        const claimed = await claimAccountCharacters(core, user.id, { version: version.id, region }, characters);
+        const toSync = claimed
           .filter((c) => c.level >= version.sync.defaultMinLevel)
           .map((c) => c.id);
         await queue.syncCharacters(toSync);
