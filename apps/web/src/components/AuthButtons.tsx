@@ -25,7 +25,7 @@ export function LogoutButton() {
       type="button"
       className="btn"
       onClick={async () => {
-        await apiSend("POST", "/auth/logout");
+        await apiSend("POST", "/auth/logout", undefined, { quiet: true });
         router.refresh();
       }}
     >

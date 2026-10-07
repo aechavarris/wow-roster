@@ -2,6 +2,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Cinzel, Inter } from "next/font/google";
 import { notFound } from "next/navigation";
+import { ActionFeedback } from "@/components/ActionFeedback";
 import { Header } from "@/components/Header";
 import { routing } from "@/i18n/routing";
 import { getConfig, getMe } from "@/lib/api";
@@ -29,6 +30,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         <NextIntlClientProvider>
           <Header user={me.user} loginEnabled={config.loginEnabled} />
           <main className="mx-auto w-full max-w-7xl px-4 py-6">{children}</main>
+          <ActionFeedback />
         </NextIntlClientProvider>
       </body>
     </html>
