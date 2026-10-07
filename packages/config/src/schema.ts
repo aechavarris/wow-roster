@@ -68,6 +68,8 @@ export const apiSchema = z.object({
   characterEndpoints: z.array(
     z.enum(["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"]),
   ),
+  /** Also read Mythic+ runs from Raider.IO (every run of the week, not only the best per dungeon). Retail only. */
+  raiderIo: z.boolean().default(false),
 });
 
 /**

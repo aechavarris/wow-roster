@@ -67,7 +67,11 @@ export function weekActivity(profile: Partial<CharacterProfile> | null, start: D
   return {
     raids: killedSince(profile?.raids, from, to),
     dungeons: killedSince(profile?.dungeons, from, to),
-    mythicPlus: (profile?.mythicPlus?.weeklyRuns ?? [])
+    // Raider.IO lists every run of the week; Blizzard only the best run per dungeon, so it is the fallback.
+    mythicPlus: (profile?.raiderIo
+      ? profile.raiderIo.weeklyRuns.map((run) => ({ ...run, dungeon: { en: run.dungeon } }))
+      : (profile?.mythicPlus?.weeklyRuns ?? [])
+    )
       .filter((run) => run.completedAt && Date.parse(run.completedAt) >= from && Date.parse(run.completedAt) < to)
       .map((run) => ({ dungeon: run.dungeon, level: run.level, timed: run.timed, completedAt: run.completedAt })),
   };

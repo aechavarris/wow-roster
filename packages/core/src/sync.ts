@@ -1,4 +1,4 @@
-import { BlizzardApiError, type CharacterProfile, type CharacterSummary, type AccountCharacter } from "@wow/blizzard";
+import { BlizzardApiError, RaiderIoError, type CharacterProfile, type CharacterSummary, type AccountCharacter } from "@wow/blizzard";
 import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
 import { gameVersion, type CoreContext } from "./context";
@@ -193,6 +193,7 @@ export function profileIncomplete(profile: GameProfile, stored: Partial<Characte
   if (!stored) return true;
   // Mythic+ profiles stored before season bests were fetched, or whose season request failed.
   if (stored.mythicPlus && stored.mythicPlus.seasonRuns === undefined) return true;
+  if (profile.api.raiderIo && stored.raiderIo === undefined && stored.missing?.raiderIo !== "404") return true;
   return profile.api.characterEndpoints.some((endpoint) => {
     if (stored[ENDPOINT_KEYS[endpoint]] !== undefined) return false;
     const reason = stored.missing?.[endpoint];
@@ -244,6 +245,14 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
   }
 
   const details = await client.getCharacterProfile(ref, summary);
+  if (profile.api.raiderIo && ctx.raiderIo) {
+    try {
+      details.raiderIo = await ctx.raiderIo.getProfile(character.region, character.realm, character.name);
+    } catch (error) {
+      // Best effort: Blizzard's data still covers the rating and weekly bests. Unknown characters are not retried.
+      details.missing.raiderIo = error instanceof RaiderIoError ? (error.notFound ? "404" : String(error.status)) : "error";
+    }
+  }
   await enrichProfile(ctx, { version: character.gameVersion, region: character.region }, details);
   const { summary: _summary, ...stored } = details;
   const updated = await prisma.character.update({

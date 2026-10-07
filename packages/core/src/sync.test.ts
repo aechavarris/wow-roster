@@ -18,6 +18,7 @@ function complete(): Partial<CharacterProfile> {
     raids: [],
     dungeons: [],
     mythicPlus: { weeklyRuns: [], seasonRuns: [] },
+    raiderIo: { weeklyRuns: [], recentRuns: [], bestRuns: [] },
     missing: {},
   } as unknown as Partial<CharacterProfile>;
 }
@@ -42,6 +43,14 @@ describe("profileIncomplete", () => {
 
   it("refetches Mythic+ profiles without the season's best runs", () => {
     expect(profileIncomplete(retail, { ...complete(), mythicPlus: { weeklyRuns: [] } })).toBe(true);
+  });
+
+  it("refetches retail profiles without Raider.IO data unless Raider.IO does not know the character", () => {
+    const { raiderIo: _r, ...withoutRio } = complete();
+    expect(profileIncomplete(retail, withoutRio)).toBe(true);
+    expect(profileIncomplete(retail, { ...withoutRio, missing: { raiderIo: "404" } })).toBe(false);
+    // Classic Era has no Raider.IO.
+    expect(profileIncomplete(era, withoutRio)).toBe(false);
   });
 
   it("treats a missing profile as incomplete", () => {

@@ -437,9 +437,6 @@
     "missingReason": "La API no devolvió estos datos ({reason})",
     "gearLegend": "Pasa el ratón (o toca) sobre una pieza para ver su tooltip; ↗ la abre en Wowhead. ✦ encantado · ◆ gemas.",
     "enchanted": "Encantado",
-    "weeklyRuns": "Mazmorras esta semana",
-    "bestKey": "Mejor llave",
-    "runs": "Llaves de la semana (✓ a tiempo)",
     "expansion": "Expansión",
     "instanceLegend": "Mejor dificultad con jefes muertos: jefes muertos/total. Pasa el ratón para ver todas las dificultades.",
     "noRaids": "Ningún personaje tiene progreso de raid registrado.",
@@ -453,9 +450,14 @@
     "noReputations": "Ningún personaje tiene reputaciones registradas.",
     "wowhead": "Ver {name} en Wowhead",
     "renown": "Renombre {level}",
-    "seasonBest": "Mejor llave de la temporada",
-    "seasonRuns": "Mejor llave por mazmorra (temporada)",
-    "mythicLegend": "La semana empieza en el reinicio semanal. ✓ a tiempo; en gris, fuera de tiempo."
+    "seasonBest": "Mejor llave",
+    "mythicLegend": "Cada mazmorra muestra la mejor llave de la temporada (✓ a tiempo; en gris, fuera de tiempo), las llaves de esta semana (cuántas y la más alta) y cuántas veces se ha completado en Mítica en total, contando Mítica 0 y llaves. La semana empieza en el reinicio semanal.",
+    "dungeonsTimed": "A tiempo",
+    "runRating": "Vale {rating} puntos",
+    "thisWeek": "semana: {count}× · {key}",
+    "weeklyKeys": "Llaves esta semana",
+    "totalClears": "{count} en Mítica (total)",
+    "raiderIoCredit": "Llaves: Raider.IO."
   },
   "weekly": {
     "title": "Auditoría semanal",

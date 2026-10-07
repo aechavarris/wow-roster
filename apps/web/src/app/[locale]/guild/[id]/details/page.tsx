@@ -48,7 +48,7 @@ export default async function RosterDetailsPage({ params }: PageProps<"/[locale]
       {!version.apiAvailable ? (
         <p className="card text-sm text-muted">{t("noApi")}</p>
       ) : (
-        <RosterDetails version={version} rows={rows} />
+        <RosterDetails version={version} rows={rows} weekStart={details?.weekStart ?? null} />
       )}
     </div>
   );

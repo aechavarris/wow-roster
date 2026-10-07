@@ -260,6 +260,37 @@ export interface MythicPlusProfile {
   seasonRuns?: MythicPlusRun[];
 }
 
+/** One Mythic+ run as Raider.IO reports it (dungeon names in English). */
+export interface RaiderIoRun {
+  dungeon: string;
+  shortName?: string;
+  level: number;
+  /** Raider.IO counts keystone upgrades; 0 means the run was over time. */
+  timed: boolean;
+  upgrades: number;
+  completedAt?: string;
+  score?: number;
+  url?: string;
+}
+
+/**
+ * A character's Mythic+ data from Raider.IO. Unlike Blizzard, it lists every run of the week (not only the best per
+ * dungeon), which is what run counts and the Great Vault need.
+ */
+export interface RaiderIoProfile {
+  profileUrl?: string;
+  /** Season slug, e.g. "season-mn-2". */
+  season?: string;
+  score?: number;
+  color?: string;
+  /** This week's runs, highest first. */
+  weeklyRuns: RaiderIoRun[];
+  /** Latest runs of the season, newest first. */
+  recentRuns: RaiderIoRun[];
+  /** Best run per dungeon this season. */
+  bestRuns: RaiderIoRun[];
+}
+
 /** Everything fetched in one character sync; endpoints the game version lacks stay undefined. */
 export interface CharacterProfile {
   summary: CharacterSummary;
@@ -272,6 +303,8 @@ export interface CharacterProfile {
   raids?: InstanceProgress[];
   dungeons?: InstanceProgress[];
   mythicPlus?: MythicPlusProfile;
+  /** Mythic+ runs from Raider.IO, for versions that enable it (retail). */
+  raiderIo?: RaiderIoProfile;
   /** Endpoints that failed or are unsupported, with the reason. */
   missing: Record<string, string>;
 }

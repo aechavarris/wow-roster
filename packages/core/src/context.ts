@@ -1,4 +1,6 @@
-import { BlizzardClient } from "@wow/blizzard";
+import { BlizzardClient, RaiderIoClient } from "@wow/blizzard";
+
+export { RaiderIoClient };
 import { versionOf, type GameProfile, type GameVersions } from "@wow/config";
 import type { PrismaClient } from "@wow/db";
 
@@ -8,6 +10,8 @@ export interface CoreContext {
   versions: GameVersions;
   /** Client for a game version's API in a region. Throws ApiUnavailableError if the version has none. */
   blizzard(version: string, region: string): BlizzardClient;
+  /** Raider.IO, for versions whose profile enables it; without it those versions use Blizzard's data only. */
+  raiderIo?: RaiderIoClient;
 }
 
 /** The game version has no public Blizzard API yet (Forever): only planned characters are possible. */
