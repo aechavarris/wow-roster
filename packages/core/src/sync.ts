@@ -171,6 +171,33 @@ function summaryFields(profile: GameProfile, summary: CharacterSummary, details?
 
 export type CharacterSyncResult = "updated" | "unchanged" | "not_found";
 
+/** Where each character endpoint of a game profile lands in the stored CharacterProfile. */
+const ENDPOINT_KEYS = {
+  equipment: "equipment",
+  specializations: "talents",
+  media: "media",
+  statistics: "statistics",
+  professions: "professions",
+  reputations: "reputations",
+  raids: "raids",
+  dungeons: "dungeons",
+  mythicPlus: "mythicPlus",
+} as const satisfies Record<GameProfile["api"]["characterEndpoints"][number], keyof CharacterProfile>;
+
+/**
+ * Whether a stored profile lacks data the game version now provides: an endpoint added to the profile after
+ * the last full sync (e.g. Mythic+), or one that failed then for a reason other than "the character has no
+ * such data" (404). Such profiles are refetched even when the character has not logged in since.
+ */
+export function profileIncomplete(profile: GameProfile, stored: Partial<CharacterProfile> | null): boolean {
+  if (!stored) return true;
+  return profile.api.characterEndpoints.some((endpoint) => {
+    if (stored[ENDPOINT_KEYS[endpoint]] !== undefined) return false;
+    const reason = stored.missing?.[endpoint];
+    return reason !== "404" && reason !== "unsupported";
+  });
+}
+
 /**
  * Refreshes one character. When it has not logged in since the last full sync,
  * only the summary is stored to save API quota.
@@ -198,7 +225,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
 
   const unchanged =
     !force &&
-    character.profile !== null &&
+    !profileIncomplete(profile, character.profile as Partial<CharacterProfile> | null) &&
     character.lastLoginAt !== null &&
     summary.lastLoginAt !== undefined &&
     new Date(summary.lastLoginAt).getTime() === character.lastLoginAt.getTime();
