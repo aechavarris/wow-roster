@@ -1063,3 +1063,48 @@ describe("characters stay in their own game version", () => {
     expect((await prisma.character.findUniqueOrThrow({ where: { id: evoker.id } })).ownerId).toBeNull();
   });
 });
+
+describe("deleting rosters", () => {
+  const send = (method: "POST" | "DELETE" | "GET", url: string, session: string | null, payload?: object) =>
+    app.inject({ method, url, payload, cookies: session ? { wr_session: session } : {} });
+
+  it("lets only the owner delete a roster after typing its name, keeping the characters", async () => {
+    const owner = await login(1001);
+    const roster = (await send("POST", "/api/rosters", owner, { name: "Para borrar", gameVersion: "retail", region: "eu" })).json().guild;
+    const thrall = await prisma.character.findFirstOrThrow({ where: { nameKey: "thrall" } });
+    await send("POST", `/api/guilds/${roster.id}/roster/mine`, owner, { characterIds: [thrall.id] });
+    await send("POST", `/api/guilds/${roster.id}/roster/planned`, owner, { classId: 1 });
+    const { token } = (await send("POST", `/api/guilds/${roster.id}/invites`, owner, { role: "OFFICER" })).json();
+    const officer = await login(2002);
+    await send("POST", `/api/invites/${token}/accept`, officer);
+
+    expect((await send("DELETE", `/api/guilds/${roster.id}`, null, { confirmName: "Para borrar" })).statusCode).toBe(401);
+    expect((await send("DELETE", `/api/guilds/${roster.id}`, officer, { confirmName: "Para borrar" })).statusCode).toBe(403);
+    expect((await send("DELETE", `/api/guilds/${roster.id}`, owner, { confirmName: "Otro" })).json().error).toBe("confirm_name_mismatch");
+    expect((await send("DELETE", `/api/guilds/${roster.id}`, owner)).statusCode).toBe(400);
+
+    calls.length = 0;
+    const deleted = await send("DELETE", `/api/guilds/${roster.id}`, owner, { confirmName: " Para borrar " });
+    expect(deleted.json()).toEqual({ deleted: true });
+    expect(calls).toEqual([`unschedule:${roster.id}`]);
+    expect((await send("GET", `/api/guilds/${roster.id}`, owner)).statusCode).toBe(404);
+    expect(await prisma.rosterEntry.count({ where: { guildId: roster.id } })).toBe(0);
+    expect(await prisma.guildMembership.count({ where: { guildId: roster.id } })).toBe(0);
+    expect(await prisma.rosterInvite.count({ where: { guildId: roster.id } })).toBe(0);
+    expect(await prisma.character.count({ where: { id: thrall.id } })).toBe(1);
+  });
+
+  it("keeps synced characters when a guild-linked roster is deleted", async () => {
+    const owner = await login();
+    const { guild } = (
+      await send("POST", "/api/guilds", owner, { gameVersion: "retail", region: "eu", realm: "Los Errantes", name: "Horda Eterna" })
+    ).json();
+    await syncGuild(core, guild.id);
+    expect(await prisma.character.count({ where: { guildId: guild.id } })).toBe(3);
+    expect((await send("DELETE", `/api/guilds/${guild.id}`, owner, { confirmName: "Horda Eterna" })).statusCode).toBe(200);
+    expect(await prisma.character.count({ where: { guildId: guild.id } })).toBe(0);
+    expect(await prisma.character.count({ where: { realm: "los-errantes" } })).toBe(3);
+    // The guild can be registered again afterwards.
+    expect((await send("POST", "/api/guilds", owner, { gameVersion: "retail", region: "eu", realm: "Los Errantes", name: "Horda Eterna" })).statusCode).toBe(201);
+  });
+});

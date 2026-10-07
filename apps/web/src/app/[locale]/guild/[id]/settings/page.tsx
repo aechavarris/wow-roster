@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { DeleteRosterForm } from "@/components/DeleteRosterForm";
 import { GameVersionForm } from "@/components/GameVersionForm";
 import { GuildSettingsForm } from "@/components/GuildSettingsForm";
 import { PublishForm } from "@/components/PublishForm";
@@ -37,6 +38,7 @@ export default async function GuildSettingsPage({ params }: PageProps<"/[locale]
       )}
       <GuildSettingsForm guild={data.guild} ranks={data.ranks} profile={versionOf(config, data.guild.gameVersion)} />
       <MembersPanel guildId={id} viewerRole={data.viewerRole} viewerUserId={me.user.id} />
+      {data.viewerRole === "OWNER" && <DeleteRosterForm guild={data.guild} />}
     </div>
   );
 }

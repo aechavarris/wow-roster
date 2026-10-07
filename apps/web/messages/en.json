@@ -303,7 +303,8 @@
     "unknown_profession": "That profession does not exist in this game version.",
     "invalid_profession_skill": "The skill is above that profession's cap in this game version.",
     "too_many_primary_professions": "A character can only have two primary professions.",
-    "professions_from_api": "In this game version professions come from Blizzard's API."
+    "professions_from_api": "In this game version professions come from Blizzard's API.",
+    "confirm_name_mismatch": "The name does not match the roster's."
   },
   "createRoster": {
     "title": "Create a custom roster",
@@ -398,5 +399,13 @@
     "empty": "There are no published rosters yet.",
     "entries": "{count, plural, one {# character} other {# characters}}",
     "by": "by {name}"
+  },
+  "deleteRoster": {
+    "title": "Delete roster",
+    "help": "Deletes the roster, its entries, members and invites. Characters are kept. This cannot be undone.",
+    "helpGuild": "Stops tracking the guild: deletes the roster, its ranks, entries, members and invites. Characters are kept. This cannot be undone.",
+    "confirmLabel": "Type “{name}” to confirm",
+    "submit": "Delete roster",
+    "deleting": "Deleting…"
   }
 }

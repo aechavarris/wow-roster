@@ -303,7 +303,8 @@
     "unknown_profession": "Esa profesión no existe en esta versión del juego.",
     "invalid_profession_skill": "El nivel supera el máximo de esa profesión en esta versión.",
     "too_many_primary_professions": "Solo se pueden tener dos profesiones principales.",
-    "professions_from_api": "En esta versión las profesiones vienen de la API de Blizzard."
+    "professions_from_api": "En esta versión las profesiones vienen de la API de Blizzard.",
+    "confirm_name_mismatch": "El nombre no coincide con el del roster."
   },
   "createRoster": {
     "title": "Crear roster libre",
@@ -398,5 +399,13 @@
     "empty": "Todavía no hay rosters publicados.",
     "entries": "{count, plural, one {# personaje} other {# personajes}}",
     "by": "de {name}"
+  },
+  "deleteRoster": {
+    "title": "Borrar roster",
+    "help": "Se borran el roster, sus entradas, miembros e invitaciones. Los personajes no se borran. No se puede deshacer.",
+    "helpGuild": "Se deja de seguir la hermandad: se borran el roster, sus rangos, entradas, miembros e invitaciones. Los personajes no se borran. No se puede deshacer.",
+    "confirmLabel": "Escribe «{name}» para confirmar",
+    "submit": "Borrar roster",
+    "deleting": "Borrando…"
   }
 }
