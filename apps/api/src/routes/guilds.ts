@@ -1,6 +1,17 @@
 import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
 import { REGIONS, blizzardSlug } from "@wow/config";
-import { buildRoster, defaultStatusForRank, fitsGameVersion, gameVersion, nameKey, syncCharacter, toCharacterView } from "@wow/core";
+import {
+  buildRoster,
+  defaultStatusForRank,
+  fitsGameVersion,
+  gameVersion,
+  nameKey,
+  syncCharacter,
+  toCharacterView,
+  vaultSlots,
+  weekStart,
+  type WeekActivity,
+} from "@wow/core";
 import type { User } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -9,6 +20,9 @@ import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from 
 import { atLeast, loadVisibleGuild, requireGuildRole, type ViewerRole } from "../permissions";
 
 const idParams = z.object({ id: z.string() });
+
+/** Weeks of history the weekly audit returns, the selected week included. */
+const HISTORY_WEEKS = 12;
 
 /** Pending proposals a non-member can have in one published roster, to keep the owner's queue manageable. */
 const MAX_PENDING_PER_USER = 10;
@@ -327,6 +341,43 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       };
     }
     return { characters };
+  });
+
+  /**
+   * Weekly audit: what each roster character did in one game week (default: the current one) and a
+   * short history of the previous weeks. Weeks follow the roster region's weekly reset.
+   */
+  app.get("/guilds/:id/weekly", async (request) => {
+    const { id } = idParams.parse(request.params);
+    const query = z.object({ week: z.coerce.date().optional() }).parse(request.query);
+    const { guild } = await loadVisibleGuild(prisma, id, request.user);
+    const rules = gameVersion(core, guild.gameVersion).weekly;
+    const current = weekStart(rules, guild.region);
+    const selected = query.week ? weekStart(rules, guild.region, query.week) : current;
+
+    const entries = await prisma.rosterEntry.findMany({
+      where: { guildId: id, pending: false, characterId: { not: null } },
+      select: { characterId: true },
+    });
+    const characterIds = entries.flatMap((e) => (e.characterId ? [e.characterId] : []));
+    const rows = await prisma.characterWeek.findMany({
+      where: { characterId: { in: characterIds }, weekStart: { lte: current, gte: new Date(current.getTime() - (HISTORY_WEEKS - 1) * 7 * 86_400_000) } },
+      orderBy: { weekStart: "desc" },
+    });
+
+    const weeks = [...new Set([current.toISOString(), ...rows.map((r) => r.weekStart.toISOString())])].sort().reverse();
+    const characters: Record<string, unknown> = {};
+    const history: Record<string, { weekStart: string; bosses: number; runs: number; itemLevel: number | null }[]> = {};
+    for (const row of rows) {
+      const activity = row.data as unknown as WeekActivity;
+      const vault = vaultSlots(rules, activity);
+      const bosses = new Set(activity.raids.flatMap((r) => r.bosses.map((b) => `${r.instanceId}:${b.id}`))).size;
+      (history[row.characterId] ??= []).push({ weekStart: row.weekStart.toISOString(), bosses, runs: activity.mythicPlus.length, itemLevel: row.itemLevel });
+      if (row.weekStart.getTime() === selected.getTime()) {
+        characters[row.characterId] = { itemLevel: row.itemLevel, activity, vault, updatedAt: row.updatedAt };
+      }
+    }
+    return { week: selected.toISOString(), current: current.toISOString(), weeks, vault: rules?.vault ?? null, characters, history };
   });
 
   /** Published rosters for signed-in users, newest first; optionally of one game version. */

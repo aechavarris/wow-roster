@@ -3,6 +3,7 @@ import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
 import { gameVersion, type CoreContext } from "./context";
 import { enrichProfile } from "./static";
+import { recordWeek } from "./weekly";
 
 /** Ranks up to this index default to a raiding status; officers can remap them later. */
 const DEFAULT_RAIDING_RANKS = 3;
@@ -189,17 +190,19 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     new Date(summary.lastLoginAt).getTime() === character.lastLoginAt.getTime();
 
   if (unchanged) {
-    await prisma.character.update({
+    const updated = await prisma.character.update({
       where: { id: characterId },
       data: { ...summaryFields(profile, summary), lastSyncedAt: new Date(), syncError: null },
     });
+    // A new week starts with nothing done, even for characters that have not logged in.
+    await recordWeek(ctx, updated, character.profile as Partial<CharacterProfile> | null);
     return "unchanged";
   }
 
   const details = await client.getCharacterProfile(ref, summary);
   await enrichProfile(ctx, { version: character.gameVersion, region: character.region }, details);
   const { summary: _summary, ...stored } = details;
-  await prisma.character.update({
+  const updated = await prisma.character.update({
     where: { id: characterId },
     data: {
       ...summaryFields(profile, summary, details),
@@ -210,6 +213,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
       syncError: null,
     },
   });
+  await recordWeek(ctx, updated, stored);
   return "updated";
 }
 

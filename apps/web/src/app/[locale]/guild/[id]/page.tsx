@@ -70,9 +70,14 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
         <div className="flex gap-2">
           {/* Anyone who sees the roster can open the details table; only versions with an API have data. */}
           {version.apiAvailable && (
-            <Link href={`/guild/${guild.id}/details`} className="btn">
-              {t("details")}
-            </Link>
+            <>
+              <Link href={`/guild/${guild.id}/details`} className="btn">
+                {t("details")}
+              </Link>
+              <Link href={`/guild/${guild.id}/weekly`} className="btn">
+                {t("weekly")}
+              </Link>
+            </>
           )}
           {isOfficer && version.apiAvailable && <SyncGuildButton guildId={guild.id} />}
           {isOfficer && (

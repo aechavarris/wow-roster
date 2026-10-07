@@ -79,7 +79,8 @@
     "customRoster": "Roster libre",
     "linkedRoster": "vinculado a la hermandad",
     "published": "Publicado",
-    "details": "Detalles"
+    "details": "Detalles",
+    "weekly": "Semana"
   },
   "roster": {
     "raiders": "{count, plural, =0 {Sin raiders} one {# raider} other {# raiders}}",
@@ -449,5 +450,34 @@
     "standing": "Reputación",
     "progress": "Progreso",
     "noReputations": "Ningún personaje tiene reputaciones registradas."
+  },
+  "weekly": {
+    "title": "Auditoría semanal",
+    "help": "Lo que ha hecho cada personaje en la semana del juego (desde el reinicio semanal de {region}) y su historial. Se actualiza en cada sincronización.",
+    "noApi": "Esta versión del juego aún no tiene API de Blizzard: la auditoría aparecerá cuando se publique.",
+    "noWeeklyData": "La API de esta versión del juego no da datos semanales (jefes de raid, mazmorras ni Mítica+), así que no hay nada que auditar todavía.",
+    "tabs": {
+      "week": "Semana",
+      "history": "Historial"
+    },
+    "week": "Semana",
+    "currentWeek": "actual",
+    "showAlts": "Mostrar alters",
+    "empty": "Este roster todavía no tiene personajes reales.",
+    "character": "Personaje",
+    "itemLevel": "iLvl",
+    "vaultRaid": "Cámara: raid",
+    "vaultDungeons": "Cámara: mazmorras",
+    "raidBosses": "Jefes de raid",
+    "mythicPlus": "Mítica+ (✓ a tiempo)",
+    "dungeonBosses": "Jefes de mazmorra",
+    "updated": "Actualizado",
+    "noData": "Sin datos de esta semana",
+    "legend": "Cuenta los jefes y llaves con fecha posterior al reinicio semanal. Pasa el ratón sobre una raid para ver los jefes.",
+    "legendVault": "Cuenta los jefes y llaves con fecha posterior al reinicio semanal. Cámara: casillas desbloqueadas (raid por jefes distintos, mazmorras por llaves de Mítica+). Pasa el ratón para ver los jefes y los umbrales.",
+    "bossesShort": "{count, plural, one {# jefe} other {# jefes}}",
+    "runsShort": "{count, plural, one {# llave} other {# llaves}}",
+    "ilvlShort": "iLvl {value}",
+    "historyLegend": "Una columna por semana desde que se empezó a registrar. Las semanas sin sincronización aparecen vacías."
   }
 }

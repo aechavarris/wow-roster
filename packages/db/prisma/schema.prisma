@@ -149,6 +149,7 @@ model Character {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   rosterEntries     RosterEntry[]
+  weeks             CharacterWeek[]
 
   @@unique([gameVersion, region, realm, nameKey])
   @@index([guildId])
@@ -198,4 +199,19 @@ model RosterEntry {
 
   @@unique([guildId, characterId])
   @@index([guildId, pending])
+}
+
+/// What a character did in one game week (raid bosses, Mythic+ runs, dungeon bosses), rebuilt on each
+/// sync during that week from the boss kill and run timestamps, and kept afterwards as weekly history.
+model CharacterWeek {
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// Start of the game week (the weekly reset of the character's region), UTC.
+  weekStart   DateTime
+  data        Json
+  itemLevel   Float?
+  updatedAt   DateTime  @updatedAt
+
+  @@id([characterId, weekStart])
+  @@index([weekStart])
 }

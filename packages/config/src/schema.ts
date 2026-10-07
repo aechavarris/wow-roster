@@ -121,6 +121,15 @@ export const professionSchema = z.object({
   maxSkill: z.number().int().positive().optional(),
 });
 
+/**
+ * Weekly audit rules. `reset` is the weekly reset per region (UTC weekday 0 = Sunday, UTC hour);
+ * `vault` lists the Great Vault thresholds where the version has one (bosses killed, dungeon runs).
+ */
+export const weeklySchema = z.object({
+  reset: z.record(z.string(), z.object({ day: z.number().int().min(0).max(6), hourUtc: z.number().int().min(0).max(23) })),
+  vault: z.object({ raid: z.array(z.number().int().positive()), dungeons: z.array(z.number().int().positive()) }).optional(),
+});
+
 export const gameProfileSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -142,6 +151,7 @@ export const gameProfileSchema = z.object({
   professions: z.array(professionSchema).default([]),
   /** How many primary professions a character can learn. */
   maxPrimaryProfessions: z.number().int().positive().default(2),
+  weekly: weeklySchema.optional(),
   sync: z.object({
     defaultIntervalMinutes: z.number().int().positive(),
     minIntervalMinutes: z.number().int().positive(),
@@ -157,6 +167,7 @@ export type GameRole = z.infer<typeof roleSchema>;
 export type RosterStatus = z.infer<typeof rosterStatusSchema>;
 export type RaidSize = z.infer<typeof raidSizeSchema>;
 export type GameProfession = z.infer<typeof professionSchema>;
+export type WeeklyRules = z.infer<typeof weeklySchema>;
 
 /** A profile file may extend another one and override any top-level key. */
 export const profileFileSchema = gameProfileSchema.partial().extend({
