@@ -8,6 +8,7 @@ import {
   normalizeMedia,
   normalizeMythicPlus,
   normalizeProfessions,
+  normalizeReputations,
   normalizeSpecializations,
   normalizeStatistics,
   normalizeSummary,
@@ -359,5 +360,18 @@ describe("normalizeEncounters / normalizeMythicPlus", () => {
       [8, false, "The Stonevault"],
     ]);
     expect(normalizeMythicPlus({})).toEqual({ rating: undefined, color: undefined, weeklyRuns: [] });
+  });
+});
+
+describe("normalizeReputations", () => {
+  it("keeps named standings and the renown level of renown factions", () => {
+    const [classic, renown] = normalizeReputations({
+      reputations: [
+        { faction: { id: 529, name: { en_US: "Argent Dawn", es_ES: "El Alba Argenta" } }, standing: { name: { en_US: "Honored", es_ES: "Honorable" }, value: 3000, max: 12000, tier: 4 } },
+        { faction: { id: 2590, name: { en_US: "Council of Dornogal" } }, standing: { raw: 41000, value: 1200, max: 2500, renown_level: 25 } },
+      ],
+    });
+    expect(classic).toMatchObject({ factionId: 529, standing: { en: "Honored", es: "Honorable" }, value: 3000, max: 12000, tier: 4 });
+    expect(renown).toMatchObject({ factionId: 2590, standing: undefined, renownLevel: 25, value: 1200, max: 2500 });
   });
 });

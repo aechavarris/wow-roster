@@ -1,4 +1,4 @@
-import type { CharacterProfile, InstanceProgress, MythicPlusProfile, Profession, Reputation } from "@wow/blizzard";
+import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, Reputation } from "@wow/blizzard";
 import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
@@ -190,19 +190,6 @@ export interface PendingEntry extends RosterCharacter {
   submittedAt: string;
 }
 
-/** Gear as the details table shows it: no tooltip lines. */
-export interface DetailItem {
-  slot: string;
-  itemId: number;
-  name: Localized;
-  quality?: string;
-  itemLevel?: number;
-  icon?: string;
-  bonusIds: number[];
-  enchantments: Localized[];
-  gems: { itemId?: number; text?: Localized }[];
-}
-
 /** One character's row data in GET /guilds/:id/details; null where the API gave nothing. */
 export interface CharacterDetails {
   level: number;
@@ -212,7 +199,7 @@ export interface CharacterDetails {
   lastSyncedAt: string | null;
   syncError: string | null;
   missing: Record<string, string>;
-  equipment: DetailItem[] | null;
+  equipment: EquippedItem[] | null;
   professions: Profession[] | null;
   manualProfessions: ManualProfession[] | null;
   reputations: Reputation[] | null;

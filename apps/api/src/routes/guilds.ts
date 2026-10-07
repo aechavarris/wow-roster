@@ -1,6 +1,7 @@
 import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
 import { REGIONS, blizzardSlug } from "@wow/config";
 import {
+  averageEquippedItemLevel,
   buildRoster,
   defaultStatusForRank,
   fitsGameVersion,
@@ -284,8 +285,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
 
   /**
    * Per-character details for the roster's details table (gear, dungeons, raids, reputations,
-   * professions), keyed by character id; roster order and names come from GET /roster. Gear is
-   * slimmed to what the table shows: no tooltip lines.
+   * professions), keyed by character id; roster order and names come from GET /roster.
    */
   app.get("/guilds/:id/details", async (request) => {
     const { id } = idParams.parse(request.params);
@@ -314,24 +314,15 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       const profile = (c.profile ?? null) as Partial<CharacterProfile> | null;
       characters[c.id] = {
         level: c.level,
-        equippedItemLevel: c.equippedItemLevel,
+        // Rows synced before the gear-based fallback existed get it computed here.
+        equippedItemLevel: c.equippedItemLevel ?? averageEquippedItemLevel(profile?.equipment) ?? null,
         averageItemLevel: c.averageItemLevel,
         lastLoginAt: c.lastLoginAt,
         lastSyncedAt: c.lastSyncedAt,
         syncError: c.syncError,
         missing: profile?.missing ?? {},
-        equipment:
-          profile?.equipment?.map((item) => ({
-            slot: item.slot,
-            itemId: item.itemId,
-            name: item.name,
-            quality: item.quality,
-            itemLevel: item.itemLevel,
-            icon: item.icon,
-            bonusIds: item.bonusIds,
-            enchantments: item.enchantments.map((e) => e.text),
-            gems: item.gems.map((g) => ({ itemId: g.itemId, text: g.text })),
-          })) ?? null,
+        // Full items: the table shows the same in-game tooltip as the character sheet.
+        equipment: profile?.equipment ?? null,
         professions: profile?.professions ?? null,
         manualProfessions: c.manualProfessions,
         reputations: profile?.reputations ?? null,

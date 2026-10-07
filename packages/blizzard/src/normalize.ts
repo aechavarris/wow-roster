@@ -367,6 +367,8 @@ export function normalizeReputations(raw: Raw): Reputation[] {
     value: num(r.standing?.value),
     max: num(r.standing?.max),
     tier: num(r.standing?.tier),
+    // Renown factions (retail) have a renown level instead of a named standing.
+    renownLevel: num(r.standing?.renown_level),
   }));
 }
 

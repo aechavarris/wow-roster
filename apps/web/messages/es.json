@@ -434,7 +434,7 @@
     "synced": "Actualizado",
     "notFound": "No encontrado en la armería",
     "missingReason": "La API no devolvió estos datos ({reason})",
-    "gearLegend": "Cada casilla enlaza al objeto en Wowhead. ✦ encantado · ◆ gemas. Pasa el ratón para ver el nombre, encantamiento y gemas.",
+    "gearLegend": "Pasa el ratón (o toca) sobre una pieza para ver su tooltip; ↗ la abre en Wowhead. ✦ encantado · ◆ gemas.",
     "enchanted": "Encantado",
     "weeklyRuns": "Mazmorras esta semana",
     "bestKey": "Mejor llave",
@@ -449,7 +449,9 @@
     "faction": "Facción",
     "standing": "Reputación",
     "progress": "Progreso",
-    "noReputations": "Ningún personaje tiene reputaciones registradas."
+    "noReputations": "Ningún personaje tiene reputaciones registradas.",
+    "wowhead": "Ver {name} en Wowhead",
+    "renown": "Renombre {level}"
   },
   "weekly": {
     "title": "Auditoría semanal",
