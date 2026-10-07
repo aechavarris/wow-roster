@@ -386,7 +386,8 @@ export function normalizeEncounters(raw: Raw): InstanceProgress[] {
         name: localized(instance.instance?.name) ?? {},
         expansionId: num(expansion.expansion?.id),
         expansion: localized(expansion.expansion?.name),
-        modes: list(instance.modes).map(
+        // Retail also lists a mode with an empty difficulty that repeats another mode's kills: it says nothing.
+        modes: list(instance.modes).filter((mode) => str(mode.difficulty?.type) !== undefined).map(
           (mode): InstanceMode => ({
             difficulty: str(mode.difficulty?.type) ?? "UNKNOWN",
             difficultyName: localized(mode.difficulty?.name),
@@ -405,25 +406,38 @@ export function normalizeEncounters(raw: Raw): InstanceProgress[] {
   );
 }
 
-/** Retail /mythic-keystone-profile: current season rating and this week's best runs. */
+/** Best Mythic+ runs (weekly or season), highest key first. */
+function mythicPlusRuns(runs: unknown): MythicPlusRun[] {
+  return list(runs)
+    .map(
+      (run): MythicPlusRun => ({
+        dungeonId: num(run.dungeon?.id),
+        dungeon: localized(run.dungeon?.name) ?? {},
+        level: num(run.keystone_level) ?? 0,
+        timed: run.is_completed_within_time === true,
+        durationMs: num(run.duration),
+        completedAt: isoDate(run.completed_timestamp),
+        rating: num(run.mythic_rating?.rating),
+      }),
+    )
+    .sort((a, b) => b.level - a.level || (b.rating ?? 0) - (a.rating ?? 0));
+}
+
+/** Retail /mythic-keystone-profile: current season rating, this week's best runs and the current season id. */
 export function normalizeMythicPlus(raw: Raw): MythicPlusProfile {
   const rating = raw.current_mythic_rating;
+  const seasons = list(raw.seasons).map((s) => num(s.id)).filter((id): id is number => id !== undefined);
   return {
     rating: num(rating?.rating),
     color: rating?.color ? rgbToHex(rating.color) : undefined,
-    weeklyRuns: list(raw.current_period?.best_runs)
-      .map(
-        (run): MythicPlusRun => ({
-          dungeonId: num(run.dungeon?.id),
-          dungeon: localized(run.dungeon?.name) ?? {},
-          level: num(run.keystone_level) ?? 0,
-          timed: run.is_completed_within_time === true,
-          durationMs: num(run.duration),
-          completedAt: isoDate(run.completed_timestamp),
-        }),
-      )
-      .sort((a, b) => b.level - a.level),
+    weeklyRuns: mythicPlusRuns(raw.current_period?.best_runs),
+    seasonId: seasons.length > 0 ? Math.max(...seasons) : undefined,
   };
+}
+
+/** Retail /mythic-keystone-profile/season/{id}: the best run of each dungeon in that season. */
+export function normalizeMythicPlusSeason(raw: Raw): MythicPlusRun[] {
+  return mythicPlusRuns(raw.best_runs);
 }
 
 export function normalizeGuild(raw: Raw): GuildInfo {

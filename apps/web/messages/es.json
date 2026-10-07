@@ -452,7 +452,10 @@
     "progress": "Progreso",
     "noReputations": "Ningún personaje tiene reputaciones registradas.",
     "wowhead": "Ver {name} en Wowhead",
-    "renown": "Renombre {level}"
+    "renown": "Renombre {level}",
+    "seasonBest": "Mejor llave de la temporada",
+    "seasonRuns": "Mejor llave por mazmorra (temporada)",
+    "mythicLegend": "La semana empieza en el reinicio semanal. ✓ a tiempo; en gris, fuera de tiempo."
   },
   "weekly": {
     "title": "Auditoría semanal",
