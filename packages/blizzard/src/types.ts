@@ -209,6 +209,50 @@ export interface BattleNetUser {
   battletag: string;
 }
 
+/** One boss of a raid or dungeon difficulty, with the character's kills. */
+export interface EncounterProgress {
+  id?: number;
+  name: LocalizedText;
+  kills: number;
+  lastKillAt?: string;
+}
+
+/** Progress in one difficulty of an instance (Normal, Heroic, Mythic, Mythic Keystone…). */
+export interface InstanceMode {
+  /** Blizzard difficulty type, e.g. "NORMAL", "HEROIC", "MYTHIC", "MYTHIC_KEYSTONE", "LFR". */
+  difficulty: string;
+  difficultyName?: LocalizedText;
+  completed: number;
+  total: number;
+  encounters: EncounterProgress[];
+}
+
+/** A raid or dungeon the character has killed something in, grouped by expansion. */
+export interface InstanceProgress {
+  id?: number;
+  name: LocalizedText;
+  expansionId?: number;
+  expansion?: LocalizedText;
+  modes: InstanceMode[];
+}
+
+export interface MythicPlusRun {
+  dungeonId?: number;
+  dungeon: LocalizedText;
+  level: number;
+  timed: boolean;
+  durationMs?: number;
+  completedAt?: string;
+}
+
+/** Retail Mythic+ profile: season rating and this week's best runs. */
+export interface MythicPlusProfile {
+  rating?: number;
+  /** Rating color as hex (#rrggbb), as Blizzard colors it in game. */
+  color?: string;
+  weeklyRuns: MythicPlusRun[];
+}
+
 /** Everything fetched in one character sync; endpoints the game version lacks stay undefined. */
 export interface CharacterProfile {
   summary: CharacterSummary;
@@ -218,6 +262,9 @@ export interface CharacterProfile {
   statistics?: Record<string, StatValue>;
   professions?: Profession[];
   reputations?: Reputation[];
+  raids?: InstanceProgress[];
+  dungeons?: InstanceProgress[];
+  mythicPlus?: MythicPlusProfile;
   /** Endpoints that failed or are unsupported, with the reason. */
   missing: Record<string, string>;
 }

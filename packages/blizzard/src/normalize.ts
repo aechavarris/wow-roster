@@ -7,6 +7,10 @@ import type {
   EquippedItem,
   GuildInfo,
   GuildRosterMember,
+  InstanceMode,
+  InstanceProgress,
+  MythicPlusProfile,
+  MythicPlusRun,
   Profession,
   Reputation,
   StatValue,
@@ -364,6 +368,60 @@ export function normalizeReputations(raw: Raw): Reputation[] {
     max: num(r.standing?.max),
     tier: num(r.standing?.tier),
   }));
+}
+
+const isoDate = (ms: unknown) => (num(ms) ? new Date(ms as number).toISOString() : undefined);
+
+/**
+ * Raid or dungeon progress (/encounters/raids, /encounters/dungeons): expansions > instances >
+ * difficulty modes > encounters with kill counts. Kept in the API's order (oldest expansion first).
+ */
+export function normalizeEncounters(raw: Raw): InstanceProgress[] {
+  return list(raw.expansions).flatMap((expansion) =>
+    list(expansion.instances).map(
+      (instance): InstanceProgress => ({
+        id: num(instance.instance?.id),
+        name: localized(instance.instance?.name) ?? {},
+        expansionId: num(expansion.expansion?.id),
+        expansion: localized(expansion.expansion?.name),
+        modes: list(instance.modes).map(
+          (mode): InstanceMode => ({
+            difficulty: str(mode.difficulty?.type) ?? "UNKNOWN",
+            difficultyName: localized(mode.difficulty?.name),
+            completed: num(mode.progress?.completed_count) ?? 0,
+            total: num(mode.progress?.total_count) ?? 0,
+            encounters: list(mode.progress?.encounters).map((e) => ({
+              id: num(e.encounter?.id),
+              name: localized(e.encounter?.name) ?? {},
+              kills: num(e.completed_count) ?? 0,
+              lastKillAt: isoDate(e.last_kill_timestamp),
+            })),
+          }),
+        ),
+      }),
+    ),
+  );
+}
+
+/** Retail /mythic-keystone-profile: current season rating and this week's best runs. */
+export function normalizeMythicPlus(raw: Raw): MythicPlusProfile {
+  const rating = raw.current_mythic_rating;
+  return {
+    rating: num(rating?.rating),
+    color: rating?.color ? rgbToHex(rating.color) : undefined,
+    weeklyRuns: list(raw.current_period?.best_runs)
+      .map(
+        (run): MythicPlusRun => ({
+          dungeonId: num(run.dungeon?.id),
+          dungeon: localized(run.dungeon?.name) ?? {},
+          level: num(run.keystone_level) ?? 0,
+          timed: run.is_completed_within_time === true,
+          durationMs: num(run.duration),
+          completedAt: isoDate(run.completed_timestamp),
+        }),
+      )
+      .sort((a, b) => b.level - a.level),
+  };
 }
 
 export function normalizeGuild(raw: Raw): GuildInfo {

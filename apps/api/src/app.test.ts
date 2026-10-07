@@ -59,6 +59,23 @@ const blizzardRoutes: Record<string, unknown> = {
       },
     ],
   },
+  "/profile/wow/character/los-errantes/garrosh/encounters/raids": {
+    expansions: [
+      {
+        expansion: { id: 514, name: "The War Within" },
+        instances: [
+          {
+            instance: { id: 1273, name: "Nerub-ar Palace" },
+            modes: [{ difficulty: { type: "HEROIC", name: "Heroic" }, progress: { completed_count: 2, total_count: 8, encounters: [] } }],
+          },
+        ],
+      },
+    ],
+  },
+  "/profile/wow/character/los-errantes/garrosh/mythic-keystone-profile": {
+    current_mythic_rating: { rating: 2100, color: { r: 0, g: 112, b: 221, a: 1 } },
+    current_period: { best_runs: [{ keystone_level: 10, dungeon: { id: 1, name: "Ara-Kara" }, is_completed_within_time: true }] },
+  },
   "/data/wow/talent-tree/790/playable-specialization/73": {
     id: 790,
     playable_specialization: { id: 73, name: "Protection" },
@@ -1106,5 +1123,40 @@ describe("deleting rosters", () => {
     expect(await prisma.character.count({ where: { realm: "los-errantes" } })).toBe(3);
     // The guild can be registered again afterwards.
     expect((await send("POST", "/api/guilds", owner, { gameVersion: "retail", region: "eu", realm: "Los Errantes", name: "Horda Eterna" })).statusCode).toBe(201);
+  });
+});
+
+describe("roster details", () => {
+  it("returns gear, raids, Mythic+ and the rest per character of the roster", async () => {
+    const owner = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: owner }, payload: { name: "Detalles", gameVersion: "retail", region: "eu", public: false } })).json().guild;
+    await app.inject({ method: "POST", url: `/api/guilds/${roster.id}/roster`, cookies: { wr_session: owner }, payload: { realm: "Los Errantes", name: "Garrosh" } });
+    await app.inject({ method: "POST", url: `/api/guilds/${roster.id}/roster/planned`, cookies: { wr_session: owner }, payload: { classId: 1 } });
+
+    const response = await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/details`, cookies: { wr_session: owner } });
+    expect(response.statusCode).toBe(200);
+    const characters = Object.values(response.json().characters) as Record<string, any>[];
+    // Planned entries have no character, so only Garrosh is there.
+    expect(characters).toHaveLength(1);
+    const garrosh = characters[0]!;
+    expect(garrosh).toMatchObject({ level: 80, equippedItemLevel: 700 });
+    expect(garrosh.equipment[0]).toEqual({
+      slot: "HEAD",
+      itemId: 500,
+      name: { en: "Helm", es: "Yelmo" },
+      quality: "EPIC",
+      icon: "https://render/icons/helm.jpg",
+      bonusIds: [],
+      enchantments: [],
+      gems: [],
+    });
+    expect(garrosh.raids[0]).toMatchObject({ name: { en: "Nerub-ar Palace" }, modes: [{ difficulty: "HEROIC", completed: 2, total: 8 }] });
+    expect(garrosh.mythicPlus).toMatchObject({ rating: 2100, color: "#0070dd", weeklyRuns: [{ level: 10, timed: true }] });
+    // Endpoints the fake API does not answer are reported as missing, not as empty data.
+    expect(garrosh.dungeons).toBeNull();
+    expect(garrosh.missing).toMatchObject({ dungeons: "404" });
+
+    // Private roster: hidden from outsiders like the roster itself.
+    expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/details` })).statusCode).toBe(404);
   });
 });

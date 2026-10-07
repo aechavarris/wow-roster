@@ -67,14 +67,20 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
           </p>
           {guild.syncError && <p className="text-sm text-danger">{t("syncError", { error: guild.syncError })}</p>}
         </div>
-        {isOfficer && (
-          <div className="flex gap-2">
-            {version.apiAvailable && <SyncGuildButton guildId={guild.id} />}
+        <div className="flex gap-2">
+          {/* Anyone who sees the roster can open the details table; only versions with an API have data. */}
+          {version.apiAvailable && (
+            <Link href={`/guild/${guild.id}/details`} className="btn">
+              {t("details")}
+            </Link>
+          )}
+          {isOfficer && version.apiAvailable && <SyncGuildButton guildId={guild.id} />}
+          {isOfficer && (
             <Link href={`/guild/${guild.id}/settings`} className="btn">
               {t("settings")}
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <PendingPanel guildId={guild.id} profile={version} entries={roster.pending} isOwner={viewerRole === "OWNER"} />
       <Composition players={roster.players} profile={version} />

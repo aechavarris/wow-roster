@@ -65,3 +65,13 @@ export const QUALITY_COLORS: Record<string, string> = {
   ARTIFACT: "var(--q-artifact)",
   HEIRLOOM: "var(--q-heirloom)",
 };
+
+/**
+ * Wowhead page of an item in the game version's database ("" for retail, "classic", "tbc"…), in the
+ * UI language, with the bonus ids so the upgrade level and stats match what the character wears.
+ */
+export function wowheadItemUrl(profile: { wowheadDomain: string }, locale: string, item: { itemId: number; bonusIds?: number[] }) {
+  const path = [profile.wowheadDomain, locale === "en" ? "" : locale].filter(Boolean).join("/");
+  const bonus = item.bonusIds && item.bonusIds.length > 0 ? `?bonus=${item.bonusIds.join(":")}` : "";
+  return `https://www.wowhead.com/${path ? `${path}/` : ""}item=${item.itemId}${bonus}`;
+}

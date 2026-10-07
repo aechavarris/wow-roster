@@ -78,7 +78,8 @@
     "syncFailed": "Could not queue",
     "customRoster": "Custom roster",
     "linkedRoster": "linked to the guild",
-    "published": "Published"
+    "published": "Published",
+    "details": "Details"
   },
   "roster": {
     "raiders": "{count, plural, =0 {No raiders} one {# raider} other {# raiders}}",
@@ -407,5 +408,46 @@
     "confirmLabel": "Type “{name}” to confirm",
     "submit": "Delete roster",
     "deleting": "Deleting…"
+  },
+  "details": {
+    "title": "Roster details",
+    "help": "Every real character of the roster in tables. Only the tabs this game version's API provides are shown.",
+    "noApi": "This game version has no Blizzard API yet: details will appear once it is published. Until then the roster only holds planned characters.",
+    "tabs": {
+      "summary": "Summary",
+      "gear": "Gear",
+      "mythicPlus": "Mythic+",
+      "dungeons": "Dungeons",
+      "raids": "Raids",
+      "professions": "Professions",
+      "reputations": "Reputations"
+    },
+    "showAlts": "Show alts",
+    "empty": "This roster has no real characters yet.",
+    "character": "Character",
+    "level": "Level",
+    "spec": "Specialization",
+    "itemLevel": "iLvl",
+    "mythicRating": "M+ rating",
+    "lastLogin": "Last login",
+    "synced": "Updated",
+    "notFound": "Not found in the armory",
+    "missingReason": "The API did not return this data ({reason})",
+    "gearLegend": "Each cell links to the item on Wowhead. ✦ enchanted · ◆ gems. Hover to see the name, enchant and gems.",
+    "enchanted": "Enchanted",
+    "weeklyRuns": "Dungeons this week",
+    "bestKey": "Best key",
+    "runs": "This week's keys (✓ timed)",
+    "expansion": "Expansion",
+    "instanceLegend": "Best difficulty with bosses killed: killed/total. Hover to see every difficulty.",
+    "noRaids": "No character has raid progress recorded.",
+    "noDungeons": "No character has dungeons recorded.",
+    "primary": "Primary {number}",
+    "secondary": "Secondary",
+    "manualProfessions": "This version's API has no professions: each character's owner enters them on its sheet.",
+    "faction": "Faction",
+    "standing": "Standing",
+    "progress": "Progress",
+    "noReputations": "No character has reputations recorded."
   }
 }

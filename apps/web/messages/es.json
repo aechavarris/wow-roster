@@ -78,7 +78,8 @@
     "syncFailed": "No se pudo encolar",
     "customRoster": "Roster libre",
     "linkedRoster": "vinculado a la hermandad",
-    "published": "Publicado"
+    "published": "Publicado",
+    "details": "Detalles"
   },
   "roster": {
     "raiders": "{count, plural, =0 {Sin raiders} one {# raider} other {# raiders}}",
@@ -407,5 +408,46 @@
     "confirmLabel": "Escribe «{name}» para confirmar",
     "submit": "Borrar roster",
     "deleting": "Borrando…"
+  },
+  "details": {
+    "title": "Detalles del roster",
+    "help": "Todos los personajes reales del roster en tablas. Solo aparecen las pestañas que la API de esta versión del juego ofrece.",
+    "noApi": "Esta versión del juego aún no tiene API de Blizzard: los detalles aparecerán cuando se publique. Hasta entonces el roster solo tiene personajes planificados.",
+    "tabs": {
+      "summary": "Resumen",
+      "gear": "Equipo",
+      "mythicPlus": "Mítica+",
+      "dungeons": "Mazmorras",
+      "raids": "Raids",
+      "professions": "Profesiones",
+      "reputations": "Reputaciones"
+    },
+    "showAlts": "Mostrar alters",
+    "empty": "Este roster todavía no tiene personajes reales.",
+    "character": "Personaje",
+    "level": "Nivel",
+    "spec": "Especialización",
+    "itemLevel": "iLvl",
+    "mythicRating": "Puntuación M+",
+    "lastLogin": "Última conexión",
+    "synced": "Actualizado",
+    "notFound": "No encontrado en la armería",
+    "missingReason": "La API no devolvió estos datos ({reason})",
+    "gearLegend": "Cada casilla enlaza al objeto en Wowhead. ✦ encantado · ◆ gemas. Pasa el ratón para ver el nombre, encantamiento y gemas.",
+    "enchanted": "Encantado",
+    "weeklyRuns": "Mazmorras esta semana",
+    "bestKey": "Mejor llave",
+    "runs": "Llaves de la semana (✓ a tiempo)",
+    "expansion": "Expansión",
+    "instanceLegend": "Mejor dificultad con jefes muertos: jefes muertos/total. Pasa el ratón para ver todas las dificultades.",
+    "noRaids": "Ningún personaje tiene progreso de raid registrado.",
+    "noDungeons": "Ningún personaje tiene mazmorras registradas.",
+    "primary": "Principal {number}",
+    "secondary": "Secundarias",
+    "manualProfessions": "En esta versión la API no da profesiones: las indica el dueño de cada personaje en su ficha.",
+    "faction": "Facción",
+    "standing": "Reputación",
+    "progress": "Progreso",
+    "noReputations": "Ningún personaje tiene reputaciones registradas."
   }
 }

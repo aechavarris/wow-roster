@@ -195,8 +195,11 @@ describe("BlizzardClient endpoints", () => {
       [`${base}/statistics`]: { body: {} },
       [`${base}/professions`]: { body: {} },
       [`${base}/reputations`]: { body: { reputations: [] } },
+      [`${base}/encounters/raids`]: { body: { expansions: [] } },
+      [`${base}/encounters/dungeons`]: { body: { expansions: [] } },
+      [`${base}/mythic-keystone-profile`]: { body: { current_mythic_rating: { rating: 1500 } } },
     });
-    const profile = await clientFor(impl, { ...retail.api, characterEndpoints: ["equipment", "specializations", "media", "statistics", "professions", "reputations"] })
+    const profile = await clientFor(impl, { ...retail.api, characterEndpoints: ["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"] })
       .getCharacterProfile({ realm: "realm", name: "Thrall" });
     expect(profile.missing).toEqual({});
     expect(profile.media?.avatar).toBe("https://render/a.jpg");
@@ -209,7 +212,11 @@ describe("BlizzardClient endpoints", () => {
       "/statistics": "en_US",
       "/professions": null,
       "/reputations": null,
+      "/encounters/raids": null,
+      "/encounters/dungeons": null,
+      "/mythic-keystone-profile": null,
     });
+    expect(profile).toMatchObject({ raids: [], dungeons: [], mythicPlus: { rating: 1500, weeklyRuns: [] } });
   });
 
   it("records missing detail endpoints instead of failing", async () => {

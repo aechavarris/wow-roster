@@ -9,6 +9,8 @@ const publicVersion = (v: GameProfile) => ({
   name: v.name,
   maxLevel: v.maxLevel,
   apiAvailable: v.api.available,
+  /** Which character data the version's API provides; the web shows a details tab per kind. */
+  characterEndpoints: v.api.available ? v.api.characterEndpoints : [],
   hasRealms: v.api.hasRealms,
   wowheadDomain: v.wowheadDomain,
   roles: v.roles,
