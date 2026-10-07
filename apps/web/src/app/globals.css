@@ -13,6 +13,11 @@
   --danger: #e5534b;
   --warning: #e3b341;
   --success: #57ab5a;
+  /* Buttons stand out from cards: a stronger edge, a slightly lighter face and a drop shadow. */
+  --btn-face: #272c37;
+  --btn-border: #3d4452;
+  --btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 1px 2px rgba(0, 0, 0, 0.45);
+  --btn-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 3px 8px rgba(0, 0, 0, 0.5);
 
   --q-poor: #9d9d9d;
   --q-common: #ffffff;
@@ -36,6 +41,10 @@
     --muted: #6b665d;
     --accent: #9a6b12;
     --accent-contrast: #ffffff;
+    --btn-face: #ffffff;
+    --btn-border: #c9c2b3;
+    --btn-shadow: 0 1px 2px rgba(60, 45, 20, 0.14);
+    --btn-shadow-hover: 0 3px 8px rgba(60, 45, 20, 0.18);
     --q-common: #1f1d1a;
     --q-uncommon: #1a8f00;
     --q-rare: #0062c4;
@@ -88,11 +97,44 @@ a {
   .card {
     @apply rounded-lg border border-border bg-surface p-4;
   }
+  /*
+   * Buttons must read as clickable at a glance: raised face, visible edge and shadow, a hand cursor
+   * (Tailwind 4 resets it to the default arrow), a lift on hover, a press on click and a focus ring
+   * for keyboard users. Disabled buttons look flat and do not react.
+   */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 text-sm font-medium transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium select-none;
+    border-color: var(--btn-border);
+    background-color: var(--btn-face);
+    box-shadow: var(--btn-shadow);
+    transition:
+      border-color 120ms,
+      box-shadow 120ms,
+      transform 120ms,
+      filter 120ms;
+  }
+  .btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    box-shadow: var(--btn-shadow-hover);
+    transform: translateY(-1px);
+  }
+  .btn:active:not(:disabled) {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    transform: translateY(0);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-50;
+    box-shadow: none;
   }
   .btn-primary {
-    @apply border-accent bg-accent text-accent-contrast hover:brightness-110;
+    @apply border-accent bg-accent text-accent-contrast;
+  }
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
   }
   .input {
     @apply w-full rounded-md border border-border bg-bg px-3 py-1.5 text-sm outline-none focus:border-accent;
