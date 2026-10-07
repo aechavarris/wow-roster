@@ -448,5 +448,8 @@
     {"id": 356, "key": "fishing", "name": {"en": "Fishing", "es": "Pesca"}, "kind": "secondary", "maxSkill": 300}
   ],
   "maxPrimaryProfessions": 2,
+  "weekly": {
+    "reset": {"eu": {"day": 3, "hourUtc": 4}, "us": {"day": 2, "hourUtc": 15}, "kr": {"day": 3, "hourUtc": 23}, "tw": {"day": 3, "hourUtc": 23}}
+  },
   "sync": {"defaultIntervalMinutes": 60, "minIntervalMinutes": 15, "defaultMinLevel": 10}
 }

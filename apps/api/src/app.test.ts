@@ -66,7 +66,20 @@ const blizzardRoutes: Record<string, unknown> = {
         instances: [
           {
             instance: { id: 1273, name: "Nerub-ar Palace" },
-            modes: [{ difficulty: { type: "HEROIC", name: "Heroic" }, progress: { completed_count: 2, total_count: 8, encounters: [] } }],
+            modes: [
+              {
+                difficulty: { type: "HEROIC", name: "Heroic" },
+                progress: {
+                  completed_count: 2,
+                  total_count: 8,
+                  // One boss killed a minute ago (this week), one long ago.
+                  encounters: [
+                    { encounter: { id: 2902, name: "Ulgrax" }, completed_count: 4, last_kill_timestamp: Date.now() - 60_000 },
+                    { encounter: { id: 2917, name: "Bloodbound Horror" }, completed_count: 1, last_kill_timestamp: Date.UTC(2024, 8, 10) },
+                  ],
+                },
+              },
+            ],
           },
         ],
       },
@@ -74,7 +87,9 @@ const blizzardRoutes: Record<string, unknown> = {
   },
   "/profile/wow/character/los-errantes/garrosh/mythic-keystone-profile": {
     current_mythic_rating: { rating: 2100, color: { r: 0, g: 112, b: 221, a: 1 } },
-    current_period: { best_runs: [{ keystone_level: 10, dungeon: { id: 1, name: "Ara-Kara" }, is_completed_within_time: true }] },
+    current_period: {
+      best_runs: [{ keystone_level: 10, dungeon: { id: 1, name: "Ara-Kara" }, is_completed_within_time: true, completed_timestamp: Date.now() - 120_000 }],
+    },
   },
   "/data/wow/talent-tree/790/playable-specialization/73": {
     id: 790,
@@ -1158,5 +1173,37 @@ describe("roster details", () => {
 
     // Private roster: hidden from outsiders like the roster itself.
     expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/details` })).statusCode).toBe(404);
+  });
+});
+
+describe("weekly audit", () => {
+  it("records each sync's week and serves the selected week with its vault and the history", async () => {
+    const owner = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: owner }, payload: { name: "Semana", gameVersion: "retail", region: "eu" } })).json().guild;
+    await app.inject({ method: "POST", url: `/api/guilds/${roster.id}/roster`, cookies: { wr_session: owner }, payload: { realm: "Los Errantes", name: "Garrosh" } });
+    const garrosh = await prisma.character.findFirstOrThrow({ where: { gameVersion: "retail", nameKey: "garrosh" } });
+
+    const weekly = (await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/weekly` })).json();
+    expect(weekly.week).toBe(weekly.current);
+    expect(weekly.vault).toEqual({ raid: [2, 4, 6], dungeons: [1, 4, 8] });
+    const mine = weekly.characters[garrosh.id];
+    expect(mine.activity.raids).toEqual([
+      { instanceId: 1273, name: { en: "Nerub-ar Palace" }, difficulty: "HEROIC", difficultyName: { en: "Heroic" }, bosses: [{ id: 2902, name: { en: "Ulgrax" } }] },
+    ]);
+    expect(mine.activity.mythicPlus).toMatchObject([{ level: 10, timed: true }]);
+    expect(mine.vault).toEqual({ raid: 0, dungeons: 1, bosses: 1, runs: 1 });
+    expect(weekly.history[garrosh.id]).toEqual([{ weekStart: weekly.current, bosses: 1, runs: 1, itemLevel: 700 }]);
+
+    // An older week stays as history and can be selected.
+    const previous = new Date(new Date(weekly.current).getTime() - 7 * 86_400_000);
+    await prisma.characterWeek.create({
+      data: { characterId: garrosh.id, weekStart: previous, itemLevel: 690, data: { raids: [], dungeons: [], mythicPlus: [{ dungeon: { en: "X" }, level: 5, timed: false }] } },
+    });
+    const old = (await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/weekly?week=${previous.toISOString()}` })).json();
+    expect(old.week).toBe(previous.toISOString());
+    expect(old.weeks).toEqual([weekly.current, previous.toISOString()]);
+    expect(old.characters[garrosh.id]).toMatchObject({ itemLevel: 690, vault: { raid: 0, dungeons: 1 } });
+    expect(old.history[garrosh.id].map((h: { runs: number }) => h.runs)).toEqual([1, 1]);
+    expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/weekly?week=nope` })).statusCode).toBe(400);
   });
 });

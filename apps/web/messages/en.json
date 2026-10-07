@@ -79,7 +79,8 @@
     "customRoster": "Custom roster",
     "linkedRoster": "linked to the guild",
     "published": "Published",
-    "details": "Details"
+    "details": "Details",
+    "weekly": "Weekly"
   },
   "roster": {
     "raiders": "{count, plural, =0 {No raiders} one {# raider} other {# raiders}}",
@@ -449,5 +450,34 @@
     "standing": "Standing",
     "progress": "Progress",
     "noReputations": "No character has reputations recorded."
+  },
+  "weekly": {
+    "title": "Weekly audit",
+    "help": "What each character did in the game week (since the {region} weekly reset) and their history. Updated on every sync.",
+    "noApi": "This game version has no Blizzard API yet: the audit will appear once it is published.",
+    "noWeeklyData": "This game version's API gives no weekly data (raid bosses, dungeons or Mythic+), so there is nothing to audit yet.",
+    "tabs": {
+      "week": "Week",
+      "history": "History"
+    },
+    "week": "Week",
+    "currentWeek": "current",
+    "showAlts": "Show alts",
+    "empty": "This roster has no real characters yet.",
+    "character": "Character",
+    "itemLevel": "iLvl",
+    "vaultRaid": "Vault: raid",
+    "vaultDungeons": "Vault: dungeons",
+    "raidBosses": "Raid bosses",
+    "mythicPlus": "Mythic+ (✓ timed)",
+    "dungeonBosses": "Dungeon bosses",
+    "updated": "Updated",
+    "noData": "No data this week",
+    "legend": "Counts bosses and keys dated after the weekly reset. Hover a raid to see its bosses.",
+    "legendVault": "Counts bosses and keys dated after the weekly reset. Vault: unlocked slots (raid by distinct bosses, dungeons by Mythic+ keys). Hover to see the bosses and thresholds.",
+    "bossesShort": "{count, plural, one {# boss} other {# bosses}}",
+    "runsShort": "{count, plural, one {# key} other {# keys}}",
+    "ilvlShort": "iLvl {value}",
+    "historyLegend": "One column per week since recording started. Weeks without a sync stay empty."
   }
 }

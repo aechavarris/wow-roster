@@ -225,6 +225,33 @@ export interface RosterDetailsResponse {
   characters: Record<string, CharacterDetails>;
 }
 
+export interface WeekInstance {
+  instanceId?: number;
+  name: Localized;
+  difficulty: string;
+  difficultyName?: Localized;
+  bosses: { id?: number; name: Localized }[];
+}
+
+export interface WeekActivity {
+  raids: WeekInstance[];
+  dungeons: WeekInstance[];
+  mythicPlus: { dungeon: Localized; level: number; timed: boolean; completedAt?: string }[];
+}
+
+/** GET /guilds/:id/weekly: one week of the roster plus a short history per character. */
+export interface WeeklyResponse {
+  week: string;
+  current: string;
+  weeks: string[];
+  vault: { raid: number[]; dungeons: number[] } | null;
+  characters: Record<
+    string,
+    { itemLevel: number | null; activity: WeekActivity; vault: { raid: number; dungeons: number; bosses: number; runs: number } | null; updatedAt: string }
+  >;
+  history: Record<string, { weekStart: string; bosses: number; runs: number; itemLevel: number | null }[]>;
+}
+
 export interface RosterResponse {
   players: RosterPlayer[];
   /** Every proposal for the owner; only the viewer's own for anyone else. */
