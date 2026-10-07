@@ -6,6 +6,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@/i18n/routing";
 import { characterPath, classColor, classText, GAME_QUALITY_COLORS, specName, wowheadItemUrl } from "@/lib/game";
 import { tr } from "@/lib/text";
+import { ItemTooltip } from "./character/ItemTooltip";
+import { GameTooltip } from "./ui/GameTooltip";
 import type { CharacterDetails, GameVersion, RosterCharacter } from "@/lib/types";
 
 export interface DetailsRow {
@@ -247,28 +249,35 @@ function GearTable({ version, rows, locale }: { version: GameVersion; rows: Deta
               slots.map((slot) => {
                 const item = items.get(slot);
                 if (!item) return <Td key={slot} className="text-muted">—</Td>;
-                const details = [
-                  tr(item.name, locale),
-                  ...item.enchantments.map((e) => tr(e, locale)),
-                  ...item.gems.map((g) => tr(g.text, locale)).filter(Boolean),
-                ].join("\n");
                 return (
-                  <Td key={slot} title={details}>
-                    <a
-                      href={wowheadItemUrl(version, locale, item)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 tabular-nums hover:underline"
-                      style={{ color: GAME_QUALITY_COLORS[item.quality ?? ""] }}
-                    >
-                      {item.icon && (
-                        // eslint-disable-next-line @next/next/no-img-element -- Blizzard icon CDN, already sized.
-                        <img src={item.icon} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-sm" />
-                      )}
-                      {item.itemLevel ?? "?"}
-                    </a>
-                    {item.enchantments.length > 0 && <span className="ml-0.5 text-success" aria-label={t("enchanted")}>✦</span>}
-                    {item.gems.length > 0 && <span className="ml-0.5 text-accent">◆{item.gems.length > 1 ? item.gems.length : ""}</span>}
+                  <Td key={slot}>
+                    <span className="inline-flex items-center gap-1">
+                      {/* Same in-game tooltip as the character sheet; the arrow opens the item on Wowhead. */}
+                      <GameTooltip
+                        label={`${tSlots.has(slot) ? tSlots(slot) : slot}: ${tr(item.name, locale)}`}
+                        content={<ItemTooltip item={item} />}
+                        className="inline-flex items-center gap-1 rounded tabular-nums hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                        style={{ color: GAME_QUALITY_COLORS[item.quality ?? ""] }}
+                      >
+                        {item.icon && (
+                          // eslint-disable-next-line @next/next/no-img-element -- Blizzard icon CDN, already sized.
+                          <img src={item.icon} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-sm" />
+                        )}
+                        {item.itemLevel ?? "?"}
+                        {item.enchantments.length > 0 && <span className="text-success" aria-label={t("enchanted")}>✦</span>}
+                        {item.gems.length > 0 && <span className="text-accent">◆{item.gems.length > 1 ? item.gems.length : ""}</span>}
+                      </GameTooltip>
+                      <a
+                        href={wowheadItemUrl(version, locale, item)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-muted hover:text-accent"
+                        aria-label={t("wowhead", { name: tr(item.name, locale) })}
+                        title={t("wowhead", { name: tr(item.name, locale) })}
+                      >
+                        ↗
+                      </a>
+                    </span>
                   </Td>
                 );
               })
@@ -494,7 +503,15 @@ function ReputationsTable({ version, rows }: { version: GameVersion; rows: Detai
           return (
             <tr key={row.character.entryId}>
               <NameCell version={version} row={row} />
-              <Td>{rep ? tr(rep.standing, locale) || "—" : row.details?.reputations == null ? <Missing reason={row.details?.missing.reputations} /> : "—"}</Td>
+              <Td>
+                {rep ? (
+                  tr(rep.standing, locale) || (rep.renownLevel != null ? t("renown", { level: rep.renownLevel }) : "—")
+                ) : row.details?.reputations == null ? (
+                  <Missing reason={row.details?.missing.reputations} />
+                ) : (
+                  "—"
+                )}
+              </Td>
               <Td className="tabular-nums text-muted">{rep?.value != null && rep.max ? `${rep.value}/${rep.max}` : ""}</Td>
             </tr>
           );

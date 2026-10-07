@@ -1,7 +1,7 @@
 import { resolveProfile } from "@wow/config";
 import { describe, expect, it } from "vitest";
 import { buildRoster, type RosterInputEntry } from "./roster";
-import { defaultStatusForRank, fitsGameVersion } from "./sync";
+import { averageEquippedItemLevel, defaultStatusForRank, fitsGameVersion } from "./sync";
 
 const profile = resolveProfile("retail");
 
@@ -132,5 +132,21 @@ describe("fitsGameVersion", () => {
     expect(fitsGameVersion(era, { classId: 1, level: 70 })).toBe(false);
     expect(fitsGameVersion(resolveProfile("retail"), { classId: 13, level: 80 })).toBe(true);
     expect(fitsGameVersion(era, { classId: null, level: 0 })).toBe(true);
+  });
+});
+
+describe("averageEquippedItemLevel", () => {
+  it("averages the gear's item levels, ignoring shirt and tabard", () => {
+    expect(
+      averageEquippedItemLevel([
+        { slot: "HEAD", itemLevel: 66 },
+        { slot: "CHEST", itemLevel: 63 },
+        { slot: "SHIRT", itemLevel: 1 },
+        { slot: "TABARD", itemLevel: 1 },
+        { slot: "WRIST" },
+      ]),
+    ).toBe(64.5);
+    expect(averageEquippedItemLevel([])).toBeUndefined();
+    expect(averageEquippedItemLevel(undefined)).toBeUndefined();
   });
 });

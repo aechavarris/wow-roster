@@ -1155,7 +1155,8 @@ describe("roster details", () => {
     expect(characters).toHaveLength(1);
     const garrosh = characters[0]!;
     expect(garrosh).toMatchObject({ level: 80, equippedItemLevel: 700 });
-    expect(garrosh.equipment[0]).toEqual({
+    // Full items, tooltip lines included, as on the character sheet.
+    expect(garrosh.equipment[0]).toMatchObject({
       slot: "HEAD",
       itemId: 500,
       name: { en: "Helm", es: "Yelmo" },
@@ -1164,6 +1165,7 @@ describe("roster details", () => {
       bonusIds: [],
       enchantments: [],
       gems: [],
+      stats: [],
     });
     expect(garrosh.raids[0]).toMatchObject({ name: { en: "Nerub-ar Palace" }, modes: [{ difficulty: "HEROIC", completed: 2, total: 8 }] });
     expect(garrosh.mythicPlus).toMatchObject({ rating: 2100, color: "#0070dd", weeklyRuns: [{ level: 10, timed: true }] });

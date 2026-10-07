@@ -135,6 +135,20 @@ export async function syncGuild(ctx: CoreContext, guildId: string): Promise<{ st
   }
 }
 
+/** Slots that carry no item level of their own. */
+const COSMETIC_SLOTS = new Set(["SHIRT", "TABARD"]);
+
+/**
+ * Average item level of the equipped gear, for versions whose character summary does not report one
+ * (Classic): each item counts once, so a two-hander with an empty off hand weighs a little less than
+ * in game. Undefined without gear that has item levels.
+ */
+export function averageEquippedItemLevel(equipment: { slot: string; itemLevel?: number }[] | undefined): number | undefined {
+  const levels = (equipment ?? []).filter((i) => !COSMETIC_SLOTS.has(i.slot) && i.itemLevel).map((i) => i.itemLevel!);
+  if (levels.length === 0) return undefined;
+  return Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 10) / 10;
+}
+
 function summaryFields(profile: GameProfile, summary: CharacterSummary, details?: CharacterProfile) {
   const activeSetup = details?.talents?.find((t) => t.active);
   const specRef = summary.activeSpec ?? { id: activeSetup?.specId, name: activeSetup?.specName };
@@ -150,7 +164,7 @@ function summaryFields(profile: GameProfile, summary: CharacterSummary, details?
     specId: specRef.id ?? spec?.blizzardIds[0] ?? null,
     specName: spec?.key ?? specRef.name ?? null,
     averageItemLevel: summary.averageItemLevel ?? null,
-    equippedItemLevel: summary.equippedItemLevel ?? null,
+    equippedItemLevel: summary.equippedItemLevel ?? averageEquippedItemLevel(details?.equipment) ?? null,
     lastLoginAt: summary.lastLoginAt ? new Date(summary.lastLoginAt) : null,
   };
 }
@@ -192,7 +206,8 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
   if (unchanged) {
     const updated = await prisma.character.update({
       where: { id: characterId },
-      data: { ...summaryFields(profile, summary), lastSyncedAt: new Date(), syncError: null },
+      // The stored profile keeps the gear-based item level for versions whose summary has none.
+      data: { ...summaryFields(profile, summary, (character.profile ?? undefined) as CharacterProfile | undefined), lastSyncedAt: new Date(), syncError: null },
     });
     // A new week starts with nothing done, even for characters that have not logged in.
     await recordWeek(ctx, updated, character.profile as Partial<CharacterProfile> | null);

@@ -172,6 +172,7 @@ export interface Reputation {
   value?: number;
   max?: number;
   tier?: number;
+  renownLevel?: number;
 }
 
 export interface GuildInfo {

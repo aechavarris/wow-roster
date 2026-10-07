@@ -434,7 +434,7 @@
     "synced": "Updated",
     "notFound": "Not found in the armory",
     "missingReason": "The API did not return this data ({reason})",
-    "gearLegend": "Each cell links to the item on Wowhead. ✦ enchanted · ◆ gems. Hover to see the name, enchant and gems.",
+    "gearLegend": "Hover (or tap) an item to see its tooltip; ↗ opens it on Wowhead. ✦ enchanted · ◆ gems.",
     "enchanted": "Enchanted",
     "weeklyRuns": "Dungeons this week",
     "bestKey": "Best key",
@@ -449,7 +449,9 @@
     "faction": "Faction",
     "standing": "Standing",
     "progress": "Progress",
-    "noReputations": "No character has reputations recorded."
+    "noReputations": "No character has reputations recorded.",
+    "wowhead": "Open {name} on Wowhead",
+    "renown": "Renown {level}"
   },
   "weekly": {
     "title": "Weekly audit",
