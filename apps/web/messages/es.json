@@ -417,7 +417,6 @@
     "noApi": "Esta versión del juego aún no tiene API de Blizzard: los detalles aparecerán cuando se publique. Hasta entonces el roster solo tiene personajes planificados.",
     "tabs": {
       "summary": "Resumen",
-      "gear": "Equipo",
       "mythicPlus": "Mítica+",
       "dungeons": "Mazmorras",
       "raids": "Raids",
@@ -435,7 +434,6 @@
     "synced": "Actualizado",
     "notFound": "No encontrado en la armería",
     "missingReason": "La API no devolvió estos datos ({reason})",
-    "gearLegend": "Pasa el ratón (o toca) sobre una pieza para ver su tooltip; ↗ la abre en Wowhead. ✦ encantado · ◆ gemas.",
     "enchanted": "Encantado",
     "expansion": "Expansión",
     "instanceLegend": "Mejor dificultad con jefes muertos: jefes muertos/total. Pasa el ratón para ver todas las dificultades.",
@@ -470,7 +468,13 @@
     "bestPerRaid": "Mejor dificultad por raid",
     "bestPerDungeon": "Mejor dificultad por mazmorra",
     "primaries": "Profesiones",
-    "reputationsLegend": "Pulsa un personaje para ver todas sus reputaciones."
+    "reputationsLegend": "Pulsa un personaje para ver todas sus reputaciones.",
+    "stats": "Estadísticas",
+    "talents": "Talentos",
+    "activeSpec": "activa",
+    "copyLoadout": "Copiar código de talentos",
+    "noRole": "Sin rol",
+    "summaryLegend": "Agrupado por rol y ordenado por nivel de objeto. Las barras comparan con el mejor del roster. Pulsa un personaje para ver todas sus estadísticas, talentos y equipo (pasa el ratón por cada pieza)."
   },
   "weekly": {
     "title": "Auditoría semanal",

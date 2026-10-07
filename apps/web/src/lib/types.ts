@@ -1,4 +1,4 @@
-import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, RaiderIoProfile, Reputation } from "@wow/blizzard";
+import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, RaiderIoProfile, Reputation, StatValue } from "@wow/blizzard";
 import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
@@ -209,6 +209,16 @@ export interface CharacterDetails {
   dungeons: InstanceProgress[] | null;
   mythicPlus: MythicPlusProfile | null;
   raiderIo: RaiderIoProfile | null;
+  statistics: Record<string, StatValue> | null;
+  talents: TalentSummary[] | null;
+}
+
+/** One talent setup of a character, summarized for the roster table (the full trees are on the character sheet). */
+export interface TalentSummary {
+  active: boolean;
+  specName: string | null;
+  loadoutCode: string | null;
+  trees: { name: string; points: number | null }[];
 }
 
 export interface RosterDetailsResponse {

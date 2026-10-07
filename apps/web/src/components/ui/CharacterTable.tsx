@@ -83,7 +83,25 @@ export const LG = "hidden lg:table-cell";
  * A character row that opens a detail panel underneath when clicked (anywhere but its links and controls), so
  * everything a narrow table leaves out is one click away instead of behind a horizontal scrollbar.
  */
-export function DetailRow({ version, row, span, cells, detail }: { version: GameVersion; row: CharacterRow; span: number; cells: ReactNode; detail: ReactNode }) {
+export function DetailRow({
+  version,
+  row,
+  span,
+  cells,
+  detail,
+  subtitle,
+  accent,
+}: {
+  version: GameVersion;
+  row: CharacterRow;
+  span: number;
+  cells: ReactNode;
+  detail: ReactNode;
+  /** Small line under the name (e.g. the spec). */
+  subtitle?: ReactNode;
+  /** Color of the stripe on the row's left edge (e.g. its role), to tell groups apart. */
+  accent?: string;
+}) {
   const { open, toggle } = useContext(ExpandContext);
   const id = row.character.entryId;
   const isOpen = open.has(id);
@@ -96,12 +114,12 @@ export function DetailRow({ version, row, span, cells, detail }: { version: Game
           toggle(id);
         }}
       >
-        <NameCell version={version} row={row} expanded={isOpen} onToggle={() => toggle(id)} />
+        <NameCell version={version} row={row} expanded={isOpen} onToggle={() => toggle(id)} subtitle={subtitle} accent={accent} />
         {cells}
       </tr>
       {isOpen && (
         <tr className="bg-surface-2/50 hover:bg-surface-2/50">
-          <td colSpan={span} className="px-3 py-3">
+          <td colSpan={span} className="px-3 py-3" style={accent ? { boxShadow: `inset 3px 0 0 ${accent}` } : undefined}>
             {detail}
           </td>
         </tr>
@@ -113,7 +131,7 @@ export function DetailRow({ version, row, span, cells, detail }: { version: Game
 /** Label/value pairs in a wrapping grid, for detail panels. */
 export function Facts({ items }: { items: [ReactNode, ReactNode][] }) {
   return (
-    <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm lg:grid-cols-4">
       {items.map(([label, value], i) => (
         <div key={i} className="min-w-0">
           <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
@@ -134,7 +152,21 @@ export const Card = ({ title, children }: { title: ReactNode; children?: ReactNo
 );
 
 /** First column: the character, linked to its sheet, with the arrow that opens its detail panel. */
-function NameCell({ version, row, expanded, onToggle }: { version: GameVersion; row: CharacterRow; expanded: boolean; onToggle: () => void }) {
+function NameCell({
+  version,
+  row,
+  expanded,
+  onToggle,
+  subtitle,
+  accent,
+}: {
+  version: GameVersion;
+  row: CharacterRow;
+  expanded: boolean;
+  onToggle: () => void;
+  subtitle?: ReactNode;
+  accent?: string;
+}) {
   const t = useTranslations("details");
   const c = row.character;
   const name = (
@@ -143,7 +175,7 @@ function NameCell({ version, row, expanded, onToggle }: { version: GameVersion; 
     </span>
   );
   return (
-    <td className="px-3 py-1.5 align-top">
+    <td className="px-3 py-1.5 align-top" style={accent ? { boxShadow: `inset 3px 0 0 ${accent}` } : undefined}>
       <span className="inline-flex items-center gap-1.5">
         <button
           type="button"
@@ -155,13 +187,20 @@ function NameCell({ version, row, expanded, onToggle }: { version: GameVersion; 
           <span className={`inline-block transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
         </button>
         {row.alt && <span className="text-muted">↳</span>}
-        {c.gameVersion && c.region && c.realm ? (
-          <Link href={characterPath({ gameVersion: c.gameVersion, region: c.region, realm: c.realm, name: c.name })} className="hover:underline">
-            {name}
-          </Link>
-        ) : (
-          name
+        {c.avatar && (
+          // eslint-disable-next-line @next/next/no-img-element -- Blizzard renders are already sized thumbnails.
+          <img src={c.avatar} alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded" />
         )}
+        <span className="min-w-0">
+          {c.gameVersion && c.region && c.realm ? (
+            <Link href={characterPath({ gameVersion: c.gameVersion, region: c.region, realm: c.realm, name: c.name })} className="hover:underline">
+              {name}
+            </Link>
+          ) : (
+            name
+          )}
+          {subtitle && <span className="block text-xs text-muted">{subtitle}</span>}
+        </span>
       </span>
     </td>
   );

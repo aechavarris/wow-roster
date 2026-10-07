@@ -330,6 +330,15 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         dungeons: profile?.dungeons ?? null,
         mythicPlus: profile?.mythicPlus ?? null,
         raiderIo: profile?.raiderIo ?? null,
+        statistics: profile?.statistics ?? null,
+        // Talent summary only (spec, loadout code, points per tree): the full trees are on the character sheet.
+        talents:
+          profile?.talents?.map((setup) => ({
+            active: setup.active,
+            specName: setup.specName ?? null,
+            loadoutCode: setup.loadoutCode ?? null,
+            trees: setup.trees.map((tree) => ({ name: tree.name, points: tree.points ?? null })),
+          })) ?? null,
       };
     }
     // Runs stored before the last weekly reset belong to an older week, even if the profile was not refreshed since.
