@@ -184,6 +184,20 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     return { guild: serializeGuild(updated) };
   });
 
+  /**
+   * Only the owner deletes a roster, typing its name to confirm. Entries, ranks, memberships and
+   * invites go with it; characters stay (their guild link is cleared) since they belong to players.
+   */
+  app.delete("/guilds/:id", async (request) => {
+    const { id } = idParams.parse(request.params);
+    const { guild } = await requireGuildRole(prisma, id, request.user, "OWNER");
+    const body = z.object({ confirmName: z.string() }).parse(request.body ?? {});
+    if (body.confirmName.trim() !== guild.name) throw new HttpError(400, "confirm_name_mismatch");
+    await queue.unscheduleGuild(id);
+    await prisma.guild.delete({ where: { id } });
+    return { deleted: true };
+  });
+
   app.put("/guilds/:id/ranks", async (request) => {
     const { id } = idParams.parse(request.params);
     const { guild } = await requireGuildRole(prisma, id, request.user, "OFFICER");
