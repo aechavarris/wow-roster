@@ -9,6 +9,9 @@ x-app-env: &app-env
   BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:-}
   BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:-}
   BLIZZARD_REGION: ${BLIZZARD_REGION:-eu}
+  # Warcraft Logs API client (warcraftlogs.com/api/clients); optional until the integration uses it.
+  WARCRAFTLOGS_CLIENT_ID: ${WARCRAFTLOGS_CLIENT_ID:-}
+  WARCRAFTLOGS_CLIENT_SECRET: ${WARCRAFTLOGS_CLIENT_SECRET:-}
   # Game version preselected for new rosters and searches; GAME_PROFILE is the older name.
   DEFAULT_GAME_VERSION: ${DEFAULT_GAME_VERSION:-}
   GAME_PROFILE: ${GAME_PROFILE:-}

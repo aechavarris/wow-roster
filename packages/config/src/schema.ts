@@ -49,6 +49,8 @@ export const raidSchema = z.object({
   size: z.number().int().positive(),
   enabled: z.boolean().default(true),
   bosses: z.array(z.object({ key: z.string(), name: localizedSchema })).default([]),
+  /** Number of bosses, for progress ("12/14") where the API only lists the bosses a character killed. */
+  bossCount: z.number().int().positive().optional(),
   note: z.string().optional(),
 });
 
@@ -73,7 +75,19 @@ export const apiSchema = z.object({
   hasRealms: z.boolean(),
   /** Profile endpoints this game version supports; others are skipped instead of 404ing. */
   characterEndpoints: z.array(
-    z.enum(["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"]),
+    z.enum([
+      "equipment",
+      "specializations",
+      "media",
+      "statistics",
+      "professions",
+      "reputations",
+      "raids",
+      "dungeons",
+      "mythicPlus",
+      // /achievements/statistics: boss kill counters, the raid and dungeon progress of APIs without /encounters (MoP Classic).
+      "encounterStatistics",
+    ]),
   ),
   /** Also read Mythic+ runs from Raider.IO (every run of the week, not only the best per dungeon). Retail only. */
   raiderIo: z.boolean().default(false),

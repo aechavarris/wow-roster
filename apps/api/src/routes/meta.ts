@@ -10,7 +10,12 @@ const publicVersion = (v: GameProfile) => ({
   maxLevel: v.maxLevel,
   apiAvailable: v.api.available,
   /** Which character data the version's API provides; the web shows a details tab per kind. */
-  characterEndpoints: v.api.available ? v.api.characterEndpoints : [],
+  // Raid and dungeon progress built from the boss kill statistics count as raids and dungeons data (MoP Classic).
+  characterEndpoints: !v.api.available
+    ? []
+    : v.api.characterEndpoints.includes("encounterStatistics")
+      ? [...new Set([...v.api.characterEndpoints, "raids", "dungeons"])]
+      : v.api.characterEndpoints,
   /** Sections not shown even though the API provides the data (still synced: other sections may use it). */
   hiddenDetails: v.hiddenDetails,
   details: v.details,

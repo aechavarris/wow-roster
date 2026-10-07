@@ -3,6 +3,7 @@ import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
 import { gameVersion, type CoreContext } from "./context";
 import { enrichProfile } from "./static";
+import { instancesFromStatistics } from "./encounterStatistics";
 import { recordWeek } from "./weekly";
 
 /** Ranks up to this index default to a raiding status; officers can remap them later. */
@@ -182,6 +183,7 @@ const ENDPOINT_KEYS = {
   raids: "raids",
   dungeons: "dungeons",
   mythicPlus: "mythicPlus",
+  encounterStatistics: "encounterStatistics",
 } as const satisfies Record<GameProfile["api"]["characterEndpoints"][number], keyof CharacterProfile>;
 
 /**
@@ -245,6 +247,12 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
   }
 
   const details = await client.getCharacterProfile(ref, summary);
+  // Versions without /encounters get their raid and dungeon progress from the boss kill statistics.
+  if (details.encounterStatistics && !profile.api.characterEndpoints.includes("raids")) {
+    const fromStats = instancesFromStatistics(profile, details.encounterStatistics);
+    details.raids = fromStats.raids;
+    details.dungeons = fromStats.dungeons;
+  }
   if (profile.api.raiderIo && ctx.raiderIo) {
     try {
       details.raiderIo = await ctx.raiderIo.getProfile(character.region, character.realm, character.name);

@@ -198,11 +198,12 @@ describe("BlizzardClient endpoints", () => {
       [`${base}/encounters/raids`]: { body: { expansions: [] } },
       [`${base}/encounters/dungeons`]: { body: { expansions: [] } },
       [`${base}/mythic-keystone-profile`]: { body: { current_mythic_rating: { rating: 1500 }, seasons: [{ id: 13 }, { id: 15 }, { id: 14 }] } },
+      [`${base}/achievements/statistics`]: { body: { categories: [] } },
       [`${base}/mythic-keystone-profile/season/15`]: {
         body: { best_runs: [{ keystone_level: 10, dungeon: { id: 1, name: { en_US: "Ara-Kara" } }, is_completed_within_time: true }] },
       },
     });
-    const profile = await clientFor(impl, { ...retail.api, characterEndpoints: ["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"] })
+    const profile = await clientFor(impl, { ...retail.api, characterEndpoints: ["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus", "encounterStatistics"] })
       .getCharacterProfile({ realm: "realm", name: "Thrall" });
     expect(profile.missing).toEqual({});
     expect(profile.media?.avatar).toBe("https://render/a.jpg");
@@ -219,6 +220,7 @@ describe("BlizzardClient endpoints", () => {
       "/encounters/dungeons": null,
       "/mythic-keystone-profile": null,
       "/mythic-keystone-profile/season/15": null,
+      "/achievements/statistics": null,
     });
     expect(profile).toMatchObject({ raids: [], dungeons: [], mythicPlus: { rating: 1500, weeklyRuns: [], seasonId: 15 } });
     expect(profile.mythicPlus?.seasonRuns?.map((r) => r.level)).toEqual([10]);

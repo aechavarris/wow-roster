@@ -9,7 +9,7 @@
     "staticNamespace": "static-classic-{region}",
     "dynamicNamespace": "dynamic-classic-{region}",
     "hasRealms": true,
-    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"]
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations", "encounterStatistics"]
   },
   "wowheadDomain": "mop-classic",
   "roles": [
@@ -23,21 +23,23 @@
       "id": 1,
       "key": "warrior",
       "color": "#C69B6D",
+      "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"],
       "name": {"en": "Warrior", "es": "Guerrero"},
       "specs": [
         {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [71], "apiNames": ["Arms"]},
         {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [72], "apiNames": ["Fury"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [73], "apiNames": ["Protection"]}
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [73], "apiNames": ["Protection"], "summaryStats": ["dodge", "parry", "block", "mastery", "expertise"]}
       ]
     },
     {
       "id": 2,
       "key": "paladin",
       "color": "#F48CBA",
+      "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"],
       "name": {"en": "Paladin", "es": "Paladín"},
       "specs": [
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [65], "apiNames": ["Holy"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [66], "apiNames": ["Protection"]},
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [65], "apiNames": ["Holy"], "summaryStats": ["spirit", "spell-crit", "spell-haste", "mastery"]},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [66], "apiNames": ["Protection"], "summaryStats": ["dodge", "parry", "block", "mastery", "expertise"]},
         {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [70], "apiNames": ["Retribution"]}
       ]
     },
@@ -45,6 +47,7 @@
       "id": 3,
       "key": "hunter",
       "color": "#AAD372",
+      "summaryStats": ["ranged-hit", "ranged-crit", "mastery"],
       "name": {"en": "Hunter", "es": "Cazador"},
       "specs": [
         {
@@ -68,6 +71,7 @@
       "id": 4,
       "key": "rogue",
       "color": "#FFF468",
+      "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"],
       "name": {"en": "Rogue", "es": "Pícaro"},
       "specs": [
         {
@@ -85,20 +89,22 @@
       "id": 5,
       "key": "priest",
       "color": "#FFFFFF",
+      "summaryStats": ["spirit", "spell-crit", "spell-haste", "mastery"],
       "name": {"en": "Priest", "es": "Sacerdote"},
       "specs": [
         {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [256], "apiNames": ["Discipline"]},
         {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [257], "apiNames": ["Holy"]},
-        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [258], "apiNames": ["Shadow"]}
+        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [258], "apiNames": ["Shadow"], "summaryStats": ["spell-hit", "spell-crit", "spell-haste", "mastery"]}
       ]
     },
     {
       "id": 6,
       "key": "death-knight",
       "color": "#C41E3A",
+      "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"],
       "name": {"en": "Death Knight", "es": "Caballero de la Muerte"},
       "specs": [
-        {"key": "blood", "name": {"en": "Blood", "es": "Sangre"}, "roles": ["tank"], "blizzardIds": [250], "apiNames": ["Blood"]},
+        {"key": "blood", "name": {"en": "Blood", "es": "Sangre"}, "roles": ["tank"], "blizzardIds": [250], "apiNames": ["Blood"], "summaryStats": ["dodge", "parry", "block", "mastery", "expertise"]},
         {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["mdps"], "blizzardIds": [251], "apiNames": ["Frost"]},
         {"key": "unholy", "name": {"en": "Unholy", "es": "Profano"}, "roles": ["mdps"], "blizzardIds": [252], "apiNames": ["Unholy"]}
       ]
@@ -107,10 +113,11 @@
       "id": 7,
       "key": "shaman",
       "color": "#0070DD",
+      "summaryStats": ["spirit", "spell-crit", "spell-haste", "mastery"],
       "name": {"en": "Shaman", "es": "Chamán"},
       "specs": [
-        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [262], "apiNames": ["Elemental"]},
-        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [263], "apiNames": ["Enhancement"]},
+        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [262], "apiNames": ["Elemental"], "summaryStats": ["spell-hit", "spell-crit", "spell-haste", "mastery"]},
+        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [263], "apiNames": ["Enhancement"], "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"]},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
@@ -124,6 +131,7 @@
       "id": 8,
       "key": "mage",
       "color": "#3FC7EB",
+      "summaryStats": ["spell-hit", "spell-crit", "spell-haste", "mastery"],
       "name": {"en": "Mage", "es": "Mago"},
       "specs": [
         {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [62], "apiNames": ["Arcane"]},
@@ -135,6 +143,7 @@
       "id": 9,
       "key": "warlock",
       "color": "#8788EE",
+      "summaryStats": ["spell-hit", "spell-crit", "spell-haste", "mastery"],
       "name": {"en": "Warlock", "es": "Brujo"},
       "specs": [
         {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [265], "apiNames": ["Affliction"]},
@@ -152,6 +161,7 @@
       "id": 10,
       "key": "monk",
       "color": "#00FF98",
+      "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"],
       "name": {"en": "Monk", "es": "Monje"},
       "specs": [
         {
@@ -159,14 +169,16 @@
           "name": {"en": "Brewmaster", "es": "Maestro cervecero"},
           "roles": ["tank"],
           "blizzardIds": [268],
-          "apiNames": ["Brewmaster"]
+          "apiNames": ["Brewmaster"],
+          "summaryStats": ["dodge", "parry", "block", "mastery", "expertise"]
         },
         {
           "key": "mistweaver",
           "name": {"en": "Mistweaver", "es": "Tejedor de niebla"},
           "roles": ["healer"],
           "blizzardIds": [270],
-          "apiNames": ["Mistweaver"]
+          "apiNames": ["Mistweaver"],
+          "summaryStats": ["spirit", "spell-crit", "spell-haste", "mastery"]
         },
         {
           "key": "windwalker",
@@ -181,11 +193,12 @@
       "id": 11,
       "key": "druid",
       "color": "#FF7C0A",
+      "summaryStats": ["spirit", "spell-crit", "spell-haste", "mastery"],
       "name": {"en": "Druid", "es": "Druida"},
       "specs": [
-        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [102], "apiNames": ["Balance"]},
-        {"key": "feral", "name": {"en": "Feral", "es": "Feral"}, "roles": ["mdps"], "blizzardIds": [103], "apiNames": ["Feral"]},
-        {"key": "guardian", "name": {"en": "Guardian", "es": "Guardián"}, "roles": ["tank"], "blizzardIds": [104], "apiNames": ["Guardian"]},
+        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [102], "apiNames": ["Balance"], "summaryStats": ["spell-hit", "spell-crit", "spell-haste", "mastery"]},
+        {"key": "feral", "name": {"en": "Feral", "es": "Feral"}, "roles": ["mdps"], "blizzardIds": [103], "apiNames": ["Feral"], "summaryStats": ["melee-hit", "expertise", "melee-crit", "melee-haste", "mastery"]},
+        {"key": "guardian", "name": {"en": "Guardian", "es": "Guardián"}, "roles": ["tank"], "blizzardIds": [104], "apiNames": ["Guardian"], "summaryStats": ["dodge", "parry", "block", "mastery", "expertise"]},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
@@ -198,16 +211,17 @@
   ],
   "raidSizes": [{"size": 10, "groupSize": 5, "enabled": true}, {"size": 25, "groupSize": 5, "enabled": true}],
   "raids": [
-    {"key": "mogushan-vaults", "name": {"en": "Mogu'shan Vaults", "es": "Cámaras Mogu'shan"}, "size": 25, "enabled": true},
-    {"key": "heart-of-fear", "name": {"en": "Heart of Fear", "es": "Corazón del Miedo"}, "size": 25, "enabled": true},
+    {"key": "mogushan-vaults", "name": {"en": "Mogu'shan Vaults", "es": "Cámaras Mogu'shan"}, "size": 25, "enabled": true, "bossCount": 6},
+    {"key": "heart-of-fear", "name": {"en": "Heart of Fear", "es": "Corazón del Miedo"}, "size": 25, "enabled": true, "bossCount": 6},
     {
       "key": "terrace-of-endless-spring",
       "name": {"en": "Terrace of Endless Spring", "es": "Veranda de la Primavera Eterna"},
       "size": 25,
-      "enabled": true
+      "enabled": true,
+      "bossCount": 4
     },
-    {"key": "throne-of-thunder", "name": {"en": "Throne of Thunder", "es": "Solio del Trueno"}, "size": 25, "enabled": true},
-    {"key": "siege-of-orgrimmar", "name": {"en": "Siege of Orgrimmar", "es": "Asedio de Orgrimmar"}, "size": 25, "enabled": true}
+    {"key": "throne-of-thunder", "name": {"en": "Throne of Thunder", "es": "Solio del Trueno"}, "size": 25, "enabled": true, "bossCount": 13},
+    {"key": "siege-of-orgrimmar", "name": {"en": "Siege of Orgrimmar", "es": "Asedio de Orgrimmar"}, "size": 25, "enabled": true, "bossCount": 14}
   ],
   "rosterStatuses": [
     {"key": "raider", "name": {"en": "Raider", "es": "Raider"}, "color": "#4caf50", "raiding": true},
@@ -235,10 +249,10 @@
       "name": {"en": "Melee", "es": "Cuerpo a cuerpo"},
       "entries": [
         {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["attack_power"]},
-        {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["melee_hit"], "format": "percent"},
-        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["melee_crit"], "format": "percent"},
+        {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "short": {"en": "Melee hit", "es": "Golpe CaC"}, "stats": ["melee_hit"], "format": "percent"},
+        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "short": {"en": "Melee crit", "es": "Crít. CaC"}, "stats": ["melee_crit"], "format": "percent"},
         {"key": "expertise", "label": {"en": "Expertise", "es": "Pericia"}, "stats": ["expertise"], "format": "percent", "hideIfZero": true},
-        {"key": "melee-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["melee_haste"], "format": "percent", "hideIfZero": true},
+        {"key": "melee-haste", "label": {"en": "Haste", "es": "Celeridad"}, "short": {"en": "Melee haste", "es": "Celer. CaC"}, "stats": ["melee_haste"], "format": "percent", "hideIfZero": true},
         {"key": "mastery", "label": {"en": "Mastery", "es": "Maestría"}, "stats": ["mastery"], "format": "percent", "hideIfZero": true}
       ]
     },
@@ -247,20 +261,20 @@
       "name": {"en": "Ranged", "es": "A distancia"},
       "entries": [
         {"key": "ranged-attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["ranged_attack_power"]},
-        {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["ranged_hit"], "format": "percent"},
-        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["ranged_crit"], "format": "percent"}
+        {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "short": {"en": "Ranged hit", "es": "Golpe dist."}, "stats": ["ranged_hit"], "format": "percent"},
+        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "short": {"en": "Ranged crit", "es": "Crít. dist."}, "stats": ["ranged_crit"], "format": "percent"}
       ]
     },
     {
       "key": "spell",
       "name": {"en": "Spell", "es": "Hechizos"},
       "entries": [
-        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "stats": ["spell_power"]},
+        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "short": {"en": "Spell power", "es": "Poder hech."}, "stats": ["spell_power"]},
         {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "stats": ["bonus_healing"]},
-        {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["spell_hit"], "format": "percent"},
-        {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["spell_crit"], "format": "percent"},
-        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "stats": ["mana_regen"]},
-        {"key": "spell-haste", "label": {"en": "Haste", "es": "Celeridad"}, "stats": ["spell_haste"], "format": "percent", "hideIfZero": true}
+        {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "short": {"en": "Spell hit", "es": "Golpe hech."}, "stats": ["spell_hit"], "format": "percent"},
+        {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "short": {"en": "Spell crit", "es": "Crít. hech."}, "stats": ["spell_crit"], "format": "percent"},
+        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "short": {"en": "Mana regen", "es": "Reg. maná"}, "stats": ["mana_regen"]},
+        {"key": "spell-haste", "label": {"en": "Haste", "es": "Celeridad"}, "short": {"en": "Spell haste", "es": "Celer. hech."}, "stats": ["spell_haste"], "format": "percent", "hideIfZero": true}
       ]
     },
     {

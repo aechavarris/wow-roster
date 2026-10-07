@@ -6,6 +6,7 @@ import {
   normalizeGuildRoster,
   normalizeEncounters,
   normalizeMedia,
+  normalizeEncounterStatistics,
   normalizeMythicPlus,
   normalizeMythicPlusSeason,
   normalizeProfessions,
@@ -395,5 +396,47 @@ describe("normalizeReputations", () => {
     });
     expect(classic).toMatchObject({ factionId: 529, standing: { en: "Honored", es: "Honorable" }, value: 3000, max: 12000, tier: 4 });
     expect(renown).toMatchObject({ factionId: 2590, standing: undefined, renownLevel: 25, value: 1200, max: 2500 });
+  });
+});
+
+describe("normalizeEncounterStatistics", () => {
+  it("keeps the boss kill counters of the Dungeons & Raids category, per expansion", () => {
+    const stats = normalizeEncounterStatistics({
+      categories: [
+        { id: 130, name: { en_US: "Character", es_ES: "Personaje" }, statistics: [{ id: 1, name: { en_US: "Deaths" }, quantity: 9 }] },
+        {
+          id: 14807,
+          name: { en_US: "Dungeons & Raids", es_ES: "Mazmorras y bandas" },
+          // Totals at the category level are not boss counters.
+          statistics: [{ id: 2, name: { en_US: "Total raids entered (10 player)" }, quantity: 7 }],
+          sub_categories: [
+            { id: 14808, name: { en_US: "Classic" }, statistics: [] },
+            {
+              id: 15106,
+              name: { en_US: "Mists of Pandaria" },
+              statistics: [
+                {
+                  id: 8607,
+                  name: { en_US: "Sha of Anger kills (Kun-Lai Summit)", es_ES: "Muertes del Sha de la ira (Cima Kun-Lai)" },
+                  quantity: 1,
+                  last_updated_timestamp: 1_762_639_878_000,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(stats).toEqual([
+      {
+        id: 8607,
+        name: { en: "Sha of Anger kills (Kun-Lai Summit)", es: "Muertes del Sha de la ira (Cima Kun-Lai)" },
+        quantity: 1,
+        lastUpdated: new Date(1_762_639_878_000).toISOString(),
+        expansion: { en: "Mists of Pandaria" },
+        expansionOrder: 2,
+      },
+    ]);
+    expect(normalizeEncounterStatistics({})).toEqual([]);
   });
 });
