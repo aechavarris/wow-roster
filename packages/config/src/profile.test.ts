@@ -147,4 +147,11 @@ describe("details configuration", () => {
     expect(era.details.keyReputations).toContain(529);
     expect(era.requirements.map((r) => r.key)).toEqual(["onyxia", "blackwing-lair", "naxxramas"]);
   });
+
+  it("tracks only the attunements TBC Anniversary still has in phase 3", () => {
+    const tbc = resolveProfile("anniversary");
+    expect(tbc.classes.find((c) => c.key === "rogue")?.summaryStats).toContain("expertise");
+    expect(tbc.details.keyReputations).toEqual([967, 989, 990, 1012]);
+    expect(tbc.requirements.map((r) => r.key)).toEqual(["mount-hyjal", "black-temple"]);
+  });
 });
