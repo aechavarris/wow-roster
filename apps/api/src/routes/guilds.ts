@@ -184,12 +184,16 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       }
       // Planned specs that do not exist in the new version are cleared; classes stay so they can be re-picked.
       const target = gameVersion(core, body.gameVersion);
-      const planned = await prisma.rosterEntry.findMany({ where: { guildId: id, plannedSpec: { not: null } } });
-      const invalid = planned.filter(
-        (e) => !target.classes.find((c) => c.id === e.plannedClassId)?.specs.some((s) => s.key === e.plannedSpec),
-      );
-      if (invalid.length > 0) {
-        await prisma.rosterEntry.updateMany({ where: { id: { in: invalid.map((e) => e.id) } }, data: { plannedSpec: null } });
+      const planned = await prisma.rosterEntry.findMany({ where: { guildId: id, OR: [{ plannedSpec: { not: null } }, { offSpec: { not: null } }] } });
+      const exists = (classId: number | null, spec: string | null) =>
+        spec === null || Boolean(target.classes.find((c) => c.id === classId)?.specs.some((s) => s.key === spec));
+      const invalidSpec = planned.filter((e) => !exists(e.plannedClassId, e.plannedSpec));
+      const invalidOffSpec = planned.filter((e) => !exists(e.plannedClassId, e.offSpec));
+      if (invalidSpec.length > 0) {
+        await prisma.rosterEntry.updateMany({ where: { id: { in: invalidSpec.map((e) => e.id) } }, data: { plannedSpec: null } });
+      }
+      if (invalidOffSpec.length > 0) {
+        await prisma.rosterEntry.updateMany({ where: { id: { in: invalidOffSpec.map((e) => e.id) } }, data: { offSpec: null } });
       }
     }
     const updated = await prisma.guild.update({ where: { id }, data: body });
@@ -509,6 +513,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       .object({
         classId: z.number().int(),
         specKey: z.string().nullable().optional(),
+        offSpecKey: z.string().nullable().optional(),
         role: z.string().nullable().optional(),
         plannedName: z.string().trim().max(40).nullable().optional(),
         playerName: z.string().trim().max(40).nullable().optional(),
@@ -519,6 +524,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       })
       .parse(request.body);
     plannedClass(guild, body.classId, body.specKey);
+    plannedClass(guild, body.classId, body.offSpecKey);
     requireKey(rules(guild).roles, body.role, "unknown_role");
     requireKey(rules(guild).rosterStatuses, body.status, "unknown_status");
     const officer = atLeast(role, "OFFICER");
@@ -529,6 +535,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         source: "planned",
         plannedClassId: body.classId,
         plannedSpec: body.specKey || null,
+        offSpec: body.offSpecKey || null,
         plannedName: body.plannedName || null,
         playerName: body.playerName || (forSelf ? request.user!.battletag.split("#")[0]! : null),
         userId: forSelf ? request.user!.id : null,
@@ -578,19 +585,30 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         plannedName: z.string().trim().max(40).nullable().optional(),
         plannedClassId: z.number().int().optional(),
         plannedSpec: z.string().nullable().optional(),
+        offSpec: z.string().nullable().optional(),
         playerName: z.string().trim().max(40).nullable().optional(),
       })
       .parse(request.body);
     requireKey(rules(guild).roles, body.role, "unknown_role");
     requireKey(rules(guild).rosterStatuses, body.status, "unknown_status");
 
-    const entry = await prisma.rosterEntry.findFirst({ where: { id: entryId, guildId: id } });
+    const entry = await prisma.rosterEntry.findFirst({
+      where: { id: entryId, guildId: id },
+      include: { character: { select: { ownerId: true, classId: true } } },
+    });
     if (!entry) throw notFound("roster_entry_not_found");
     if (entry.pending) throw new HttpError(400, "entry_pending");
     const officer = atLeast(viewerRole, "OFFICER");
     if (!officer) {
       const ownPlanned = entry.userId === request.user!.id && !entry.characterId;
-      if (!ownPlanned || body.status !== undefined || body.mainEntryId !== undefined) throw forbidden();
+      // Players also pick the off-spec of their own real characters: only they know their second spec.
+      const own = entry.userId === request.user!.id || entry.character?.ownerId === request.user!.id;
+      const onlyOffSpec = Object.entries(body).every(([key, value]) => key === "offSpec" || value === undefined);
+      if (!(ownPlanned || (own && onlyOffSpec)) || body.status !== undefined || body.mainEntryId !== undefined) throw forbidden();
+    }
+    if (body.offSpec) {
+      const classId = entry.character ? entry.character.classId : (body.plannedClassId ?? entry.plannedClassId);
+      plannedClass(guild, classId ?? -1, body.offSpec);
     }
     const planningFields = [body.plannedName, body.plannedClassId, body.plannedSpec].some((v) => v !== undefined);
     if (planningFields && entry.characterId) throw new HttpError(400, "entry_already_linked");
@@ -606,7 +624,10 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       await prisma.rosterEntry.updateMany({ where: { mainEntryId: entryId }, data: { mainEntryId: body.mainEntryId } });
     }
     // Changing the planned class resets a spec that may not belong to the new class.
-    const data = body.plannedClassId !== undefined && body.plannedSpec === undefined ? { ...body, plannedSpec: null } : body;
+    const data =
+      body.plannedClassId !== undefined
+        ? { ...body, plannedSpec: body.plannedSpec ?? null, offSpec: body.offSpec ?? null }
+        : body;
     return { entry: await prisma.rosterEntry.update({ where: { id: entryId }, data }) };
   });
 

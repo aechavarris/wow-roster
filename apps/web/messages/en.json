@@ -147,7 +147,11 @@
     "roleFromSpec": "From the spec",
     "noApiYet": "This version has no public Blizzard API yet: for now the roster only holds planned characters. Once it is published you can link them to the real ones.",
     "proposeHelp": "This roster is published. You can propose your characters or plan one: they stay pending until the owner accepts them.",
-    "proposalSent": "Proposal sent: the owner has to accept it."
+    "proposalSent": "Proposal sent: the owner has to accept it.",
+    "offSpec": "Off-spec",
+    "offSpecShort": "OS",
+    "noOffSpec": "No off-spec",
+    "offSpecHint": "Second spec they can switch to (dual spec) or gear for"
   },
   "settings": {
     "title": "Guild settings",
@@ -336,7 +340,14 @@
     "covered": "covered",
     "missing": "missing",
     "plannedProviders": "{count, plural, one {# of them planned} other {# of them planned}}",
-    "plannedFootnote": "* Includes planned characters. Counts mains with a raiding status; the buff list is configured in the game profile."
+    "plannedFootnote": "* Includes planned characters. Counts mains with a raiding status; the buff list is configured in the game profile.",
+    "offSpecFlex": "{count, plural, one {# character can cover it with their off-spec} other {# characters can cover it with their off-spec}}",
+    "asText": "Text",
+    "copy": "Copy",
+    "copied": "Copied",
+    "missingList": "Missing",
+    "plannedMark": "planned, not in the game yet",
+    "offSpecShort": "OS"
   },
   "members": {
     "title": "Members and invites",

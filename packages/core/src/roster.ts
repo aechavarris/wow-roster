@@ -33,6 +33,7 @@ export interface RosterInputEntry {
   plannedName?: string | null;
   plannedClassId?: number | null;
   plannedSpec?: string | null;
+  offSpec?: string | null;
   playerName?: string | null;
   userId?: string | null;
 }
@@ -50,6 +51,10 @@ export interface RosterCharacterView {
   level: number;
   classId: number | null;
   specKey: string | null;
+  /** Second spec the player can switch to (dual spec) or gears for as off-spec; a spec of the same class. */
+  offSpecKey: string | null;
+  /** Role the off-spec plays, when it differs from the character's role (it can cover that role too). */
+  offRole: string | null;
   role: string | null;
   roleOverridden: boolean;
   status: string;
@@ -96,6 +101,9 @@ export function toCharacterView(
     ? specKeyFor(profile, c.classId, c.specName, c.specId)
     : specKeyFor(profile, classId, entry.plannedSpec ?? null, null);
   const spec = findClass(profile, classId)?.specs.find((s) => s.key === specKey);
+  const offSpec = findClass(profile, classId)?.specs.find((s) => s.key === entry.offSpec && s.key !== specKey);
+  const role = entry.role ?? defaultRoleForSpec(spec) ?? null;
+  const offRole = defaultRoleForSpec(offSpec) ?? null;
   const rankDerived = c?.guildRank != null ? rankStatus.get(c.guildRank) : undefined;
   const fallbackStatus = profile.rosterStatuses.find((s) => !s.hidden)?.key ?? profile.rosterStatuses[0]!.key;
   return {
@@ -110,7 +118,9 @@ export function toCharacterView(
     level: c?.level ?? 0,
     classId,
     specKey,
-    role: entry.role ?? defaultRoleForSpec(spec) ?? null,
+    offSpecKey: offSpec?.key ?? null,
+    offRole: offRole !== role ? offRole : null,
+    role,
     roleOverridden: entry.role !== null,
     status: entry.status ?? rankDerived ?? fallbackStatus,
     statusOverridden: entry.status !== null,

@@ -165,6 +165,12 @@
       "note": "Only reported by fan sites citing a roadmap image."
     }
   ],
+  "rulesets": [
+    {"key": "normal", "name": {"en": "Normal", "es": "Normal"}},
+    {"key": "pvp", "name": {"en": "PvP", "es": "JcJ"}},
+    {"key": "rp", "name": {"en": "RP", "es": "Rol"}},
+    {"key": "hardcore", "name": {"en": "Hardcore", "es": "Hardcore"}, "enabled": false, "note": "Announced for later, not at launch."}
+  ],
   "rosterStatuses": [
     {"key": "raider", "name": {"en": "Raider", "es": "Raider"}, "color": "#4caf50", "raiding": true},
     {"key": "trial", "name": {"en": "Trial", "es": "Prueba"}, "color": "#ffb300", "raiding": true},

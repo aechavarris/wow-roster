@@ -28,6 +28,7 @@ const MERGE_KEYS: Record<string, string> = {
   classes: "id",
   raidSizes: "size",
   raids: "key",
+  rulesets: "key",
   rosterStatuses: "key",
   professions: "key",
   // statPanel is replaced as a whole: a different game version means a different panel.

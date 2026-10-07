@@ -16,6 +16,15 @@ describe("computeComposition", () => {
     expect(result).toMatchObject({ total: 3, planned: 2, byRole: { tank: 1, healer: 1, rdps: 1 }, byClass: { 1: 1, 5: 2 } });
   });
 
+  it("counts who could switch to another role with their off-spec", () => {
+    const result = computeComposition(forever, [
+      { classId: 2, specKey: "holy", role: "healer", offRole: "tank", planned: false },
+      { classId: 11, specKey: "balance", role: "rdps", offRole: "healer", planned: false },
+      { classId: 1, specKey: "arms", role: "mdps", offRole: "mdps", planned: false },
+    ]);
+    expect(result.flexByRole).toEqual({ tank: 1, healer: 1 });
+  });
+
   it("requires the spec for talent-based effects", () => {
     expect(coverage([{ classId: 5, specKey: "holy", role: "healer", planned: false }])).toMatchObject({
       fortitude: 1,

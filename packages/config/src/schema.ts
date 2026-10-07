@@ -142,6 +142,7 @@ export const buffSchema = z.object({
 
 export type Buff = z.infer<typeof buffSchema>;
 export type Requirement = z.infer<typeof requirementSchema>;
+export type Ruleset = z.infer<typeof rulesetSchema>;
 export type StatEntry = z.infer<typeof statEntrySchema>;
 export type StatSection = z.infer<typeof statSectionSchema>;
 
@@ -162,6 +163,14 @@ export const professionSchema = z.object({
  * Weekly audit rules. `reset` is the weekly reset per region (UTC weekday 0 = Sunday, UTC hour);
  * `vault` lists the Great Vault thresholds where the version has one (bosses killed, dungeon runs).
  */
+/** A ruleset of a realmless version (Forever): characters and guilds are addressed by it instead of a realm. */
+export const rulesetSchema = z.object({
+  key: z.string(),
+  name: localizedSchema,
+  enabled: z.boolean().default(true),
+  note: z.string().optional(),
+});
+
 export const weeklySchema = z.object({
   reset: z.record(z.string(), z.object({ day: z.number().int().min(0).max(6), hourUtc: z.number().int().min(0).max(23) })),
   vault: z.object({ raid: z.array(z.number().int().positive()), dungeons: z.array(z.number().int().positive()) }).optional(),
@@ -180,6 +189,8 @@ export const gameProfileSchema = z.object({
   classes: z.array(classSchema),
   raidSizes: z.array(raidSizeSchema),
   raids: z.array(raidSchema),
+  /** Rulesets offered instead of a free-text realm where the version has no realms; disabled ones are not offered yet. */
+  rulesets: z.array(rulesetSchema).default([]),
   rosterStatuses: z.array(rosterStatusSchema),
   statPanel: z.array(statSectionSchema).default([]),
   /** Raid composition coverage; replaced as a whole when a profile extends another. */
