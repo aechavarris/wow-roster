@@ -289,7 +289,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
    */
   app.get("/guilds/:id/details", async (request) => {
     const { id } = idParams.parse(request.params);
-    await loadVisibleGuild(prisma, id, request.user);
+    const { guild } = await loadVisibleGuild(prisma, id, request.user);
     const entries = await prisma.rosterEntry.findMany({
       where: { guildId: id, pending: false, characterId: { not: null } },
       select: {
@@ -329,9 +329,11 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         raids: profile?.raids ?? null,
         dungeons: profile?.dungeons ?? null,
         mythicPlus: profile?.mythicPlus ?? null,
+        raiderIo: profile?.raiderIo ?? null,
       };
     }
-    return { characters };
+    // Runs stored before the last weekly reset belong to an older week, even if the profile was not refreshed since.
+    return { characters, weekStart: weekStart(gameVersion(core, guild.gameVersion).weekly, guild.region).toISOString() };
   });
 
   /**

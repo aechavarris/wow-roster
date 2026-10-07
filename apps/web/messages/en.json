@@ -451,11 +451,13 @@
     "wowhead": "Open {name} on Wowhead",
     "renown": "Renown {level}",
     "seasonBest": "Best key",
-    "mythicLegend": "Best key: the season's highest. Timed: dungeons whose best key was timed. This week: different dungeons done since the weekly reset. Each dungeon shows its season best key (✓ timed; grey, over time) and this week's best below. Blizzard only gives the best key per dungeon, not the number of runs.",
+    "mythicLegend": "Each dungeon shows the season's best key (✓ timed; grey, over time), this week's keys (how many and the highest) and how many times it was cleared on Mythic overall, Mythic 0 and keys included. The week starts at the weekly reset.",
     "dungeonsTimed": "Timed",
-    "weeklyDungeons": "This week",
     "runRating": "Worth {rating} points",
-    "thisWeek": "week: {key}"
+    "thisWeek": "week: {count}× · {key}",
+    "weeklyKeys": "Keys this week",
+    "totalClears": "{count} on Mythic (total)",
+    "raiderIoCredit": "Keys: Raider.IO."
   },
   "weekly": {
     "title": "Weekly audit",

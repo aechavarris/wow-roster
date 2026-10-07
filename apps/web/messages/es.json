@@ -451,11 +451,13 @@
     "wowhead": "Ver {name} en Wowhead",
     "renown": "Renombre {level}",
     "seasonBest": "Mejor llave",
-    "mythicLegend": "Mejor llave: la más alta de la temporada. A tiempo: mazmorras con su mejor llave a tiempo. Esta semana: mazmorras distintas hechas desde el reinicio semanal. Cada mazmorra muestra su mejor llave de la temporada (✓ a tiempo; en gris, fuera de tiempo) y debajo la mejor de esta semana. Blizzard solo da la mejor llave por mazmorra, no el número de partidas.",
+    "mythicLegend": "Cada mazmorra muestra la mejor llave de la temporada (✓ a tiempo; en gris, fuera de tiempo), las llaves de esta semana (cuántas y la más alta) y cuántas veces se ha completado en Mítica en total, contando Mítica 0 y llaves. La semana empieza en el reinicio semanal.",
     "dungeonsTimed": "A tiempo",
-    "weeklyDungeons": "Esta semana",
     "runRating": "Vale {rating} puntos",
-    "thisWeek": "semana: {key}"
+    "thisWeek": "semana: {count}× · {key}",
+    "weeklyKeys": "Llaves esta semana",
+    "totalClears": "{count} en Mítica (total)",
+    "raiderIoCredit": "Llaves: Raider.IO."
   },
   "weekly": {
     "title": "Auditoría semanal",

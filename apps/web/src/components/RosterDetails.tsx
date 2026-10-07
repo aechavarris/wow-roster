@@ -1,6 +1,6 @@
 "use client";
 
-import type { InstanceMode, InstanceProgress, MythicPlusRun } from "@wow/blizzard";
+import type { InstanceMode, InstanceProgress } from "@wow/blizzard";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@/i18n/routing";
@@ -9,6 +9,7 @@ import { tr } from "@/lib/text";
 import { ItemTooltip } from "./character/ItemTooltip";
 import { GameTooltip } from "./ui/GameTooltip";
 import type { CharacterDetails, GameVersion, RosterCharacter } from "@/lib/types";
+import type { Localized } from "@wow/config";
 
 export interface DetailsRow {
   character: RosterCharacter;
@@ -60,7 +61,7 @@ function bestMode(instance: InstanceProgress | undefined): InstanceMode | undefi
     .sort((a, b) => difficultyRank(b.difficulty) - difficultyRank(a.difficulty))[0];
 }
 
-export function RosterDetails({ version, rows }: { version: GameVersion; rows: DetailsRow[] }) {
+export function RosterDetails({ version, rows, weekStart }: { version: GameVersion; rows: DetailsRow[]; weekStart: string | null }) {
   const t = useTranslations("details");
   const locale = useLocale();
   const tabs = tabsFor(version);
@@ -96,7 +97,7 @@ export function RosterDetails({ version, rows }: { version: GameVersion; rows: D
         <div className="card overflow-x-auto p-0">
           {tab === "summary" && <SummaryTable version={version} rows={shown} />}
           {tab === "gear" && <GearTable version={version} rows={shown} locale={locale} />}
-          {tab === "mythicPlus" && <MythicPlusTable version={version} rows={shown} />}
+          {tab === "mythicPlus" && <MythicPlusTable version={version} rows={shown} weekStart={weekStart} />}
           {tab === "dungeons" && <InstanceTable version={version} rows={shown} kind="dungeons" />}
           {tab === "raids" && <InstanceTable version={version} rows={shown} kind="raids" />}
           {tab === "professions" && <ProfessionsTable version={version} rows={shown} />}
@@ -290,23 +291,101 @@ function GearTable({ version, rows, locale }: { version: GameVersion; rows: Deta
   );
 }
 
+/** Dungeon names differ in punctuation between Blizzard and Raider.IO ("Kings' Rest"), so columns match on letters only. */
+const dungeonKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+interface KeyRun {
+  level: number;
+  timed: boolean;
+  rating?: number;
+}
+
+interface MythicPlusCells {
+  rating?: number;
+  color?: string;
+  profileUrl?: string;
+  season: Map<string, KeyRun>;
+  week: Map<string, KeyRun[]>;
+  weekRuns: number;
+  /** Lifetime Mythic clears (Mythic 0 and keys) from Blizzard's final boss kill counter. */
+  total: Map<string, number>;
+}
+
 /**
- * One column per Mythic+ dungeon seen in the roster this season: each cell is the character's best key there this
- * season, with this week's best below. Blizzard gives the best run per dungeon (season and week), not run counts.
+ * One character's Mythic+ data by dungeon. Raider.IO, where the version enables it, lists every run of the week and
+ * the current season's bests; Blizzard gives the rating, the best run per dungeon (season and week) and, through
+ * the dungeons endpoint, how many times each dungeon was cleared on Mythic.
  */
-function MythicPlusTable({ version, rows }: { version: GameVersion; rows: DetailsRow[] }) {
+function mythicPlusCells(details: CharacterDetails | undefined, weekStart: number, names: Map<string, Localized>): MythicPlusCells {
+  const m = details?.mythicPlus;
+  const rio = details?.raiderIo;
+  const thisWeek = (completedAt?: string) => completedAt !== undefined && Date.parse(completedAt) >= weekStart;
+  const season = new Map<string, KeyRun>();
+  const week = new Map<string, KeyRun[]>();
+  const addBest = (key: string, run: KeyRun) => {
+    const old = season.get(key);
+    if (!old || run.level > old.level || (run.level === old.level && run.timed && !old.timed)) season.set(key, run);
+  };
+  if (rio) {
+    for (const run of rio.bestRuns) addBest(dungeonKey(run.dungeon), { level: run.level, timed: run.timed, rating: run.score });
+    for (const run of rio.weeklyRuns.filter((r) => thisWeek(r.completedAt))) {
+      const key = dungeonKey(run.dungeon);
+      week.set(key, [...(week.get(key) ?? []), { level: run.level, timed: run.timed }]);
+      if (!names.has(key)) names.set(key, { en: run.dungeon });
+    }
+    for (const run of rio.bestRuns) if (!names.has(dungeonKey(run.dungeon))) names.set(dungeonKey(run.dungeon), { en: run.dungeon });
+  } else {
+    for (const run of m?.seasonRuns ?? []) {
+      const key = dungeonKey(tr(run.dungeon, "en"));
+      addBest(key, { level: run.level, timed: run.timed, rating: run.rating });
+      if (!names.has(key)) names.set(key, run.dungeon);
+    }
+    for (const run of (m?.weeklyRuns ?? []).filter((r) => thisWeek(r.completedAt))) {
+      const key = dungeonKey(tr(run.dungeon, "en"));
+      week.set(key, [...(week.get(key) ?? []), { level: run.level, timed: run.timed }]);
+      if (!names.has(key)) names.set(key, run.dungeon);
+    }
+  }
+  const total = new Map<string, number>();
+  for (const instance of details?.dungeons ?? []) {
+    const mythic = instance.modes.find((mode) => mode.difficulty === "MYTHIC");
+    const kills = Math.max(0, ...(mythic?.encounters.map((e) => e.kills) ?? []));
+    if (kills > 0) total.set(dungeonKey(tr(instance.name, "en")), kills);
+  }
+  // Blizzard's localized dungeon names win over Raider.IO's English ones.
+  for (const instance of details?.dungeons ?? []) {
+    const key = dungeonKey(tr(instance.name, "en"));
+    if (names.has(key)) names.set(key, instance.name);
+  }
+  return {
+    rating: m?.rating ?? rio?.score,
+    color: m?.color ?? rio?.color,
+    profileUrl: rio?.profileUrl,
+    season,
+    week,
+    weekRuns: [...week.values()].reduce((sum, runs) => sum + runs.length, 0),
+    total,
+  };
+}
+
+/**
+ * One column per Mythic+ dungeon of the season: the character's best key there, this week's runs (count and
+ * highest) and how many times the dungeon was cleared on Mythic overall.
+ */
+function MythicPlusTable({ version, rows, weekStart }: { version: GameVersion; rows: DetailsRow[]; weekStart: string | null }) {
   const t = useTranslations("details");
   const locale = useLocale();
-  const runKey = (run: MythicPlusRun) => run.dungeonId ?? tr(run.dungeon, "en");
-  const dungeons = useMemo(() => {
-    const byKey = new Map<number | string, MythicPlusRun>();
-    for (const row of rows) {
-      const m = row.details?.mythicPlus;
-      for (const run of [...(m?.seasonRuns ?? []), ...(m?.weeklyRuns ?? [])]) if (!byKey.has(runKey(run))) byKey.set(runKey(run), run);
-    }
-    return [...byKey.entries()].sort((a, b) => tr(a[1].dungeon, locale).localeCompare(tr(b[1].dungeon, locale)));
-  }, [rows, locale]);
-  const key = (run: MythicPlusRun | undefined) => (run ? `+${run.level}${run.timed ? " ✓" : ""}` : null);
+  const { cells, dungeons, names } = useMemo(() => {
+    const names = new Map<string, Localized>();
+    const start = weekStart ? Date.parse(weekStart) : 0;
+    const cells = new Map(rows.map((row) => [row.character.entryId, mythicPlusCells(row.details, start, names)]));
+    // Columns: dungeons with a key this season or this week, in any character.
+    const keys = new Set([...cells.values()].flatMap((c) => [...c.season.keys(), ...c.week.keys()]));
+    const dungeons = [...keys].sort((a, b) => tr(names.get(a), locale).localeCompare(tr(names.get(b), locale)));
+    return { cells, dungeons, names };
+  }, [rows, weekStart, locale]);
+  const key = (run: KeyRun | undefined) => (run ? `+${run.level}${run.timed ? " ✓" : ""}` : null);
+  const hasRaiderIo = rows.some((row) => row.details?.raiderIo);
   return (
     <Table
       head={
@@ -315,41 +394,46 @@ function MythicPlusTable({ version, rows }: { version: GameVersion; rows: Detail
           <Th>{t("mythicRating")}</Th>
           <Th>{t("seasonBest")}</Th>
           <Th>{t("dungeonsTimed")}</Th>
-          <Th>{t("weeklyDungeons")}</Th>
-          {dungeons.map(([id, run]) => (
-            <Th key={id}>{tr(run.dungeon, locale)}</Th>
+          <Th>{t("weeklyKeys")}</Th>
+          {dungeons.map((d) => (
+            <Th key={d}>{tr(names.get(d), locale)}</Th>
           ))}
         </>
       }
-      footer={t("mythicLegend")}
+      footer={
+        <>
+          {t("mythicLegend")}
+          {hasRaiderIo && <> {t("raiderIoCredit")}</>}
+        </>
+      }
     >
       {rows.map((row) => {
-        const m = row.details?.mythicPlus;
-        const season = new Map((m?.seasonRuns ?? []).map((run) => [runKey(run), run]));
-        const week = new Map((m?.weeklyRuns ?? []).map((run) => [runKey(run), run]));
-        const best = m?.seasonRuns?.[0];
+        const c = cells.get(row.character.entryId)!;
+        const best = [...c.season.entries()].sort((a, b) => b[1].level - a[1].level)[0];
         return (
           <tr key={row.character.entryId}>
             <NameCell version={version} row={row} />
             <Td className="tabular-nums">
-              {m?.rating != null ? <span style={{ color: m.color }}>{Math.round(m.rating)}</span> : <Missing reason={row.details?.missing.mythicPlus} />}
+              {c.rating != null ? <span style={{ color: c.color }}>{Math.round(c.rating)}</span> : <Missing reason={row.details?.missing.mythicPlus} />}
+              {c.profileUrl && (
+                <a href={c.profileUrl} target="_blank" rel="noreferrer" className="ml-1 text-xs text-muted" title="Raider.IO">
+                  ↗
+                </a>
+              )}
             </Td>
-            <Td className="tabular-nums">{best ? `${key(best)} ${tr(best.dungeon, locale)}` : "—"}</Td>
-            <Td className="tabular-nums">
-              {m?.seasonRuns ? `${m.seasonRuns.filter((r) => r.timed).length}/${dungeons.length}` : "—"}
-            </Td>
-            <Td className="tabular-nums">{m ? m.weeklyRuns.length : "—"}</Td>
-            {dungeons.map(([id]) => {
-              const s = season.get(id);
-              const w = week.get(id);
+            <Td className="tabular-nums">{best ? `${key(best[1])} ${tr(names.get(best[0]), locale)}` : "—"}</Td>
+            <Td className="tabular-nums">{c.season.size > 0 ? `${[...c.season.values()].filter((r) => r.timed).length}/${dungeons.length}` : "—"}</Td>
+            <Td className="tabular-nums">{row.details?.mythicPlus || row.details?.raiderIo ? c.weekRuns : "—"}</Td>
+            {dungeons.map((d) => {
+              const s = c.season.get(d);
+              const w = c.week.get(d) ?? [];
+              const total = c.total.get(d);
+              const top = [...w].sort((a, b) => b.level - a.level)[0];
               return (
-                <Td
-                  key={id}
-                  className="tabular-nums"
-                  title={s?.rating != null ? t("runRating", { rating: Math.round(s.rating) }) : undefined}
-                >
+                <Td key={d} className="tabular-nums" title={s?.rating != null ? t("runRating", { rating: Math.round(s.rating) }) : undefined}>
                   <span className={s && !s.timed ? "text-muted" : ""}>{key(s) ?? "—"}</span>
-                  {w && <span className="block text-xs text-muted">{t("thisWeek", { key: key(w)! })}</span>}
+                  {top && <span className="block text-xs">{t("thisWeek", { count: w.length, key: key(top)! })}</span>}
+                  {total !== undefined && <span className="block text-xs text-muted">{t("totalClears", { count: total })}</span>}
                 </Td>
               );
             })}

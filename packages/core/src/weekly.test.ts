@@ -58,4 +58,24 @@ describe("weekActivity", () => {
     expect(vaultSlots(retail.weekly, week)).toEqual({ raid: 1, dungeons: 1, bosses: 2, runs: 1 });
     expect(vaultSlots(resolveProfile("classic-era").weekly, week)).toBeNull();
   });
+
+  it("counts every Raider.IO run of the week, repeats included, instead of Blizzard's best per dungeon", () => {
+    const run = (dungeon: string, level: number, completedAt: string) => ({ dungeon, level, timed: true, upgrades: 1, completedAt });
+    const week = weekActivity(
+      {
+        ...profile,
+        raiderIo: {
+          weeklyRuns: [run("Ara-Kara", 12, "2026-10-07T18:00:00Z"), run("Ara-Kara", 10, "2026-10-08T18:00:00Z"), run("The Rookery", 9, "2026-10-06T18:00:00Z")],
+          recentRuns: [],
+          bestRuns: [],
+        },
+      },
+      start,
+    );
+    expect(week.mythicPlus.map((r) => [r.dungeon.en, r.level])).toEqual([
+      ["Ara-Kara", 12],
+      ["Ara-Kara", 10],
+    ]);
+    expect(vaultSlots(retail.weekly, week)?.runs).toBe(2);
+  });
 });

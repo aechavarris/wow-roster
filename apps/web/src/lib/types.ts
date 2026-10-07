@@ -1,4 +1,4 @@
-import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, Reputation } from "@wow/blizzard";
+import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, RaiderIoProfile, Reputation } from "@wow/blizzard";
 import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
@@ -206,10 +206,13 @@ export interface CharacterDetails {
   raids: InstanceProgress[] | null;
   dungeons: InstanceProgress[] | null;
   mythicPlus: MythicPlusProfile | null;
+  raiderIo: RaiderIoProfile | null;
 }
 
 export interface RosterDetailsResponse {
   characters: Record<string, CharacterDetails>;
+  /** Start of the current game week in the roster's region. */
+  weekStart: string;
 }
 
 export interface WeekInstance {

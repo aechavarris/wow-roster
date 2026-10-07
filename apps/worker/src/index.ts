@@ -2,6 +2,7 @@ import { Queue, Worker } from "bullmq";
 import { loadServerGameVersions } from "@wow/config/node";
 import {
   QUEUES,
+  RaiderIoClient,
   blizzardFactory,
   characterJobId,
   guildSchedulerId,
@@ -30,6 +31,7 @@ const ctx: CoreContext = {
     clientId: env.BLIZZARD_CLIENT_ID ?? "",
     clientSecret: env.BLIZZARD_CLIENT_SECRET ?? "",
   }),
+  raiderIo: new RaiderIoClient(),
 };
 
 const characterQueue = new Queue<CharacterSyncJob>(QUEUES.characterSync, { connection: createRedis(redisUrl) });

@@ -1,4 +1,4 @@
-import { authorizeUrl, exchangeCode, getUserInfo } from "@wow/blizzard";
+import { RaiderIoClient, authorizeUrl, exchangeCode, getUserInfo } from "@wow/blizzard";
 import { loadServerGameVersions } from "@wow/config/node";
 import {
   QUEUES,
@@ -59,7 +59,7 @@ const app = await buildApp(
     env: { ...env, ALLOW_UNVERIFIED_GUILDS: process.env.ALLOW_UNVERIFIED_GUILDS === "true" },
     prisma,
     versions,
-    core: { prisma, versions, blizzard: blizzardFactory(versions, oauthConfig) },
+    core: { prisma, versions, blizzard: blizzardFactory(versions, oauthConfig), raiderIo: new RaiderIoClient() },
     queue,
     oauth: {
       authorizeUrl: (state) => authorizeUrl(oauthConfig, state),
