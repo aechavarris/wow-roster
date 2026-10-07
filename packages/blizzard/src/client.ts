@@ -8,6 +8,7 @@ import {
   normalizeIcon,
   normalizeMedia,
   normalizeMythicPlus,
+  normalizeMythicPlusSeason,
   normalizeProfessions,
   normalizeReputations,
   normalizeSpecializations,
@@ -213,6 +214,23 @@ export class BlizzardClient {
       fetchDetail("dungeons", "dungeons", "/encounters/dungeons", normalizeEncounters, null),
       fetchDetail("mythicPlus", "mythicPlus", "/mythic-keystone-profile", normalizeMythicPlus, null),
     ]);
+    const mythicPlus = profile.mythicPlus;
+    if (mythicPlus) {
+      // Season bests are best effort: without them the rating and this week's runs still show.
+      if (mythicPlus.seasonId === undefined) mythicPlus.seasonRuns = [];
+      else {
+        try {
+          const raw = await this.request(this.characterPath(ref, `/mythic-keystone-profile/season/${mythicPlus.seasonId}`), {
+            namespace: "profile",
+            locale: null,
+          });
+          mythicPlus.seasonRuns = normalizeMythicPlusSeason(raw);
+        } catch (error) {
+          // No run in the current season yet.
+          if (error instanceof BlizzardApiError && error.notFound) mythicPlus.seasonRuns = [];
+        }
+      }
+    }
     return profile;
   }
 

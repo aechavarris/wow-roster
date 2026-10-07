@@ -7,6 +7,7 @@ import {
   normalizeEncounters,
   normalizeMedia,
   normalizeMythicPlus,
+  normalizeMythicPlusSeason,
   normalizeProfessions,
   normalizeReputations,
   normalizeSpecializations,
@@ -332,12 +333,15 @@ describe("normalizeEncounters / normalizeMythicPlus", () => {
                     encounters: [{ encounter: { id: 2902, name: { en_US: "Ulgrax the Devourer" } }, completed_count: 3, last_kill_timestamp: 1_760_000_000_000 }],
                   },
                 },
+                // Retail repeats a mode with an empty difficulty (seen on every dungeon): dropped.
+                { difficulty: {}, status: { type: "COMPLETE" }, progress: { completed_count: 1, total_count: 1, encounters: [] } },
               ],
             },
           ],
         },
       ],
     });
+    expect(raid!.modes).toHaveLength(1);
     expect(raid).toMatchObject({ id: 1273, name: { en: "Nerub-ar Palace", es: "Palacio Nerub-ar" }, expansionId: 514 });
     expect(raid!.modes[0]).toMatchObject({ difficulty: "HEROIC", difficultyName: { es: "Heroico" }, completed: 2, total: 8 });
     expect(raid!.modes[0]!.encounters[0]).toEqual({ id: 2902, name: { en: "Ulgrax the Devourer" }, kills: 3, lastKillAt: new Date(1_760_000_000_000).toISOString() });
@@ -359,7 +363,25 @@ describe("normalizeEncounters / normalizeMythicPlus", () => {
       [12, true, "City of Threads"],
       [8, false, "The Stonevault"],
     ]);
-    expect(normalizeMythicPlus({})).toEqual({ rating: undefined, color: undefined, weeklyRuns: [] });
+    expect(normalizeMythicPlus({})).toEqual({ rating: undefined, color: undefined, weeklyRuns: [], seasonId: undefined });
+  });
+
+  it("takes the highest season id as the current one, as Blizzard lists seasons unsorted", () => {
+    expect(normalizeMythicPlus({ seasons: [{ id: 11 }, { id: 18 }, { id: 9 }, { id: 15 }] }).seasonId).toBe(18);
+  });
+
+  it("keeps the season's best run per dungeon with its rating", () => {
+    const runs = normalizeMythicPlusSeason({
+      best_runs: [
+        { keystone_level: 11, dungeon: { id: 505, name: { es_ES: "El Rompealbas" } }, is_completed_within_time: false, mythic_rating: { rating: 296.5 } },
+        { keystone_level: 12, dungeon: { id: 392, name: { es_ES: "Tazavesh" } }, is_completed_within_time: true, mythic_rating: { rating: 380 } },
+      ],
+    });
+    expect(runs.map((r) => [r.level, r.dungeon.es, r.timed, r.rating])).toEqual([
+      [12, "Tazavesh", true, 380],
+      [11, "El Rompealbas", false, 296.5],
+    ]);
+    expect(normalizeMythicPlusSeason({})).toEqual([]);
   });
 });
 

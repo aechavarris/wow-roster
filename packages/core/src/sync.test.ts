@@ -17,7 +17,7 @@ function complete(): Partial<CharacterProfile> {
     reputations: [],
     raids: [],
     dungeons: [],
-    mythicPlus: { weeklyRuns: [] },
+    mythicPlus: { weeklyRuns: [], seasonRuns: [] },
     missing: {},
   } as unknown as Partial<CharacterProfile>;
 }
@@ -38,6 +38,10 @@ describe("profileIncomplete", () => {
     const { mythicPlus: _m, ...rest } = complete();
     expect(profileIncomplete(retail, { ...rest, missing: { mythicPlus: "404" } })).toBe(false);
     expect(profileIncomplete(retail, { ...rest, missing: { mythicPlus: "502" } })).toBe(true);
+  });
+
+  it("refetches Mythic+ profiles without the season's best runs", () => {
+    expect(profileIncomplete(retail, { ...complete(), mythicPlus: { weeklyRuns: [] } })).toBe(true);
   });
 
   it("treats a missing profile as incomplete", () => {

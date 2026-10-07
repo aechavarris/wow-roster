@@ -191,6 +191,8 @@ const ENDPOINT_KEYS = {
  */
 export function profileIncomplete(profile: GameProfile, stored: Partial<CharacterProfile> | null): boolean {
   if (!stored) return true;
+  // Mythic+ profiles stored before season bests were fetched, or whose season request failed.
+  if (stored.mythicPlus && stored.mythicPlus.seasonRuns === undefined) return true;
   return profile.api.characterEndpoints.some((endpoint) => {
     if (stored[ENDPOINT_KEYS[endpoint]] !== undefined) return false;
     const reason = stored.missing?.[endpoint];

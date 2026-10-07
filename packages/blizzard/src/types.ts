@@ -244,14 +244,20 @@ export interface MythicPlusRun {
   timed: boolean;
   durationMs?: number;
   completedAt?: string;
+  /** Rating the run is worth (season runs only). */
+  rating?: number;
 }
 
-/** Retail Mythic+ profile: season rating and this week's best runs. */
+/** Retail Mythic+ profile: season rating, this week's best runs and the season's best run per dungeon. */
 export interface MythicPlusProfile {
   rating?: number;
   /** Rating color as hex (#rrggbb), as Blizzard colors it in game. */
   color?: string;
   weeklyRuns: MythicPlusRun[];
+  /** Current season: the highest id the profile lists (Blizzard does not sort them). */
+  seasonId?: number;
+  /** Best run per dungeon this season, highest key first; undefined until the season was fetched. */
+  seasonRuns?: MythicPlusRun[];
 }
 
 /** Everything fetched in one character sync; endpoints the game version lacks stay undefined. */

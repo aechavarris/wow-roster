@@ -452,7 +452,10 @@
     "progress": "Progress",
     "noReputations": "No character has reputations recorded.",
     "wowhead": "Open {name} on Wowhead",
-    "renown": "Renown {level}"
+    "renown": "Renown {level}",
+    "seasonBest": "Season best key",
+    "seasonRuns": "Best key per dungeon (season)",
+    "mythicLegend": "The week starts at the weekly reset. ✓ timed; grey, over time."
   },
   "weekly": {
     "title": "Weekly audit",

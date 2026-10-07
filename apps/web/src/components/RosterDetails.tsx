@@ -1,6 +1,6 @@
 "use client";
 
-import type { InstanceMode, InstanceProgress } from "@wow/blizzard";
+import type { InstanceMode, InstanceProgress, MythicPlusRun } from "@wow/blizzard";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@/i18n/routing";
@@ -55,7 +55,8 @@ function latestInstances(all: InstanceProgress[]): InstanceProgress[] {
 
 function bestMode(instance: InstanceProgress | undefined): InstanceMode | undefined {
   return [...(instance?.modes ?? [])]
-    .filter((m) => m.completed > 0)
+    // Profiles synced before the normalizer dropped retail's difficulty-less duplicate mode still carry it.
+    .filter((m) => m.completed > 0 && m.difficulty !== "UNKNOWN")
     .sort((a, b) => difficultyRank(b.difficulty) - difficultyRank(a.difficulty))[0];
 }
 
@@ -301,11 +302,22 @@ function MythicPlusTable({ version, rows }: { version: GameVersion; rows: Detail
           <Th>{t("weeklyRuns")}</Th>
           <Th>{t("bestKey")}</Th>
           <Th>{t("runs")}</Th>
+          <Th>{t("seasonBest")}</Th>
+          <Th>{t("seasonRuns")}</Th>
         </>
       }
+      footer={t("mythicLegend")}
     >
       {rows.map((row) => {
         const m = row.details?.mythicPlus;
+        const runs = (list: MythicPlusRun[] | undefined) =>
+          list?.map((run, i) => (
+            <span key={i} className={`mr-2 whitespace-nowrap ${run.timed ? "" : "text-muted"}`}>
+              +{run.level} {tr(run.dungeon, locale)}
+              {run.timed ? " ✓" : ""}
+            </span>
+          ));
+        const seasonBest = m?.seasonRuns?.[0];
         return (
           <tr key={row.character.entryId}>
             <NameCell version={version} row={row} />
@@ -314,14 +326,11 @@ function MythicPlusTable({ version, rows }: { version: GameVersion; rows: Detail
             </Td>
             <Td className="tabular-nums">{m ? m.weeklyRuns.length : "—"}</Td>
             <Td className="tabular-nums">{m?.weeklyRuns[0] ? `+${m.weeklyRuns[0].level}` : "—"}</Td>
-            <Td className="text-xs">
-              {m?.weeklyRuns.map((run, i) => (
-                <span key={i} className={`mr-2 ${run.timed ? "" : "text-muted"}`}>
-                  +{run.level} {tr(run.dungeon, locale)}
-                  {run.timed ? " ✓" : ""}
-                </span>
-              ))}
+            <Td className="text-xs">{runs(m?.weeklyRuns)}</Td>
+            <Td className="tabular-nums">
+              {seasonBest ? `+${seasonBest.level} ${tr(seasonBest.dungeon, locale)}${seasonBest.timed ? " ✓" : ""}` : "—"}
             </Td>
+            <Td className="text-xs">{runs(m?.seasonRuns)}</Td>
           </tr>
         );
       })}
@@ -387,7 +396,7 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
                 const own = row.details?.[kind]?.find((i) => i.id === instance.id);
                 const mode = bestMode(own);
                 const title = own?.modes
-                  .filter((m) => m.completed > 0)
+                  .filter((m) => m.completed > 0 && m.difficulty !== "UNKNOWN")
                   .map((m) => `${tr(m.difficultyName, locale) || m.difficulty}: ${m.completed}/${m.total}`)
                   .join("\n");
                 return (
