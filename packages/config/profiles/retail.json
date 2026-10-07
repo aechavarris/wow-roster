@@ -12,6 +12,7 @@
     "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"],
     "raiderIo": true
   },
+  "hiddenDetails": ["dungeons"],
   "wowheadDomain": "",
   "roles": [
     {"key": "tank", "name": {"en": "Tank", "es": "Tanque"}, "color": "#4f86c6"},

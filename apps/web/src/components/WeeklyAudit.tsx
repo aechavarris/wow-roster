@@ -129,7 +129,7 @@ function Runs({ runs }: { runs: WeeklyResponse["characters"][string]["activity"]
 function WeekTable({ version, rows, weekly }: { version: GameVersion; rows: WeeklyRow[]; weekly: WeeklyResponse }) {
   const t = useTranslations("weekly");
   const format = useFormatter();
-  const has = (e: string) => version.characterEndpoints.includes(e);
+  const has = (e: string) => version.characterEndpoints.includes(e) && !version.hiddenDetails.includes(e);
   const vaultDungeons = weekly.vault && has("mythicPlus");
   const span = 1 + 1 + (weekly.vault ? 1 : 0) + (vaultDungeons ? 1 : 0) + (has("raids") ? 1 : 0) + (has("mythicPlus") ? 1 : 0) + (has("dungeons") ? 1 : 0) + 1;
   return (
@@ -201,7 +201,7 @@ const HISTORY_COLUMNS = ["", SM, MD, LG];
 
 function HistoryTable({ version, rows, weekly, weekLabel }: { version: GameVersion; rows: WeeklyRow[]; weekly: WeeklyResponse; weekLabel: (iso: string) => string }) {
   const t = useTranslations("weekly");
-  const has = (e: string) => version.characterEndpoints.includes(e);
+  const has = (e: string) => version.characterEndpoints.includes(e) && !version.hiddenDetails.includes(e);
   const columns = weekly.weeks.slice(0, HISTORY_COLUMNS.length);
   const summary = (h: WeeklyResponse["history"][string][number] | undefined) =>
     h ? (

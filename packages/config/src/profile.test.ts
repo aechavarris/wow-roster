@@ -30,6 +30,11 @@ describe("resolveProfile", () => {
     expect(retail.statPanel.map((s) => s.key)).toEqual(["attributes", "enhancements"]);
   });
 
+  it("hides retail's dungeon section only: every dungeon is run on Mythic there", () => {
+    expect(resolveProfile("retail").hiddenDetails).toEqual(["dungeons"]);
+    for (const id of ["forever", "classic-era", "anniversary", "progression"]) expect(resolveProfile(id).hiddenDetails).toEqual([]);
+  });
+
   it("accepts the old retail-dev id as an alias of retail", () => {
     expect(resolveProfile("retail-dev").id).toBe("retail");
   });
