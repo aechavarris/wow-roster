@@ -437,9 +437,6 @@
     "missingReason": "The API did not return this data ({reason})",
     "gearLegend": "Hover (or tap) an item to see its tooltip; ↗ opens it on Wowhead. ✦ enchanted · ◆ gems.",
     "enchanted": "Enchanted",
-    "weeklyRuns": "Dungeons this week",
-    "bestKey": "Best key",
-    "runs": "This week's keys (✓ timed)",
     "expansion": "Expansion",
     "instanceLegend": "Best difficulty with bosses killed: killed/total. Hover to see every difficulty.",
     "noRaids": "No character has raid progress recorded.",
@@ -453,9 +450,12 @@
     "noReputations": "No character has reputations recorded.",
     "wowhead": "Open {name} on Wowhead",
     "renown": "Renown {level}",
-    "seasonBest": "Season best key",
-    "seasonRuns": "Best key per dungeon (season)",
-    "mythicLegend": "The week starts at the weekly reset. ✓ timed; grey, over time."
+    "seasonBest": "Best key",
+    "mythicLegend": "Best key: the season's highest. Timed: dungeons whose best key was timed. This week: different dungeons done since the weekly reset. Each dungeon shows its season best key (✓ timed; grey, over time) and this week's best below. Blizzard only gives the best key per dungeon, not the number of runs.",
+    "dungeonsTimed": "Timed",
+    "weeklyDungeons": "This week",
+    "runRating": "Worth {rating} points",
+    "thisWeek": "week: {key}"
   },
   "weekly": {
     "title": "Weekly audit",

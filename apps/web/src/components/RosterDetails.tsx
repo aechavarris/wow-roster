@@ -290,47 +290,69 @@ function GearTable({ version, rows, locale }: { version: GameVersion; rows: Deta
   );
 }
 
+/**
+ * One column per Mythic+ dungeon seen in the roster this season: each cell is the character's best key there this
+ * season, with this week's best below. Blizzard gives the best run per dungeon (season and week), not run counts.
+ */
 function MythicPlusTable({ version, rows }: { version: GameVersion; rows: DetailsRow[] }) {
   const t = useTranslations("details");
   const locale = useLocale();
+  const runKey = (run: MythicPlusRun) => run.dungeonId ?? tr(run.dungeon, "en");
+  const dungeons = useMemo(() => {
+    const byKey = new Map<number | string, MythicPlusRun>();
+    for (const row of rows) {
+      const m = row.details?.mythicPlus;
+      for (const run of [...(m?.seasonRuns ?? []), ...(m?.weeklyRuns ?? [])]) if (!byKey.has(runKey(run))) byKey.set(runKey(run), run);
+    }
+    return [...byKey.entries()].sort((a, b) => tr(a[1].dungeon, locale).localeCompare(tr(b[1].dungeon, locale)));
+  }, [rows, locale]);
+  const key = (run: MythicPlusRun | undefined) => (run ? `+${run.level}${run.timed ? " ✓" : ""}` : null);
   return (
     <Table
       head={
         <>
           <Th className="sticky left-0 z-10 bg-surface-2">{t("character")}</Th>
           <Th>{t("mythicRating")}</Th>
-          <Th>{t("weeklyRuns")}</Th>
-          <Th>{t("bestKey")}</Th>
-          <Th>{t("runs")}</Th>
           <Th>{t("seasonBest")}</Th>
-          <Th>{t("seasonRuns")}</Th>
+          <Th>{t("dungeonsTimed")}</Th>
+          <Th>{t("weeklyDungeons")}</Th>
+          {dungeons.map(([id, run]) => (
+            <Th key={id}>{tr(run.dungeon, locale)}</Th>
+          ))}
         </>
       }
       footer={t("mythicLegend")}
     >
       {rows.map((row) => {
         const m = row.details?.mythicPlus;
-        const runs = (list: MythicPlusRun[] | undefined) =>
-          list?.map((run, i) => (
-            <span key={i} className={`mr-2 whitespace-nowrap ${run.timed ? "" : "text-muted"}`}>
-              +{run.level} {tr(run.dungeon, locale)}
-              {run.timed ? " ✓" : ""}
-            </span>
-          ));
-        const seasonBest = m?.seasonRuns?.[0];
+        const season = new Map((m?.seasonRuns ?? []).map((run) => [runKey(run), run]));
+        const week = new Map((m?.weeklyRuns ?? []).map((run) => [runKey(run), run]));
+        const best = m?.seasonRuns?.[0];
         return (
           <tr key={row.character.entryId}>
             <NameCell version={version} row={row} />
             <Td className="tabular-nums">
               {m?.rating != null ? <span style={{ color: m.color }}>{Math.round(m.rating)}</span> : <Missing reason={row.details?.missing.mythicPlus} />}
             </Td>
-            <Td className="tabular-nums">{m ? m.weeklyRuns.length : "—"}</Td>
-            <Td className="tabular-nums">{m?.weeklyRuns[0] ? `+${m.weeklyRuns[0].level}` : "—"}</Td>
-            <Td className="text-xs">{runs(m?.weeklyRuns)}</Td>
+            <Td className="tabular-nums">{best ? `${key(best)} ${tr(best.dungeon, locale)}` : "—"}</Td>
             <Td className="tabular-nums">
-              {seasonBest ? `+${seasonBest.level} ${tr(seasonBest.dungeon, locale)}${seasonBest.timed ? " ✓" : ""}` : "—"}
+              {m?.seasonRuns ? `${m.seasonRuns.filter((r) => r.timed).length}/${dungeons.length}` : "—"}
             </Td>
-            <Td className="text-xs">{runs(m?.seasonRuns)}</Td>
+            <Td className="tabular-nums">{m ? m.weeklyRuns.length : "—"}</Td>
+            {dungeons.map(([id]) => {
+              const s = season.get(id);
+              const w = week.get(id);
+              return (
+                <Td
+                  key={id}
+                  className="tabular-nums"
+                  title={s?.rating != null ? t("runRating", { rating: Math.round(s.rating) }) : undefined}
+                >
+                  <span className={s && !s.timed ? "text-muted" : ""}>{key(s) ?? "—"}</span>
+                  {w && <span className="block text-xs text-muted">{t("thisWeek", { key: key(w)! })}</span>}
+                </Td>
+              );
+            })}
           </tr>
         );
       })}
