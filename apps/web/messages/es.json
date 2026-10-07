@@ -221,7 +221,12 @@
     "noProfession": "Ninguna",
     "save": "Guardar",
     "cancel": "Cancelar",
-    "saving": "Guardando…"
+    "saving": "Guardando…",
+    "requirements": "Requisitos de acceso",
+    "requirementsHelp": "Lo marca el propietario del personaje.",
+    "requirementsHelpOwner": "Marca los que ya tienes: la API de Blizzard no los da.",
+    "requirementDone": "Completado",
+    "requirementMissing": "Pendiente"
   },
   "slots": {
     "HEAD": "Cabeza",
@@ -307,7 +312,8 @@
     "too_many_primary_professions": "Solo se pueden tener dos profesiones principales.",
     "professions_from_api": "En esta versión las profesiones vienen de la API de Blizzard.",
     "confirm_name_mismatch": "El nombre no coincide con el del roster.",
-    "network_error": "No se pudo conectar con el servidor. Revisa tu conexión."
+    "network_error": "No se pudo conectar con el servidor. Revisa tu conexión.",
+    "unknown_requirement": "Ese requisito no existe en esta versión del juego."
   },
   "createRoster": {
     "title": "Crear roster libre",
@@ -421,7 +427,8 @@
       "dungeons": "Mazmorras",
       "raids": "Raids",
       "professions": "Profesiones",
-      "reputations": "Reputaciones"
+      "reputations": "Reputaciones",
+      "requirements": "Requisitos"
     },
     "showAlts": "Mostrar alters",
     "empty": "Este roster todavía no tiene personajes reales.",
@@ -468,13 +475,19 @@
     "bestPerRaid": "Mejor dificultad por raid",
     "bestPerDungeon": "Mejor dificultad por mazmorra",
     "primaries": "Profesiones",
-    "reputationsLegend": "Pulsa un personaje para ver todas sus reputaciones.",
+    "reputationsLegend": "Las primeras columnas son las reputaciones de las que dependen las raids de esta versión. Pulsa un personaje para ver todas.",
     "stats": "Estadísticas",
     "talents": "Talentos",
     "activeSpec": "activa",
     "copyLoadout": "Copiar código de talentos",
     "noRole": "Sin rol",
-    "summaryLegend": "Agrupado por rol y ordenado por nivel de objeto. Las barras comparan con el mejor del roster. Pulsa un personaje para ver todas sus estadísticas, talentos y equipo (pasa el ratón por cada pieza)."
+    "summaryLegend": "Agrupado por rol y ordenado por nivel de objeto. Las barras comparan con el mejor del roster. Pulsa un personaje para ver todas sus estadísticas, talentos y equipo (pasa el ratón por cada pieza).",
+    "resistances": "Resistencias",
+    "otherFaction": "Otra facción",
+    "requirementsDone": "Completados",
+    "requirementDone": "Completado",
+    "requirementMissing": "Pendiente",
+    "requirementsLegend": "Los requisitos no salen en la API: cada jugador los marca en la ficha de su personaje."
   },
   "weekly": {
     "title": "Auditoría semanal",

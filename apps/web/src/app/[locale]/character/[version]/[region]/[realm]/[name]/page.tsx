@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { GearPanel } from "@/components/character/GearPanel";
 import { ProfessionsPanel, ReputationsPanel } from "@/components/character/ProfessionsPanel";
 import { RefreshCharacterButton } from "@/components/character/RefreshCharacterButton";
+import { RequirementsPanel } from "@/components/character/RequirementsPanel";
 import { StatsPanel } from "@/components/character/StatsPanel";
 import { TalentsPanel } from "@/components/character/TalentsPanel";
 import { VersionBadge } from "@/components/VersionSelect";
@@ -91,6 +92,12 @@ export default async function CharacterPage({ params }: Props) {
             />
             <ReputationsPanel reputations={profile.reputations} missing={missing.reputations} />
           </div>
+          <RequirementsPanel
+            game={game}
+            done={c.manualRequirements}
+            characterId={c.id}
+            canEdit={me.characters?.some((own) => own.id === c.id) ?? false}
+          />
         </>
       )}
     </div>

@@ -108,6 +108,25 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     return { character: serialize((await detail(id))!) };
   });
 
+  /**
+   * The owner ticks the requirements (attunements) the character has: keys of the game version's enabled
+   * requirements. No API reports them, so they are entered by hand like Classic professions.
+   */
+  app.put("/characters/:id/requirements", async (request) => {
+    if (!request.user) throw unauthorized();
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ requirements: z.array(z.string().min(1).max(64)).max(50) }).parse(request.body);
+    const character = await prisma.character.findUnique({ where: { id } });
+    if (!character) throw notFound("character_not_found");
+    if (character.ownerId !== request.user.id) throw forbidden();
+    const known = new Set(gameVersion(core, character.gameVersion).requirements.filter((r) => r.enabled).map((r) => r.key));
+    if (body.requirements.some((key) => !known.has(key))) throw new HttpError(400, "unknown_requirement");
+
+    const keys = [...new Set(body.requirements)];
+    await prisma.character.update({ where: { id }, data: { manualRequirements: keys.length > 0 ? keys : Prisma.DbNull } });
+    return { character: serialize((await detail(id))!) };
+  });
+
   app.post("/characters/:id/sync", async (request) => {
     if (!request.user) throw unauthorized();
     const { id } = z.object({ id: z.string() }).parse(request.params);

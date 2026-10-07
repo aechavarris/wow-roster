@@ -78,6 +78,7 @@ export const Td = ({ children, className = "", title, colSpan }: { children?: Re
 export const SM = "hidden sm:table-cell";
 export const MD = "hidden md:table-cell";
 export const LG = "hidden lg:table-cell";
+export const XL = "hidden xl:table-cell";
 
 /**
  * A character row that opens a detail panel underneath when clicked (anywhere but its links and controls), so

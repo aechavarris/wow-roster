@@ -112,44 +112,46 @@ model GuildMembership {
 
 /// A game character, shared by every app guild that tracks it.
 model Character {
-  id                String        @id @default(cuid())
+  id                 String          @id @default(cuid())
   /// Game version (config profile id) whose API the character is read from; names are unique per version.
-  gameVersion       String
-  region            String
-  realm             String
-  name              String
+  gameVersion        String
+  region             String
+  realm              String
+  name               String
   /// Lowercased name used for lookups.
-  nameKey           String
-  blizzardId        Int?
-  level             Int           @default(0)
-  classId           Int?
-  raceId            Int?
-  gender            String?
-  faction           String?
-  specId            Int?
-  specName          String?
-  averageItemLevel  Float?
-  equippedItemLevel Float?
-  lastLoginAt       DateTime?
-  avatarUrl         String?
+  nameKey            String
+  blizzardId         Int?
+  level              Int             @default(0)
+  classId            Int?
+  raceId             Int?
+  gender             String?
+  faction            String?
+  specId             Int?
+  specName           String?
+  averageItemLevel   Float?
+  equippedItemLevel  Float?
+  lastLoginAt        DateTime?
+  avatarUrl          String?
   /// In-game guild, when it is registered in the app.
-  guildId           String?
-  guild             Guild?        @relation(fields: [guildId], references: [id], onDelete: SetNull)
-  guildRank         Int?
+  guildId            String?
+  guild              Guild?          @relation(fields: [guildId], references: [id], onDelete: SetNull)
+  guildRank          Int?
   /// Battle.net user that owns the character (verified at login).
-  ownerId           String?
-  owner             User?         @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  isMain            Boolean       @default(false)
+  ownerId            String?
+  owner              User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  isMain             Boolean         @default(false)
   /// Normalized details: equipment, talents, media, statistics, professions, reputations.
-  profile           Json?
+  profile            Json?
   /// Professions entered by the owner ([{ id, skill }]) for game versions whose API has none (Classic).
-  manualProfessions Json?
-  lastSyncedAt      DateTime?
-  syncError         String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  rosterEntries     RosterEntry[]
-  weeks             CharacterWeek[]
+  manualProfessions  Json?
+  /// Requirements (attunements) the owner ticked, as requirement keys of the game version's profile.
+  manualRequirements Json?
+  lastSyncedAt       DateTime?
+  syncError          String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  rosterEntries      RosterEntry[]
+  weeks              CharacterWeek[]
 
   @@unique([gameVersion, region, realm, nameKey])
   @@index([guildId])
