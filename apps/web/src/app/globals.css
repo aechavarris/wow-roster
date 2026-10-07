@@ -18,6 +18,7 @@
   --btn-border: #3d4452;
   --btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 1px 2px rgba(0, 0, 0, 0.45);
   --btn-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 3px 8px rgba(0, 0, 0, 0.5);
+  --btn-hover-text: #f0c86e;
 
   --q-poor: #9d9d9d;
   --q-common: #ffffff;
@@ -45,6 +46,7 @@
     --btn-border: #c9c2b3;
     --btn-shadow: 0 1px 2px rgba(60, 45, 20, 0.14);
     --btn-shadow-hover: 0 3px 8px rgba(60, 45, 20, 0.18);
+    --btn-hover-text: #6e4a06;
     --q-common: #1f1d1a;
     --q-uncommon: #1a8f00;
     --q-rare: #0062c4;
@@ -92,6 +94,123 @@ a {
   color: inherit;
 }
 
+/*
+ * Everything clickable says so: hand cursor on buttons, selects, toggles and their labels; links in the page
+ * underline on hover; checkboxes take the accent; table rows highlight under the pointer so the eye can follow a row.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  [role="tab"],
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--accent);
+    width: 1rem;
+    height: 1rem;
+  }
+  main a:not(.btn) {
+    text-underline-offset: 3px;
+    transition: color 120ms;
+  }
+  main a:not(.btn):hover {
+    text-decoration-line: underline;
+  }
+  button:not(.btn):not(:disabled):active {
+    transform: scale(0.94);
+  }
+  button.badge:not(:disabled) {
+    transition: opacity 120ms, box-shadow 120ms;
+  }
+  button.badge:not(:disabled):hover {
+    opacity: 1;
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  tbody tr {
+    transition: background-color 100ms;
+  }
+  tbody tr:hover {
+    background-color: color-mix(in oklab, var(--accent) 7%, transparent);
+  }
+  /* Busy selects and checkboxes (see ActionFeedback) pulse until their change is saved. */
+  select[aria-busy="true"],
+  input[aria-busy="true"] {
+    cursor: progress;
+    animation: wr-pulse 1s ease-in-out infinite;
+  }
+}
+
+/* Thin bar at the top while any API request runs, and result notices (both rendered by ActionFeedback). */
+.activity-bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: activity 1s ease-in-out infinite;
+}
+@keyframes activity {
+  from {
+    background-position: -50% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 24rem;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  font-size: 0.875rem;
+  cursor: pointer;
+  animation: toast-in 160ms ease-out;
+}
+.toast-ok {
+  border-left-color: var(--success);
+}
+.toast-ok > span {
+  color: var(--success);
+}
+.toast-error {
+  border-left-color: var(--danger);
+}
+.toast-error > span {
+  color: var(--danger);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .toast,
+  .activity-bar {
+    transition: none;
+    animation-duration: 0s;
+  }
+  .btn[aria-busy="true"]::before {
+    animation-duration: 2s;
+  }
+}
+
 /* Shared building blocks. */
 @layer components {
   .card {
@@ -99,28 +218,33 @@ a {
   }
   /*
    * Buttons must read as clickable at a glance: raised face, visible edge and shadow, a hand cursor
-   * (Tailwind 4 resets it to the default arrow), a lift on hover, a press on click and a focus ring
-   * for keyboard users. Disabled buttons look flat and do not react.
+   * (Tailwind 4 resets it to the default arrow). Hover tints the face with the accent and lifts it, a press sinks
+   * and darkens it, keyboard focus gets a ring. Disabled buttons look flat and do not react.
    */
   .btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium select-none;
+    @apply relative inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium select-none;
     border-color: var(--btn-border);
     background-color: var(--btn-face);
     box-shadow: var(--btn-shadow);
     transition:
+      background-color 120ms,
       border-color 120ms,
+      color 120ms,
       box-shadow 120ms,
-      transform 120ms,
+      transform 80ms,
       filter 120ms;
   }
   .btn:hover:not(:disabled) {
     border-color: var(--accent);
+    background-color: color-mix(in oklab, var(--accent) 18%, var(--btn-face));
+    color: var(--btn-hover-text);
     box-shadow: var(--btn-shadow-hover);
     transform: translateY(-1px);
   }
   .btn:active:not(:disabled) {
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-    transform: translateY(0);
+    background-color: color-mix(in oklab, var(--accent) 32%, var(--btn-face));
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+    transform: translateY(1px) scale(0.97);
   }
   .btn:focus-visible {
     outline: 2px solid var(--accent);
@@ -130,14 +254,48 @@ a {
     @apply cursor-not-allowed opacity-50;
     box-shadow: none;
   }
+  /* Selected tab or pressed toggle: accent edge, tinted face and accent text, so the current choice is obvious. */
+  .btn[aria-selected="true"],
+  .btn[aria-pressed="true"] {
+    border-color: var(--accent);
+    background-color: color-mix(in oklab, var(--accent) 22%, var(--btn-face));
+    color: var(--btn-hover-text);
+  }
   .btn-primary {
     @apply border-accent bg-accent text-accent-contrast;
   }
   .btn-primary:hover:not(:disabled) {
-    filter: brightness(1.1);
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+    filter: brightness(1.15) saturate(1.1);
+  }
+  .btn-primary:active:not(:disabled) {
+    background-color: var(--accent);
+    filter: brightness(0.85);
+  }
+  /* A request started by this control is running (set by ActionFeedback): spinner in place of a click response. */
+  .btn[aria-busy="true"] {
+    cursor: progress;
+    pointer-events: none;
+  }
+  .btn[aria-busy="true"]::before {
+    content: "";
+    width: 0.9em;
+    height: 0.9em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 9999px;
+    animation: wr-spin 0.7s linear infinite;
   }
   .input {
     @apply w-full rounded-md border border-border bg-bg px-3 py-1.5 text-sm outline-none focus:border-accent;
+    transition: border-color 120ms;
+  }
+  .input:hover:not(:disabled):not(:focus) {
+    border-color: color-mix(in oklab, var(--accent) 55%, var(--border));
+  }
+  select.input {
+    cursor: pointer;
   }
   .label {
     @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted;
@@ -190,4 +348,14 @@ a {
   border-radius: 6px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 10px -2px var(--frame, transparent);
   background: #0b0d12;
+}
+@keyframes wr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wr-pulse {
+  50% {
+    opacity: 0.5;
+  }
 }

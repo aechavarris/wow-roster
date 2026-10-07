@@ -306,7 +306,8 @@
     "invalid_profession_skill": "El nivel supera el máximo de esa profesión en esta versión.",
     "too_many_primary_professions": "Solo se pueden tener dos profesiones principales.",
     "professions_from_api": "En esta versión las profesiones vienen de la API de Blizzard.",
-    "confirm_name_mismatch": "El nombre no coincide con el del roster."
+    "confirm_name_mismatch": "El nombre no coincide con el del roster.",
+    "network_error": "No se pudo conectar con el servidor. Revisa tu conexión."
   },
   "createRoster": {
     "title": "Crear roster libre",
@@ -481,5 +482,11 @@
     "runsShort": "{count, plural, one {# llave} other {# llaves}}",
     "ilvlShort": "iLvl {value}",
     "historyLegend": "Una columna por semana desde que se empezó a registrar. Las semanas sin sincronización aparecen vacías."
+  },
+  "feedback": {
+    "working": "Procesando…",
+    "saved": "Cambios guardados",
+    "deleted": "Eliminado",
+    "done": "Hecho"
   }
 }

@@ -306,7 +306,8 @@
     "invalid_profession_skill": "The skill is above that profession's cap in this game version.",
     "too_many_primary_professions": "A character can only have two primary professions.",
     "professions_from_api": "In this game version professions come from Blizzard's API.",
-    "confirm_name_mismatch": "The name does not match the roster's."
+    "confirm_name_mismatch": "The name does not match the roster's.",
+    "network_error": "Could not reach the server. Check your connection."
   },
   "createRoster": {
     "title": "Create a custom roster",
@@ -481,5 +482,11 @@
     "runsShort": "{count, plural, one {# key} other {# keys}}",
     "ilvlShort": "iLvl {value}",
     "historyLegend": "One column per week since recording started. Weeks without a sync stay empty."
+  },
+  "feedback": {
+    "working": "Working…",
+    "saved": "Changes saved",
+    "deleted": "Deleted",
+    "done": "Done"
   }
 }
