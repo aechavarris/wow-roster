@@ -1,11 +1,13 @@
 import { namespaceFor, type ApiConfig } from "@wow/config";
 import {
   normalizeAccountCharacters,
+  normalizeEncounters,
   normalizeEquipment,
   normalizeGuild,
   normalizeGuildRoster,
   normalizeIcon,
   normalizeMedia,
+  normalizeMythicPlus,
   normalizeProfessions,
   normalizeReputations,
   normalizeSpecializations,
@@ -206,6 +208,10 @@ export class BlizzardClient {
       fetchDetail("statistics", "statistics", "/statistics", normalizeStatistics),
       fetchDetail("professions", "professions", "/professions", normalizeProfessions, null),
       fetchDetail("reputations", "reputations", "/reputations", normalizeReputations, null),
+      // Instance and boss names in every locale, like the gear.
+      fetchDetail("raids", "raids", "/encounters/raids", normalizeEncounters, null),
+      fetchDetail("dungeons", "dungeons", "/encounters/dungeons", normalizeEncounters, null),
+      fetchDetail("mythicPlus", "mythicPlus", "/mythic-keystone-profile", normalizeMythicPlus, null),
     ]);
     return profile;
   }

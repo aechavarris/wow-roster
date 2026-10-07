@@ -1,4 +1,4 @@
-import type { CharacterProfile } from "@wow/blizzard";
+import type { CharacterProfile, InstanceProgress, MythicPlusProfile, Profession, Reputation } from "@wow/blizzard";
 import type { Buff, GameClass, GameRole, Localized, RaidSize, RosterStatus, StatSection } from "@wow/config";
 
 /** Shapes returned by the API (see apps/api/src/routes). */
@@ -12,6 +12,8 @@ export interface GameVersion {
   maxLevel: number;
   /** False while Blizzard has no API for the version (Forever): rosters only hold planned characters. */
   apiAvailable: boolean;
+  /** Character data the version's API provides (equipment, raids, mythicPlus…); empty without an API. */
+  characterEndpoints: string[];
   hasRealms: boolean;
   wowheadDomain: string;
   roles: GameRole[];
@@ -186,6 +188,41 @@ export interface RosterInvite {
 export interface PendingEntry extends RosterCharacter {
   submittedBy: string | null;
   submittedAt: string;
+}
+
+/** Gear as the details table shows it: no tooltip lines. */
+export interface DetailItem {
+  slot: string;
+  itemId: number;
+  name: Localized;
+  quality?: string;
+  itemLevel?: number;
+  icon?: string;
+  bonusIds: number[];
+  enchantments: Localized[];
+  gems: { itemId?: number; text?: Localized }[];
+}
+
+/** One character's row data in GET /guilds/:id/details; null where the API gave nothing. */
+export interface CharacterDetails {
+  level: number;
+  equippedItemLevel: number | null;
+  averageItemLevel: number | null;
+  lastLoginAt: string | null;
+  lastSyncedAt: string | null;
+  syncError: string | null;
+  missing: Record<string, string>;
+  equipment: DetailItem[] | null;
+  professions: Profession[] | null;
+  manualProfessions: ManualProfession[] | null;
+  reputations: Reputation[] | null;
+  raids: InstanceProgress[] | null;
+  dungeons: InstanceProgress[] | null;
+  mythicPlus: MythicPlusProfile | null;
+}
+
+export interface RosterDetailsResponse {
+  characters: Record<string, CharacterDetails>;
 }
 
 export interface RosterResponse {

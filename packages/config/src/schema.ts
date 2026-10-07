@@ -66,7 +66,7 @@ export const apiSchema = z.object({
   hasRealms: z.boolean(),
   /** Profile endpoints this game version supports; others are skipped instead of 404ing. */
   characterEndpoints: z.array(
-    z.enum(["equipment", "specializations", "media", "statistics", "professions", "reputations"]),
+    z.enum(["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"]),
   ),
 });
 

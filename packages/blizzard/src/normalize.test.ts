@@ -4,7 +4,9 @@ import {
   normalizeEquipment,
   normalizeTalentTree,
   normalizeGuildRoster,
+  normalizeEncounters,
   normalizeMedia,
+  normalizeMythicPlus,
   normalizeProfessions,
   normalizeSpecializations,
   normalizeStatistics,
@@ -307,5 +309,55 @@ describe("normalizeProfessions", () => {
     const [archaeology] = normalizeProfessions({ secondaries: [{ profession: { id: 794, name: "Archaeology" }, skill_points: 950, max_skill_points: 950 }] });
     expect(archaeology).toMatchObject({ skill: 950, maxSkill: 950, tiers: [] });
     expect(normalizeProfessions({})).toEqual([]);
+  });
+});
+
+describe("normalizeEncounters / normalizeMythicPlus", () => {
+  it("flattens expansions into instances with per-difficulty boss kills", () => {
+    const [raid] = normalizeEncounters({
+      expansions: [
+        {
+          expansion: { id: 514, name: { en_US: "The War Within", es_ES: "The War Within" } },
+          instances: [
+            {
+              instance: { id: 1273, name: { en_US: "Nerub-ar Palace", es_ES: "Palacio Nerub-ar" } },
+              modes: [
+                {
+                  difficulty: { type: "HEROIC", name: { en_US: "Heroic", es_ES: "Heroico" } },
+                  status: { type: "COMPLETE" },
+                  progress: {
+                    completed_count: 2,
+                    total_count: 8,
+                    encounters: [{ encounter: { id: 2902, name: { en_US: "Ulgrax the Devourer" } }, completed_count: 3, last_kill_timestamp: 1_760_000_000_000 }],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(raid).toMatchObject({ id: 1273, name: { en: "Nerub-ar Palace", es: "Palacio Nerub-ar" }, expansionId: 514 });
+    expect(raid!.modes[0]).toMatchObject({ difficulty: "HEROIC", difficultyName: { es: "Heroico" }, completed: 2, total: 8 });
+    expect(raid!.modes[0]!.encounters[0]).toEqual({ id: 2902, name: { en: "Ulgrax the Devourer" }, kills: 3, lastKillAt: new Date(1_760_000_000_000).toISOString() });
+    expect(normalizeEncounters({})).toEqual([]);
+  });
+
+  it("keeps the season rating, its color and this week's runs, highest key first", () => {
+    const mplus = normalizeMythicPlus({
+      current_mythic_rating: { rating: 2456.7, color: { r: 255, g: 128, b: 0, a: 1 } },
+      current_period: {
+        best_runs: [
+          { keystone_level: 8, dungeon: { id: 501, name: { en_US: "The Stonevault" } }, is_completed_within_time: false, duration: 2_100_000, completed_timestamp: 1_760_000_000_000 },
+          { keystone_level: 12, dungeon: { id: 502, name: { en_US: "City of Threads" } }, is_completed_within_time: true, duration: 1_700_000 },
+        ],
+      },
+    });
+    expect(mplus).toMatchObject({ rating: 2456.7, color: "#ff8000" });
+    expect(mplus.weeklyRuns.map((r) => [r.level, r.timed, r.dungeon.en])).toEqual([
+      [12, true, "City of Threads"],
+      [8, false, "The Stonevault"],
+    ]);
+    expect(normalizeMythicPlus({})).toEqual({ rating: undefined, color: undefined, weeklyRuns: [] });
   });
 });

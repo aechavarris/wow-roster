@@ -9,7 +9,7 @@
     "staticNamespace": "static-{region}",
     "dynamicNamespace": "dynamic-{region}",
     "hasRealms": true,
-    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations"]
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"]
   },
   "wowheadDomain": "",
   "roles": [

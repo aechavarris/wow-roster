@@ -1,4 +1,4 @@
-import { BlizzardApiError } from "@wow/blizzard";
+import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
 import { REGIONS, blizzardSlug } from "@wow/config";
 import { buildRoster, defaultStatusForRank, fitsGameVersion, gameVersion, nameKey, syncCharacter, toCharacterView } from "@wow/core";
 import type { User } from "@wow/db";
@@ -266,6 +266,67 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         submittedAt: e.createdAt,
       }));
     return { players, pending };
+  });
+
+  /**
+   * Per-character details for the roster's details table (gear, dungeons, raids, reputations,
+   * professions), keyed by character id; roster order and names come from GET /roster. Gear is
+   * slimmed to what the table shows: no tooltip lines.
+   */
+  app.get("/guilds/:id/details", async (request) => {
+    const { id } = idParams.parse(request.params);
+    await loadVisibleGuild(prisma, id, request.user);
+    const entries = await prisma.rosterEntry.findMany({
+      where: { guildId: id, pending: false, characterId: { not: null } },
+      select: {
+        character: {
+          select: {
+            id: true,
+            level: true,
+            equippedItemLevel: true,
+            averageItemLevel: true,
+            lastLoginAt: true,
+            lastSyncedAt: true,
+            syncError: true,
+            profile: true,
+            manualProfessions: true,
+          },
+        },
+      },
+    });
+    const characters: Record<string, unknown> = {};
+    for (const { character: c } of entries) {
+      if (!c) continue;
+      const profile = (c.profile ?? null) as Partial<CharacterProfile> | null;
+      characters[c.id] = {
+        level: c.level,
+        equippedItemLevel: c.equippedItemLevel,
+        averageItemLevel: c.averageItemLevel,
+        lastLoginAt: c.lastLoginAt,
+        lastSyncedAt: c.lastSyncedAt,
+        syncError: c.syncError,
+        missing: profile?.missing ?? {},
+        equipment:
+          profile?.equipment?.map((item) => ({
+            slot: item.slot,
+            itemId: item.itemId,
+            name: item.name,
+            quality: item.quality,
+            itemLevel: item.itemLevel,
+            icon: item.icon,
+            bonusIds: item.bonusIds,
+            enchantments: item.enchantments.map((e) => e.text),
+            gems: item.gems.map((g) => ({ itemId: g.itemId, text: g.text })),
+          })) ?? null,
+        professions: profile?.professions ?? null,
+        manualProfessions: c.manualProfessions,
+        reputations: profile?.reputations ?? null,
+        raids: profile?.raids ?? null,
+        dungeons: profile?.dungeons ?? null,
+        mythicPlus: profile?.mythicPlus ?? null,
+      };
+    }
+    return { characters };
   });
 
   /** Published rosters for signed-in users, newest first; optionally of one game version. */
