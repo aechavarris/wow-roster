@@ -9,6 +9,7 @@ import {
   normalizeMedia,
   normalizeMythicPlus,
   normalizeMythicPlusSeason,
+  normalizeEncounterStatistics,
   normalizeProfessions,
   normalizeReputations,
   normalizeSpecializations,
@@ -213,6 +214,8 @@ export class BlizzardClient {
       fetchDetail("raids", "raids", "/encounters/raids", normalizeEncounters, null),
       fetchDetail("dungeons", "dungeons", "/encounters/dungeons", normalizeEncounters, null),
       fetchDetail("mythicPlus", "mythicPlus", "/mythic-keystone-profile", normalizeMythicPlus, null),
+      // Every locale: boss and instance names come from the statistic names.
+      fetchDetail("encounterStatistics", "encounterStatistics", "/achievements/statistics", normalizeEncounterStatistics, null),
     ]);
     const mythicPlus = profile.mythicPlus;
     if (mythicPlus) {

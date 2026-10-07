@@ -229,6 +229,10 @@ describe("config", () => {
     expect(byId.forever!.apiAvailable).toBe(false);
     expect(byId.forever!.raidSizes.filter((r) => r.enabled).map((r) => r.size)).toEqual([10, 20]);
     expect(byId.retail!.api).toBeUndefined();
+    // MoP Classic has no /encounters: its raid and dungeon tabs come from the boss kill statistics.
+    const endpoints = (id: string) => (body.versions as { id: string; characterEndpoints: string[] }[]).find((v) => v.id === id)!.characterEndpoints;
+    expect(endpoints("progression")).toEqual(expect.arrayContaining(["encounterStatistics", "raids", "dungeons"]));
+    expect(endpoints("classic-era")).not.toContain("raids");
   });
 });
 

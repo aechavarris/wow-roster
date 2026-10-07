@@ -228,6 +228,20 @@ export interface InstanceMode {
   encounters: EncounterProgress[];
 }
 
+/**
+ * One boss kill counter of the in-game statistics ("Garrosh Hellscream kills (Siege of Orgrimmar 25 player)"),
+ * from the "Dungeons & Raids" category: how many kills and when the counter last changed.
+ */
+export interface EncounterStatistic {
+  id: number;
+  name: LocalizedText;
+  quantity: number;
+  lastUpdated?: string;
+  /** Expansion subcategory it is listed under, and its position (1 = oldest) to tell the current tier. */
+  expansion?: LocalizedText;
+  expansionOrder: number;
+}
+
 /** A raid or dungeon the character has killed something in, grouped by expansion. */
 export interface InstanceProgress {
   id?: number;
@@ -303,6 +317,8 @@ export interface CharacterProfile {
   raids?: InstanceProgress[];
   dungeons?: InstanceProgress[];
   mythicPlus?: MythicPlusProfile;
+  /** Boss kill counters of /achievements/statistics, where the API has no /encounters (MoP Classic). */
+  encounterStatistics?: EncounterStatistic[];
   /** Mythic+ runs from Raider.IO, for versions that enable it (retail). */
   raiderIo?: RaiderIoProfile;
   /** Endpoints that failed or are unsupported, with the reason. */

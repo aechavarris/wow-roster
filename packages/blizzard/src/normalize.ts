@@ -4,6 +4,7 @@ import type {
   AccountCharacter,
   CharacterMedia,
   CharacterSummary,
+  EncounterStatistic,
   EquippedItem,
   GuildInfo,
   GuildRosterMember,
@@ -475,5 +476,30 @@ export function normalizeAccountCharacters(raw: Raw): AccountCharacter[] {
       raceId: num(c.playable_race?.id),
       faction: str(c.faction?.type),
     })),
+  );
+}
+
+/**
+ * /achievements/statistics, requested in every locale: the boss kill counters of the "Dungeons & Raids" category,
+ * one subcategory per expansion. Other categories (deaths, travel, consumables…) are dropped: only these are used.
+ */
+export function normalizeEncounterStatistics(raw: Raw): EncounterStatistic[] {
+  const category = list(raw.categories).find((c) => /dungeons? & raids?/i.test(localized(c.name)?.en ?? ""));
+  return list(category?.sub_categories).flatMap((expansion, index) =>
+    list(expansion.statistics).flatMap((stat): EncounterStatistic[] => {
+      const id = num(stat.id);
+      const name = localized(stat.name);
+      if (id === undefined || !name) return [];
+      return [
+        {
+          id,
+          name,
+          quantity: num(stat.quantity) ?? 0,
+          lastUpdated: isoDate(stat.last_updated_timestamp),
+          expansion: localized(expansion.name),
+          expansionOrder: index + 1,
+        },
+      ];
+    }),
   );
 }
