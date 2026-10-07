@@ -14,6 +14,8 @@ export interface GameVersion {
   apiAvailable: boolean;
   /** Character data the version's API provides (equipment, raids, mythicPlus…); empty without an API. */
   characterEndpoints: string[];
+  /** Details sections the version hides although its API has the data. */
+  hiddenDetails: string[];
   hasRealms: boolean;
   wowheadDomain: string;
   roles: GameRole[];

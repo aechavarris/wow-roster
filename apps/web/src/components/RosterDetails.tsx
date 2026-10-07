@@ -31,10 +31,11 @@ type TabKey = "summary" | "gear" | "mythicPlus" | "dungeons" | "raids" | "profes
 
 /**
  * Tabs come from the game version: each one appears only when the version's API provides that data
- * (its profile's characterEndpoints), so Classic, retail and later Forever each show what they have.
+ * (its profile's characterEndpoints) and the profile does not hide it (hiddenDetails), so Classic, retail and later
+ * Forever each show what makes sense for them.
  */
 function tabsFor(version: GameVersion): TabKey[] {
-  const has = (endpoint: string) => version.characterEndpoints.includes(endpoint);
+  const has = (endpoint: string) => version.characterEndpoints.includes(endpoint) && !version.hiddenDetails.includes(endpoint);
   const tabs: TabKey[] = ["summary"];
   if (has("equipment")) tabs.push("gear");
   if (has("mythicPlus")) tabs.push("mythicPlus");
@@ -136,8 +137,9 @@ function SummaryTable({ version, rows }: { version: GameVersion; rows: DetailsRo
   const t = useTranslations("details");
   const locale = useLocale();
   const format = useFormatter();
-  const hasRaids = version.characterEndpoints.includes("raids");
-  const hasMythic = version.characterEndpoints.includes("mythicPlus");
+  const shows = (e: string) => version.characterEndpoints.includes(e) && !version.hiddenDetails.includes(e);
+  const hasRaids = shows("raids");
+  const hasMythic = shows("mythicPlus");
   const current = latestInstances(rows.flatMap((r) => r.details?.raids ?? []));
   const when = (iso: string | null | undefined) => (iso ? format.relativeTime(new Date(iso)) : "—");
   const span = 4 + (hasMythic ? 1 : 0) + (hasRaids ? 1 : 0) + 2;

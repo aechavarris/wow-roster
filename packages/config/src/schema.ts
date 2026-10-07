@@ -154,6 +154,11 @@ export const gameProfileSchema = z.object({
   /** How many primary professions a character can learn. */
   maxPrimaryProfessions: z.number().int().positive().default(2),
   weekly: weeklySchema.optional(),
+  /**
+   * Character data the version's API provides but the roster pages should not show as a section, because it says
+   * nothing there (retail runs every dungeon on Mythic, so dungeon progress is covered by the Mythic+ tab).
+   */
+  hiddenDetails: z.array(z.enum(["gear", "mythicPlus", "dungeons", "raids", "professions", "reputations"])).default([]),
   sync: z.object({
     defaultIntervalMinutes: z.number().int().positive(),
     minIntervalMinutes: z.number().int().positive(),
