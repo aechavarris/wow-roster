@@ -5,6 +5,8 @@ export interface CompositionMember {
   classId: number | null;
   specKey: string | null;
   role: string | null;
+  /** Role of the member's off-spec when it differs from `role`: the member could cover it instead. */
+  offRole?: string | null;
   planned: boolean;
 }
 
@@ -19,6 +21,8 @@ export interface Composition {
   total: number;
   planned: number;
   byRole: Record<string, number>;
+  /** Members who play another role but could switch to this one with their off-spec. */
+  flexByRole: Record<string, number>;
   byClass: Record<number, number>;
   buffs: BuffCoverage[];
 }
@@ -30,9 +34,11 @@ export function computeComposition(
 ): Composition {
   const classKey = new Map(profile.classes.map((c) => [c.id, c.key]));
   const byRole: Record<string, number> = {};
+  const flexByRole: Record<string, number> = {};
   const byClass: Record<number, number> = {};
   for (const m of members) {
     if (m.role) byRole[m.role] = (byRole[m.role] ?? 0) + 1;
+    if (m.offRole && m.offRole !== m.role) flexByRole[m.offRole] = (flexByRole[m.offRole] ?? 0) + 1;
     if (m.classId != null) byClass[m.classId] = (byClass[m.classId] ?? 0) + 1;
   }
 
@@ -49,5 +55,5 @@ export function computeComposition(
     return { buff, providers: able.length, planned: able.filter((m) => m.planned).length };
   });
 
-  return { total: members.length, planned: members.filter((m) => m.planned).length, byRole, byClass, buffs };
+  return { total: members.length, planned: members.filter((m) => m.planned).length, byRole, flexByRole, byClass, buffs };
 }

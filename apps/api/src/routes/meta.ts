@@ -21,6 +21,8 @@ const publicVersion = (v: GameProfile) => ({
   details: v.details,
   requirements: v.requirements.filter((r) => r.enabled),
   hasRealms: v.api.hasRealms,
+  /** Offered instead of a free-text realm where the version has no realms (Forever). */
+  rulesets: v.rulesets.filter((r) => r.enabled),
   wowheadDomain: v.wowheadDomain,
   roles: v.roles,
   classes: v.classes,

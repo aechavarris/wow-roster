@@ -229,6 +229,10 @@ describe("config", () => {
     expect(byId.forever!.apiAvailable).toBe(false);
     expect(byId.forever!.raidSizes.filter((r) => r.enabled).map((r) => r.size)).toEqual([10, 20]);
     expect(byId.retail!.api).toBeUndefined();
+    // Forever has rulesets instead of realms; Hardcore is announced for later and not offered yet.
+    const rulesets = (id: string) => (body.versions as { id: string; rulesets: { key: string }[] }[]).find((v) => v.id === id)!.rulesets;
+    expect(rulesets("forever").map((r) => r.key)).toEqual(["normal", "pvp", "rp"]);
+    expect(rulesets("retail")).toEqual([]);
     // MoP Classic has no /encounters: its raid and dungeon tabs come from the boss kill statistics.
     const endpoints = (id: string) => (body.versions as { id: string; characterEndpoints: string[] }[]).find((v) => v.id === id)!.characterEndpoints;
     expect(endpoints("progression")).toEqual(expect.arrayContaining(["encounterStatistics", "raids", "dungeons"]));
@@ -401,10 +405,19 @@ describe("custom rosters and planned characters", () => {
     expect(mine.userId).not.toBeNull();
     expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${mine.id}`, member, { plannedSpec: "shadow" })).statusCode).toBe(200);
     expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${mine.id}`, member, { status: "bench" })).statusCode).toBe(403);
+    // Players pick the off-spec of their own entries only, among their class's specs.
+    expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${mine.id}`, member, { offSpec: "discipline" })).statusCode).toBe(200);
+    expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${mine.id}`, member, { offSpec: "fury" })).statusCode).toBe(400);
+    expect((await send("PATCH", `/api/guilds/${guild.id}/roster/${tank.json().entry.id}`, member, { offSpec: "fury" })).statusCode).toBe(403);
     expect((await send("DELETE", `/api/guilds/${guild.id}/roster/${tank.json().entry.id}`, member)).statusCode).toBe(403);
     expect((await send("POST", `/api/guilds/${guild.id}/invites`, member, { role: "MEMBER" })).statusCode).toBe(403);
     players = await roster(guild.id);
-    expect(players.find((p) => p.main.userId === mine.userId)!.main).toMatchObject({ specKey: "shadow", role: "rdps" });
+    expect(players.find((p) => p.main.userId === mine.userId)!.main).toMatchObject({
+      specKey: "shadow",
+      role: "rdps",
+      offSpecKey: "discipline",
+      offRole: "healer",
+    });
 
     // When the character exists in the game, the planned entry is linked to it.
     const linked = await send("POST", `/api/guilds/${guild.id}/roster/${tank.json().entry.id}/link`, owner, { realm: "Los Errantes", name: "Garrosh" });
@@ -509,7 +522,13 @@ describe("game versions", () => {
   it("keeps Forever rosters to planned characters until Blizzard publishes its API", async () => {
     const owner = await login(1001);
     const roster = (await send("POST", "/api/rosters", owner, { name: "Forever", gameVersion: "forever", region: "eu" })).json().guild;
-    expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, owner, { classId: 2, specKey: "holy" })).statusCode).toBe(201);
+    const healer = await send("POST", `/api/guilds/${roster.id}/roster/planned`, owner, { classId: 2, specKey: "holy", offSpecKey: "protection" });
+    expect(healer.statusCode).toBe(201);
+    expect(healer.json().entry.offSpec).toBe("protection");
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, owner, { classId: 2, offSpecKey: "arms" })).statusCode).toBe(400);
+    // Changing the planned class clears both specs.
+    const changed = await send("PATCH", `/api/guilds/${roster.id}/roster/${healer.json().entry.id}`, owner, { plannedClassId: 1 });
+    expect(changed.json().entry).toMatchObject({ plannedSpec: null, offSpec: null });
     const real = await send("POST", `/api/guilds/${roster.id}/roster`, owner, { realm: "Los Errantes", name: "Garrosh" });
     expect(real.statusCode).toBe(409);
     expect(real.json().error).toBe("game_version_without_api");

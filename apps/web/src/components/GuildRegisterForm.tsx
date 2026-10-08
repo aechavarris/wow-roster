@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
+import { RealmField } from "@/components/ui/RealmField";
 import type { GameVersion } from "@/lib/types";
 import { VersionSelect } from "./VersionSelect";
 
@@ -58,7 +59,7 @@ export function GuildRegisterForm({ regions, defaultRegion, versions }: Props) {
         </div>
         <div className="col-span-2">
           <label className="label" htmlFor="gr-realm">{version.hasRealms ? t("realm") : t("ruleset")}</label>
-          <input id="gr-realm" name="realm" required className="input" />
+          <RealmField id="gr-realm" version={version} />
         </div>
       </div>
       <div>

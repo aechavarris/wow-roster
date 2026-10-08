@@ -21,6 +21,8 @@ export interface GameVersion {
   /** Attunements tracked by hand, if the version has any. */
   requirements: Requirement[];
   hasRealms: boolean;
+  /** Rulesets offered instead of a free-text realm (Forever); empty where the version has realms. */
+  rulesets: { key: string; name: Localized }[];
   wowheadDomain: string;
   roles: GameRole[];
   classes: GameClass[];
@@ -130,6 +132,8 @@ export interface RosterCharacter {
   level: number;
   classId: number | null;
   specKey: string | null;
+  offSpecKey: string | null;
+  offRole: string | null;
   role: string | null;
   roleOverridden: boolean;
   status: string;

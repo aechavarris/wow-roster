@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
 import { classColor, classText } from "@/lib/game";
+import { RealmField } from "@/components/ui/RealmField";
 import type { GameVersion, MeResponse, ViewerRole } from "@/lib/types";
 
 type Profile = GameVersion;
@@ -51,7 +52,7 @@ export function RosterTools({ guildId, region, profile, viewerRole, myCharacters
         {profile.apiAvailable ? (
           <div className="space-y-4">
             {myCharacters.length > 0 && <MyCharactersForm guildId={guildId} profile={profile} characters={myCharacters} run={run} />}
-            {isOfficer && <RealCharacterForm guildId={guildId} hasRealms={profile.hasRealms} region={region} run={run} />}
+            {isOfficer && <RealCharacterForm guildId={guildId} version={profile} region={region} run={run} />}
           </div>
         ) : (
           // Versions without a Blizzard API (Forever, for now) only hold planned characters.
@@ -89,6 +90,7 @@ function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; pr
             apiSend("POST", `/guilds/${guildId}/roster/planned`, {
               classId,
               specKey: data.get("specKey") || null,
+              offSpecKey: data.get("offSpecKey") || null,
               role: data.get("role") || null,
               plannedName: data.get("plannedName") || null,
               playerName: data.get("playerName") || null,
@@ -105,7 +107,7 @@ function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; pr
         <h3 className="heading">{t("planTitle")}</h3>
         <p className="text-xs text-muted">{t("planHelp")}</p>
       </div>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="plan-class">{t("class")}</label>
           <select
@@ -124,6 +126,15 @@ function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; pr
           <label className="label" htmlFor="plan-spec">{t("spec")}</label>
           <select id="plan-spec" name="specKey" className="input" key={classId} defaultValue="">
             <option value="">{t("anySpec")}</option>
+            {specs.map((s) => (
+              <option key={s.key} value={s.key}>{localize(s.name, locale)}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="plan-offspec" title={t("offSpecHint")}>{t("offSpec")}</label>
+          <select id="plan-offspec" name="offSpecKey" className="input" key={classId} defaultValue="">
+            <option value="">{t("noOffSpec")}</option>
             {specs.map((s) => (
               <option key={s.key} value={s.key}>{localize(s.name, locale)}</option>
             ))}
@@ -229,7 +240,7 @@ function MyCharactersForm({
   );
 }
 
-function RealCharacterForm({ guildId, hasRealms, region, run }: { guildId: string; hasRealms: boolean; region: string; run: Run }) {
+function RealCharacterForm({ guildId, version, region, run }: { guildId: string; version: GameVersion; region: string; run: Run }) {
   const t = useTranslations("roster");
   const [pending, setPending] = useState(false);
   return (
@@ -249,8 +260,8 @@ function RealCharacterForm({ guildId, hasRealms, region, run }: { guildId: strin
       <p className="text-xs text-muted">{t("addHelp", { region: region.toUpperCase() })}</p>
       <div className="grid gap-2 sm:grid-cols-2">
         <div>
-          <label className="label" htmlFor="add-realm">{hasRealms ? t("realm") : t("ruleset")}</label>
-          <input id="add-realm" name="realm" required className="input" />
+          <label className="label" htmlFor="add-realm">{version.hasRealms ? t("realm") : t("ruleset")}</label>
+          <RealmField id="add-realm" version={version} />
         </div>
         <div>
           <label className="label" htmlFor="add-name">{t("name")}</label>

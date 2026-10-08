@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { characterPath } from "@/lib/game";
 import type { GameVersion } from "@/lib/types";
+import { RealmField } from "./ui/RealmField";
 import { VersionSelect } from "./VersionSelect";
 
 interface Props {
@@ -41,7 +42,7 @@ export function CharacterSearch({ regions, defaultRegion, versions }: Props) {
         </div>
         <div className="col-span-2">
           <label className="label" htmlFor="cs-realm">{version.hasRealms ? t("realm") : t("ruleset")}</label>
-          <input id="cs-realm" name="realm" required className="input" />
+          <RealmField id="cs-realm" version={version} />
         </div>
       </div>
       <div>

@@ -6,6 +6,7 @@ import { Fragment, useMemo, useState } from "react";
 import { Link, useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
 import { characterPath, classColor, classText, className, roleOf, specName, statusOf } from "@/lib/game";
+import { RealmField } from "@/components/ui/RealmField";
 import type { GameVersion, RosterCharacter, RosterPlayer, ViewerRole } from "@/lib/types";
 
 type Profile = GameVersion;
@@ -24,7 +25,6 @@ interface Props {
 const AUTO = "__auto__";
 
 export function RosterTable({ guildId, players, profile, viewerRole, viewerUserId, showRank }: Props) {
-  const hasRealms = profile.hasRealms;
   const t = useTranslations("roster");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -104,13 +104,14 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
   const rowProps = (c: RosterCharacter, player: RosterPlayer) => ({
     character: c,
     profile,
-    hasRealms,
     showRank,
     isOfficer,
     // Members edit their own planned entries; officers edit everything.
     // Planned entries can only become real characters in versions with a Blizzard API.
     canLink: profile.apiAvailable,
     canEditPlanning: isOfficer || (c.planned && c.userId !== null && c.userId === viewerUserId),
+    // Players pick the off-spec of any of their own characters: only they know their second spec.
+    canEditOffSpec: isOfficer || (c.userId !== null && c.userId === viewerUserId),
     canRemove: isOfficer || ((c.source === "manual" || c.source === "planned") && c.userId !== null && c.userId === viewerUserId),
     mainOptions: player.claimed ? [] : mainOptions.filter((m) => m.entryId !== c.entryId),
     actions,
@@ -219,11 +220,11 @@ interface RowActions {
 interface RowProps {
   character: RosterCharacter;
   profile: Profile;
-  hasRealms: boolean;
   showRank: boolean;
   canLink: boolean;
   isOfficer: boolean;
   canEditPlanning: boolean;
+  canEditOffSpec: boolean;
   canRemove: boolean;
   showActions: boolean;
   isAlt?: boolean;
@@ -232,7 +233,7 @@ interface RowProps {
   actions: RowActions;
 }
 
-function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, canEditPlanning, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
+function Row({ character: c, profile, showRank, canLink, isOfficer, canEditPlanning, canEditOffSpec, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
   const t = useTranslations("roster");
   const locale = useLocale();
   const format = useFormatter();
@@ -240,10 +241,26 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
   const status = statusOf(profile, c.status);
   const gameClass = profile.classes.find((g) => g.id === c.classId);
   const color = classColor(profile, c.classId);
+  const offSpecSelect = gameClass && (
+    <select
+      aria-label={t("offSpec")}
+      title={t("offSpecHint")}
+      className="input w-auto max-w-32 py-0.5"
+      value={c.offSpecKey ?? ""}
+      onChange={(e) => actions.update(c.entryId, { offSpec: e.target.value || null })}
+    >
+      <option value="">{t("noOffSpec")}</option>
+      {gameClass.specs
+        .filter((s) => s.key !== c.specKey)
+        .map((s) => (
+          <option key={s.key} value={s.key}>{`${t("offSpecShort")}: ${localize(s.name, locale)}`}</option>
+        ))}
+    </select>
+  );
   // Shown in their own column on wide screens and under the name on narrow ones, so the table never scrolls sideways.
   const actionButtons = (
     <div className="flex flex-wrap items-center gap-1">
-      {c.planned && canEditPlanning && canLink && <LinkForm hasRealms={hasRealms} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
+      {c.planned && canEditPlanning && canLink && <LinkForm version={profile} onLink={(realm, name) => actions.link(c.entryId, realm, name)} />}
       {isOfficer && mainOptions.length > 0 && !c.claimed && (
         <select
           aria-label={t("linkMain")}
@@ -320,6 +337,7 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
         <div className={`flex flex-wrap gap-x-2 text-xs text-muted xl:hidden ${isAlt ? "pl-6" : ""}`}>
           <span className="md:hidden">
             {specName(profile, c.classId, c.specKey, locale)} {className(profile, c.classId, locale)}
+            {c.offSpecKey && ` · ${t("offSpecShort")}: ${specName(profile, c.classId, c.offSpecKey, locale)}`}
           </span>
           {!c.planned && (
             <>
@@ -356,11 +374,17 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
                 <option key={s.key} value={s.key}>{localize(s.name, locale)}</option>
               ))}
             </select>
+            {offSpecSelect}
           </div>
         ) : (
-          <>
-            {specName(profile, c.classId, c.specKey, locale)} {className(profile, c.classId, locale)}
-          </>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>
+              {specName(profile, c.classId, c.specKey, locale)} {className(profile, c.classId, locale)}
+            </span>
+            {canEditOffSpec
+              ? offSpecSelect
+              : c.offSpecKey && <span className="text-xs">{`${t("offSpecShort")}: ${specName(profile, c.classId, c.offSpecKey, locale)}`}</span>}
+          </div>
         )}
       </td>
       <td className="px-2 py-1.5">
@@ -424,7 +448,7 @@ function Row({ character: c, profile, hasRealms, showRank, canLink, isOfficer, c
 }
 
 /** Inline form that links a planned entry to the real character once it exists. */
-function LinkForm({ hasRealms, onLink }: { hasRealms: boolean; onLink: (realm: string, name: string) => Promise<boolean> }) {
+function LinkForm({ version, onLink }: { version: GameVersion; onLink: (realm: string, name: string) => Promise<boolean> }) {
   const t = useTranslations("roster");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -447,7 +471,7 @@ function LinkForm({ hasRealms, onLink }: { hasRealms: boolean; onLink: (realm: s
         if (ok) setOpen(false);
       }}
     >
-      <input name="realm" required placeholder={hasRealms ? t("realm") : t("ruleset")} aria-label={hasRealms ? t("realm") : t("ruleset")} className="input w-24 py-0.5" />
+      <RealmField version={version} label={version.hasRealms ? t("realm") : t("ruleset")} className="input w-24 py-0.5" />
       <input name="name" required placeholder={t("name")} aria-label={t("name")} className="input w-24 py-0.5" />
       <button type="submit" className="btn btn-primary px-2 py-0.5" disabled={pending}>
         {pending ? "…" : t("link")}

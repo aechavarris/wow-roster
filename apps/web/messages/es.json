@@ -147,7 +147,11 @@
     "roleFromSpec": "Según la especialización",
     "noApiYet": "Esta versión todavía no tiene API pública de Blizzard: de momento el roster solo admite personajes planificados. Cuando se publique, podrás vincularlos con los reales.",
     "proposeHelp": "Este roster está publicado. Puedes proponer tus personajes o planificar uno: quedarán pendientes hasta que el propietario los acepte.",
-    "proposalSent": "Propuesta enviada: el propietario tiene que aceptarla."
+    "proposalSent": "Propuesta enviada: el propietario tiene que aceptarla.",
+    "offSpec": "Off-spec",
+    "offSpecShort": "OS",
+    "noOffSpec": "Sin off-spec",
+    "offSpecHint": "Segunda especialización que puede usar (doble spec) o para la que equipa"
   },
   "settings": {
     "title": "Ajustes de la hermandad",
@@ -336,7 +340,14 @@
     "covered": "cubierto",
     "missing": "falta",
     "plannedProviders": "{count, plural, one {# de ellos planificado} other {# de ellos planificados}}",
-    "plannedFootnote": "* Incluye personajes planificados. Cuenta los mains con estado de raid; la lista de bufos se configura en el perfil de juego."
+    "plannedFootnote": "* Incluye personajes planificados. Cuenta los mains con estado de raid; la lista de bufos se configura en el perfil de juego.",
+    "offSpecFlex": "{count, plural, one {# personaje puede cubrirlo con su off-spec} other {# personajes pueden cubrirlo con su off-spec}}",
+    "asText": "Texto",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "missingList": "Falta",
+    "plannedMark": "planificado, aún no existe en el juego",
+    "offSpecShort": "OS"
   },
   "members": {
     "title": "Miembros e invitaciones",

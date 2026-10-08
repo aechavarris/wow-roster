@@ -181,6 +181,8 @@ model RosterEntry {
   plannedName    String?
   plannedClassId Int?
   plannedSpec    String?
+  /// Second spec the player can switch to (dual spec), as a spec key of the entry's class; also off-spec for loot.
+  offSpec        String?
   /// Who will play the entry: a free-text name and/or the app user (groups it with their characters).
   playerName     String?
   userId         String?
