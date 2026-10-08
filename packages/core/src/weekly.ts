@@ -40,20 +40,36 @@ export interface WeekActivity {
   mythicPlus: WeekRun[];
 }
 
-/** Bosses whose last kill falls in the week, per instance and difficulty. */
+/**
+ * Bosses whose last kill falls in the week, per instance and difficulty. The retail encounters API can list the
+ * same raid under more than one expansion block (e.g. a "current season" grouping besides its expansion), so entries
+ * are merged by instance and difficulty, each boss counted once, instead of showing the raid twice.
+ */
 function killedSince(instances: InstanceProgress[] | undefined, from: number, to: number): WeekInstance[] {
-  const result: WeekInstance[] = [];
+  const byKey = new Map<string, WeekInstance & { seen: Set<string> }>();
+  const order: string[] = [];
   for (const instance of instances ?? []) {
     for (const mode of instance.modes) {
-      const bosses = mode.encounters
-        .filter((e) => e.lastKillAt && Date.parse(e.lastKillAt) >= from && Date.parse(e.lastKillAt) < to)
-        .map((e) => ({ id: e.id, name: e.name }));
-      if (bosses.length > 0) {
-        result.push({ instanceId: instance.id, name: instance.name, difficulty: mode.difficulty, difficultyName: mode.difficultyName, bosses });
+      const key = `${instance.id ?? JSON.stringify(instance.name)}:${mode.difficulty}`;
+      for (const e of mode.encounters) {
+        if (!e.lastKillAt || Date.parse(e.lastKillAt) < from || Date.parse(e.lastKillAt) >= to) continue;
+        let group = byKey.get(key);
+        if (!group) {
+          group = { instanceId: instance.id, name: instance.name, difficulty: mode.difficulty, difficultyName: mode.difficultyName, bosses: [], seen: new Set() };
+          byKey.set(key, group);
+          order.push(key);
+        }
+        const bossId = e.id != null ? `id:${e.id}` : `name:${JSON.stringify(e.name)}`;
+        if (group.seen.has(bossId)) continue;
+        group.seen.add(bossId);
+        group.bosses.push({ id: e.id, name: e.name });
       }
     }
   }
-  return result;
+  return order.map((key) => {
+    const { seen: _seen, ...instance } = byKey.get(key)!;
+    return instance;
+  });
 }
 
 /**
