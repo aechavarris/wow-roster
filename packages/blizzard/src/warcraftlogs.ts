@@ -43,9 +43,11 @@ export function normalizeWarcraftLogs(raw: Raw, characterName: string, url: stri
       const encounterId = num(fight.encounterID);
       // Without the character among the fight's players (benched, swapped out) the kill is not theirs.
       if (!encounterId || (self && !list(fight.friendlyPlayers).includes(self.id))) continue;
+      const zoneName = str(report.zone?.name);
       kills.push({
         report: str(report.code) ?? "",
         zoneId: num(report.zone?.id),
+        zoneName: zoneName ? { en: zoneName } : undefined,
         encounterId,
         name: str(fight.name) ?? String(encounterId),
         difficulty: num(fight.difficulty),

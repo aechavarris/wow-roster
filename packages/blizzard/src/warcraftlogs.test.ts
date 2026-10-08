@@ -27,6 +27,7 @@ describe("normalizeWarcraftLogs", () => {
       {
         report: "TptbCL6ax3XGHwQD",
         zoneId: 2006,
+        zoneName: { en: "Naxxramas" },
         encounterId: 51107,
         name: "Anub'Rekhan",
         difficulty: 3,
