@@ -1,5 +1,5 @@
 import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
-import { REGIONS, blizzardSlug } from "@wow/config";
+import { REGIONS, blizzardSlug, progressEventsSchema } from "@wow/config";
 import {
   averageEquippedItemLevel,
   buildRoster,
@@ -8,6 +8,7 @@ import {
   fitsGameVersion,
   gameVersion,
   nameKey,
+  postDiscordWebhook,
   syncCharacter,
   toCharacterView,
   vaultSlots,
@@ -18,6 +19,7 @@ import { Prisma, type User } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { resolveBisList } from "../bis";
+import { isDiscordWebhookUrl, maskWebhookUrl } from "../discord";
 import type { AppDeps } from "../deps";
 import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from "../errors";
 import { atLeast, loadVisibleGuild, requireGuildRole, type ViewerRole } from "../permissions";
@@ -418,6 +420,83 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         : [],
     );
     return { available: true, logs: buildRosterLogs(gameVersion(core, guild.gameVersion), characters, host) };
+  });
+
+  // Discord webhooks that announce character progress. Officers manage them; the URL (a secret) is never read back.
+  const serializeWebhook = (w: { id: string; label: string; url: string; events: string[]; locale: string; allCharacters: boolean; characterIds: string[]; enabled: boolean }) => ({
+    id: w.id,
+    label: w.label,
+    urlMasked: maskWebhookUrl(w.url),
+    events: w.events,
+    locale: w.locale,
+    allCharacters: w.allCharacters,
+    characterIds: w.characterIds,
+    enabled: w.enabled,
+  });
+  const webhookBody = z.object({
+    label: z.string().trim().min(1).max(60),
+    url: z.string().trim().max(300).refine(isDiscordWebhookUrl, "invalid_webhook_url"),
+    events: progressEventsSchema,
+    locale: z.enum(["es", "en"]).default("es"),
+    allCharacters: z.boolean().default(true),
+    characterIds: z.array(z.string()).max(200).default([]),
+    enabled: z.boolean().default(true),
+  });
+
+  app.get("/guilds/:id/webhooks", async (request) => {
+    const { id } = idParams.parse(request.params);
+    await requireGuildRole(prisma, id, request.user, "OFFICER");
+    const webhooks = await prisma.rosterWebhook.findMany({ where: { guildId: id }, orderBy: { createdAt: "asc" } });
+    return { webhooks: webhooks.map(serializeWebhook) };
+  });
+
+  app.post("/guilds/:id/webhooks", async (request, reply) => {
+    const { id } = idParams.parse(request.params);
+    await requireGuildRole(prisma, id, request.user, "OFFICER");
+    const body = webhookBody.parse(request.body);
+    const webhook = await prisma.rosterWebhook.create({ data: { guildId: id, ...body } });
+    return reply.status(201).send({ webhook: serializeWebhook(webhook) });
+  });
+
+  app.patch("/guilds/:id/webhooks/:webhookId", async (request) => {
+    const { id, webhookId } = z.object({ id: z.string(), webhookId: z.string() }).parse(request.params);
+    await requireGuildRole(prisma, id, request.user, "OFFICER");
+    const existing = await prisma.rosterWebhook.findFirst({ where: { id: webhookId, guildId: id } });
+    if (!existing) throw notFound("webhook_not_found");
+    // The URL can be left out to keep the stored secret; when present it is re-validated.
+    const body = webhookBody.partial().parse(request.body);
+    const webhook = await prisma.rosterWebhook.update({ where: { id: webhookId }, data: body });
+    return { webhook: serializeWebhook(webhook) };
+  });
+
+  app.delete("/guilds/:id/webhooks/:webhookId", async (request) => {
+    const { id, webhookId } = z.object({ id: z.string(), webhookId: z.string() }).parse(request.params);
+    await requireGuildRole(prisma, id, request.user, "OFFICER");
+    const existing = await prisma.rosterWebhook.findFirst({ where: { id: webhookId, guildId: id } });
+    if (!existing) throw notFound("webhook_not_found");
+    await prisma.rosterWebhook.delete({ where: { id: webhookId } });
+    return { removed: true };
+  });
+
+  /** Posts a sample message to the webhook so the officer can confirm the channel is right. */
+  app.post("/guilds/:id/webhooks/:webhookId/test", async (request) => {
+    const { id, webhookId } = z.object({ id: z.string(), webhookId: z.string() }).parse(request.params);
+    const { guild } = await requireGuildRole(prisma, id, request.user, "OFFICER");
+    const webhook = await prisma.rosterWebhook.findFirst({ where: { id: webhookId, guildId: id } });
+    if (!webhook) throw notFound("webhook_not_found");
+    const es = webhook.locale === "es";
+    const ok = await postDiscordWebhook(webhook.url, {
+      embeds: [
+        {
+          title: guild.name,
+          color: 0x5865f2,
+          description: es ? "✅ Prueba de webhook de wow-roster. ¡Funciona!" : "✅ wow-roster webhook test. It works!",
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    });
+    if (!ok) throw new HttpError(502, "webhook_delivery_failed");
+    return { ok: true };
   });
 
   /** Published rosters for signed-in users, newest first; optionally of one game version. */

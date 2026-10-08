@@ -4,3 +4,4 @@ export * from "./helpers";
 export * from "./stats";
 export * from "./composition";
 export * from "./bis";
+export * from "./progress";

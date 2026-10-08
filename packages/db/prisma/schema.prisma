@@ -63,6 +63,7 @@ model Guild {
   roster              RosterEntry[]
   characters          Character[]
   invites             RosterInvite[]
+  webhooks            RosterWebhook[]
 
   @@unique([gameVersion, region, realm, slug])
   @@index([published])
@@ -158,6 +159,31 @@ model Character {
   @@unique([gameVersion, region, realm, nameKey])
   @@index([guildId])
   @@index([ownerId])
+}
+
+/// A Discord webhook a roster posts character-progress announcements to. A roster can have several (different
+/// servers or channels). `url` holds the webhook secret and is never returned in full by the API.
+model RosterWebhook {
+  id            String   @id @default(cuid())
+  guildId       String
+  guild         Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  /// Human label for the server/channel.
+  label         String
+  /// Discord webhook URL (contains a secret token); masked on read.
+  url           String
+  /// Progress event type keys this webhook announces (see @wow/config PROGRESS_EVENTS).
+  events        String[]
+  /// Language the announcements are written in.
+  locale        String   @default("es")
+  /// Announce every roster character; when false, only `characterIds`.
+  allCharacters Boolean  @default(true)
+  /// Character ids to announce when `allCharacters` is false.
+  characterIds  String[]
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([guildId])
 }
 
 /// Static game data (icons, talent trees) fetched once from the Blizzard API.

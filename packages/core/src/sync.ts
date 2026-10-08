@@ -10,6 +10,7 @@ import {
 import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
 import { gameVersion, type CoreContext } from "./context";
+import { announceProgress, detectProgressEvents, type ProgressSnapshot } from "./progress";
 import { enrichProfile } from "./static";
 import { instancesFromStatistics } from "./encounterStatistics";
 import { instancesFromWarcraftLogs, warcraftLogsStale } from "./warcraftLogs";
@@ -27,6 +28,19 @@ export function defaultStatusForRank(profile: GameProfile, rank: number): string
 }
 
 const nameKey = (name: string) => name.trim().toLowerCase();
+
+/** The slice of a character used to detect progress between two syncs. */
+const progressSnapshot = (
+  row: { level: number; equippedItemLevel: number | null },
+  prof: Partial<CharacterProfile> | null | undefined,
+): ProgressSnapshot => ({
+  level: row.level,
+  equippedItemLevel: row.equippedItemLevel,
+  raids: prof?.raids ?? null,
+  mythicPlus: prof?.mythicPlus ?? null,
+  professions: prof?.professions ?? null,
+  reputations: prof?.reputations ?? null,
+});
 
 const isStale = (lastSyncedAt: Date | null, intervalMinutes: number) =>
   !lastSyncedAt || Date.now() - lastSyncedAt.getTime() >= intervalMinutes * 60_000;
@@ -294,6 +308,11 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     });
     // A new week starts with nothing done, even for characters that have not logged in.
     await recordWeek(ctx, updated, stored);
+    if (character.lastSyncedAt) {
+      // Logs refreshed above can add raid kills even when the character did not log in.
+      const events = detectProgressEvents(profile, progressSnapshot(character, character.profile as Partial<CharacterProfile> | null), progressSnapshot(updated, stored));
+      await announceProgress(ctx, updated, events);
+    }
     return "unchanged";
   }
 
@@ -334,6 +353,10 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     },
   });
   await recordWeek(ctx, updated, stored);
+  if (character.lastSyncedAt) {
+    const events = detectProgressEvents(profile, progressSnapshot(character, character.profile as Partial<CharacterProfile> | null), progressSnapshot(updated, stored));
+    await announceProgress(ctx, updated, events);
+  }
   return "updated";
 }
 
