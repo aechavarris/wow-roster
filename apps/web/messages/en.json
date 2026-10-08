@@ -146,12 +146,17 @@
     "addHelp": "Any existing character in {region}, from this guild or another.",
     "roleFromSpec": "From the spec",
     "noApiYet": "This version has no public Blizzard API yet: for now the roster only holds planned characters. Once it is published you can link them to the real ones.",
-    "proposeHelp": "This roster is published. You can propose your characters or plan one: they stay pending until the owner accepts them.",
-    "proposalSent": "Proposal sent: the owner has to accept it.",
+    "proposeHelp": "You are not a member of this roster. You can plan a character (and, signed in, propose a real one of yours): it will wait until the owner or an officer accepts it.",
+    "proposalSent": "Proposal sent: the owner or an officer must accept it.",
     "offSpec": "Off-spec",
     "offSpecShort": "OS",
     "noOffSpec": "No off-spec",
-    "offSpecHint": "Second spec they can switch to (dual spec) or gear for"
+    "offSpecHint": "Second spec they can switch to (dual spec) or gear for",
+    "realTitle": "Add a real character",
+    "loginForReal": "To add a real character, sign in with your Battle.net account and add your own. Sign in at the top right.",
+    "yourName": "Your name",
+    "yourNamePlaceholder": "who is proposing?",
+    "plannedPending": "It will wait for approval."
   },
   "settings": {
     "title": "Guild settings",
@@ -310,14 +315,15 @@
     "unknown_role": "Unknown role.",
     "unknown_status": "Unknown status.",
     "entry_pending": "This entry is pending: the owner has to accept it first.",
-    "too_many_pending": "You have too many pending proposals in this roster. Wait for the owner to review them.",
+    "too_many_pending": "There are too many pending proposals in this roster. Wait for a moderator to review them.",
     "unknown_profession": "That profession does not exist in this game version.",
     "invalid_profession_skill": "The skill is above that profession's cap in this game version.",
     "too_many_primary_professions": "A character can only have two primary professions.",
     "professions_from_api": "In this game version professions come from Blizzard's API.",
     "confirm_name_mismatch": "The name does not match the roster's.",
     "network_error": "Could not reach the server. Check your connection.",
-    "unknown_requirement": "That requirement does not exist in this game version."
+    "unknown_requirement": "That requirement does not exist in this game version.",
+    "name_required": "Give a character name or your name so the roster knows what you are proposing."
   },
   "createRoster": {
     "title": "Create a custom roster",

@@ -18,17 +18,21 @@ interface Props {
   viewerRole: ViewerRole;
   /** The viewer's characters (same region) that are not in the roster yet. */
   myCharacters: NonNullable<MeResponse["characters"]>;
-  /** Signed-in non-member of a published roster: entries are sent as proposals for the owner. */
+  /** Non-member of a roster open to proposals: entries are sent as proposals for an officer to approve. */
   proposing?: boolean;
+  /** Whether the viewer is signed in. Anonymous visitors can only propose planned characters. */
+  isLoggedIn?: boolean;
 }
 
 /** Ways to add people to a roster: planned characters, the viewer's own characters, any game character. */
-export function RosterTools({ guildId, region, profile, viewerRole, myCharacters, proposing = false }: Props) {
+export function RosterTools({ guildId, region, profile, viewerRole, myCharacters, proposing = false, isLoggedIn = true }: Props) {
   const t = useTranslations("roster");
   const tErrors = useTranslations("errors");
   const router = useRouter();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const isOfficer = viewerRole === "OWNER" || viewerRole === "OFFICER";
+  // An anonymous proposer can only plan a character; adding a real one needs an account.
+  const anon = proposing && !isLoggedIn;
   if (!viewerRole && !proposing) return null;
 
   async function run(action: () => Promise<unknown>, success: string) {
@@ -48,15 +52,27 @@ export function RosterTools({ guildId, region, profile, viewerRole, myCharacters
     <div className="space-y-3">
       {proposing && <p className="card border-accent/50 text-sm">{t("proposeHelp")}</p>}
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <PlannedForm guildId={guildId} profile={profile} isOfficer={isOfficer} run={run} />
-        {profile.apiAvailable ? (
+        <PlannedForm guildId={guildId} profile={profile} isOfficer={isOfficer} anon={anon} run={run} />
+        {!profile.apiAvailable ? (
+          // Versions without a Blizzard API (Forever, for now): real characters are shown but disabled for everyone.
+          <div className="card space-y-2 opacity-70">
+            <h3 className="heading">{t("realTitle")}</h3>
+            <p className="text-sm text-muted">{t("noApiYet")}</p>
+            <button type="button" className="btn" disabled>
+              {t("add")}
+            </button>
+          </div>
+        ) : anon ? (
+          // Real characters need an account: an anonymous proposer is pointed to logging in.
+          <div className="card space-y-2">
+            <h3 className="heading">{t("realTitle")}</h3>
+            <p className="text-sm text-muted">{t("loginForReal")}</p>
+          </div>
+        ) : (
           <div className="space-y-4">
             {myCharacters.length > 0 && <MyCharactersForm guildId={guildId} profile={profile} characters={myCharacters} run={run} />}
             {isOfficer && <RealCharacterForm guildId={guildId} version={profile} region={region} run={run} />}
           </div>
-        ) : (
-          // Versions without a Blizzard API (Forever, for now) only hold planned characters.
-          <p className="card text-sm text-muted">{t("noApiYet")}</p>
         )}
       </div>
       {message && (
@@ -70,7 +86,7 @@ export function RosterTools({ guildId, region, profile, viewerRole, myCharacters
 
 type Run = (action: () => Promise<unknown>, success: string) => Promise<boolean>;
 
-function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; profile: Profile; isOfficer: boolean; run: Run }) {
+function PlannedForm({ guildId, profile, isOfficer, anon, run }: { guildId: string; profile: Profile; isOfficer: boolean; anon: boolean; run: Run }) {
   const t = useTranslations("roster");
   const locale = useLocale();
   const [classId, setClassId] = useState(profile.classes[0]?.id ?? 0);
@@ -155,10 +171,11 @@ function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; pr
           <label className="label" htmlFor="plan-name">{t("plannedName")}</label>
           <input id="plan-name" name="plannedName" maxLength={40} className="input" placeholder={t("plannedNamePlaceholder")} />
         </div>
-        {isOfficer && (
+        {(isOfficer || anon) && (
           <div>
-            <label className="label" htmlFor="plan-player">{t("playerName")}</label>
-            <input id="plan-player" name="playerName" maxLength={40} className="input" />
+            <label className="label" htmlFor="plan-player">{anon ? t("yourName") : t("playerName")}</label>
+            {/* Anonymous proposals carry a name so the officer knows who is asking. */}
+            <input id="plan-player" name="playerName" maxLength={40} className="input" required={anon} placeholder={anon ? t("yourNamePlaceholder") : undefined} />
           </div>
         )}
       </div>
@@ -173,7 +190,7 @@ function PlannedForm({ guildId, profile, isOfficer, run }: { guildId: string; pr
             {t("forMe")}
           </label>
         ) : (
-          <span className="text-xs text-muted">{t("plannedForYou")}</span>
+          <span className="text-xs text-muted">{t(anon ? "plannedPending" : "plannedForYou")}</span>
         )}
         <button type="submit" className="btn btn-primary" disabled={pending}>
           {pending ? t("adding") : t("planSubmit")}

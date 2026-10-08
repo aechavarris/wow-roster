@@ -146,12 +146,17 @@
     "addHelp": "Cualquier personaje existente en {region}, de esta hermandad o de otra.",
     "roleFromSpec": "Según la especialización",
     "noApiYet": "Esta versión todavía no tiene API pública de Blizzard: de momento el roster solo admite personajes planificados. Cuando se publique, podrás vincularlos con los reales.",
-    "proposeHelp": "Este roster está publicado. Puedes proponer tus personajes o planificar uno: quedarán pendientes hasta que el propietario los acepte.",
-    "proposalSent": "Propuesta enviada: el propietario tiene que aceptarla.",
+    "proposeHelp": "No eres miembro de este roster. Puedes planificar un personaje (y, si inicias sesión, proponer uno real tuyo): quedará pendiente hasta que el dueño o un oficial lo acepte.",
+    "proposalSent": "Propuesta enviada: el dueño o un oficial tiene que aceptarla.",
     "offSpec": "Off-spec",
     "offSpecShort": "OS",
     "noOffSpec": "Sin off-spec",
-    "offSpecHint": "Segunda especialización que puede usar (doble spec) o para la que equipa"
+    "offSpecHint": "Segunda especialización que puede usar (doble spec) o para la que equipa",
+    "realTitle": "Añadir personaje real",
+    "loginForReal": "Para añadir un personaje real tienes que iniciar sesión con tu cuenta de Battle.net y añadir el tuyo. Inícia sesión arriba a la derecha.",
+    "yourName": "Tu nombre",
+    "yourNamePlaceholder": "¿quién propone?",
+    "plannedPending": "Quedará pendiente de aprobación."
   },
   "settings": {
     "title": "Ajustes de la hermandad",
@@ -310,14 +315,15 @@
     "unknown_role": "Rol desconocido.",
     "unknown_status": "Estado desconocido.",
     "entry_pending": "Esta entrada está pendiente: el propietario tiene que aceptarla antes.",
-    "too_many_pending": "Tienes demasiadas propuestas pendientes en este roster. Espera a que el propietario las revise.",
+    "too_many_pending": "Hay demasiadas propuestas pendientes en este roster. Espera a que un responsable las revise.",
     "unknown_profession": "Esa profesión no existe en esta versión del juego.",
     "invalid_profession_skill": "El nivel supera el máximo de esa profesión en esta versión.",
     "too_many_primary_professions": "Solo se pueden tener dos profesiones principales.",
     "professions_from_api": "En esta versión las profesiones vienen de la API de Blizzard.",
     "confirm_name_mismatch": "El nombre no coincide con el del roster.",
     "network_error": "No se pudo conectar con el servidor. Revisa tu conexión.",
-    "unknown_requirement": "Ese requisito no existe en esta versión del juego."
+    "unknown_requirement": "Ese requisito no existe en esta versión del juego.",
+    "name_required": "Indica un nombre de personaje o tu nombre para que el roster sepa qué propones."
   },
   "createRoster": {
     "title": "Crear roster libre",

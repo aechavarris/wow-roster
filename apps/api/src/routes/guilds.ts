@@ -28,6 +28,9 @@ const HISTORY_WEEKS = 12;
 /** Pending proposals a non-member can have in one published roster, to keep the owner's queue manageable. */
 const MAX_PENDING_PER_USER = 10;
 
+/** Anonymous (not signed in) pending proposals one public roster holds at once, to bound spam. */
+const MAX_ANON_PENDING_PER_GUILD = 20;
+
 export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
   const { prisma, versions, core, queue, env } = deps;
   const versionField = gameVersionSchema(versions);
@@ -278,7 +281,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     const players = buildRoster(rules(guild), ranks, inputs.filter((e) => !e.pending));
     const rankStatus = new Map(ranks.map((r) => [r.rank, r.status]));
     const pending = inputs
-      .filter((e) => e.pending && (role === "OWNER" || (request.user !== null && e.userId === request.user.id)))
+      .filter((e) => e.pending && (atLeast(role, "OFFICER") || (request.user !== null && e.userId === request.user.id)))
       .map((e) => ({
         ...toCharacterView(rules(guild), rankStatus, e),
         submittedBy: e.user?.battletag ?? null,
@@ -416,16 +419,35 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
   });
 
   /**
-   * Who may add entries: members add directly; on a published roster any signed-in user may
-   * propose entries, which stay pending until the owner accepts them.
+   * Who may add real characters: members add directly; any signed-in non-member of a roster open to
+   * proposals (public or published) proposes their own, pending an officer's approval. Always needs a login.
    */
   async function contributor(guildId: string, user: User | null) {
     if (!user) throw unauthorized();
     const { guild, role } = await loadVisibleGuild(prisma, guildId, user);
     if (atLeast(role, "MEMBER")) return { guild, role, pending: false };
-    if (!guild.published) throw forbidden();
+    if (!guild.public && !guild.published) throw forbidden();
     const open = await prisma.rosterEntry.count({ where: { guildId, pending: true, userId: user.id } });
     return { guild, role: null as ViewerRole, pending: true, slots: MAX_PENDING_PER_USER - open };
+  }
+
+  /**
+   * Who may propose a planned character: members add directly; everyone else (a signed-in non-member, or an
+   * anonymous visitor) proposes on a roster open to proposals, pending an officer's approval. Anonymous proposals
+   * are allowed on public rosters only and are capped per roster, since there is no account to attribute them to.
+   */
+  async function plannedContributor(guildId: string, user: User | null) {
+    const { guild, role } = await loadVisibleGuild(prisma, guildId, user);
+    if (user && atLeast(role, "MEMBER")) return { guild, role, pending: false, slots: Infinity };
+    if (!guild.public && !guild.published) throw forbidden();
+    if (user) {
+      const open = await prisma.rosterEntry.count({ where: { guildId, pending: true, userId: user.id } });
+      return { guild, role: null as ViewerRole, pending: true, slots: MAX_PENDING_PER_USER - open };
+    }
+    // Anonymous: only on public rosters (loadVisibleGuild already hides the rest), bounded per roster.
+    if (!guild.public) throw forbidden();
+    const open = await prisma.rosterEntry.count({ where: { guildId, pending: true, userId: null } });
+    return { guild, role: null as ViewerRole, pending: true, slots: MAX_ANON_PENDING_PER_GUILD - open };
   }
 
   /**
@@ -502,13 +524,13 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
 
   /**
    * Adds a character that does not exist in the game yet, to plan a roster ahead of time.
-   * Officers can plan for anyone; members plan their own entries; non-members of a published
-   * roster propose their own entries, pending the owner's approval.
+   * Officers can plan for anyone; members plan their own entries; everyone else (signed-in non-members and
+   * anonymous visitors of a roster open to proposals) proposes one, pending an officer's approval.
    */
   app.post("/guilds/:id/roster/planned", async (request, reply) => {
     const { id } = idParams.parse(request.params);
-    const { guild, role, pending, slots } = await contributor(id, request.user);
-    if (pending && slots! < 1) throw new HttpError(429, "too_many_pending");
+    const { guild, role, pending, slots } = await plannedContributor(id, request.user);
+    if (pending && slots < 1) throw new HttpError(429, "too_many_pending");
     const body = z
       .object({
         classId: z.number().int(),
@@ -527,8 +549,12 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     plannedClass(guild, body.classId, body.offSpecKey);
     requireKey(rules(guild).roles, body.role, "unknown_role");
     requireKey(rules(guild).rosterStatuses, body.status, "unknown_status");
+    const user = request.user;
     const officer = atLeast(role, "OFFICER");
-    const forSelf = !officer || body.forSelf === true;
+    // Members' entries are their own unless an officer plans for someone else; a proposer's entry is theirs.
+    const forSelf = Boolean(user) && (!officer || body.forSelf === true);
+    // An anonymous proposal has no account, so it must carry a name for the officer to know what it is.
+    if (!user && !body.plannedName && !body.playerName) throw new HttpError(400, "name_required");
     const entry = await prisma.rosterEntry.create({
       data: {
         guildId: id,
@@ -537,8 +563,8 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         plannedSpec: body.specKey || null,
         offSpec: body.offSpecKey || null,
         plannedName: body.plannedName || null,
-        playerName: body.playerName || (forSelf ? request.user!.battletag.split("#")[0]! : null),
-        userId: forSelf ? request.user!.id : null,
+        playerName: body.playerName || (forSelf ? user!.battletag.split("#")[0]! : null),
+        userId: forSelf ? user!.id : null,
         role: body.role ?? null,
         note: body.note ?? null,
         status: officer ? (body.status ?? null) : null,
@@ -646,7 +672,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     if (!entry) throw notFound("roster_entry_not_found");
     // A pending proposal is rejected by the owner or withdrawn by whoever proposed it.
     if (entry.pending) {
-      if (role !== "OWNER" && entry.userId !== request.user.id) throw forbidden();
+      if (!atLeast(role, "OFFICER") && entry.userId !== request.user.id) throw forbidden();
       await prisma.rosterEntry.delete({ where: { id: entryId } });
       return { removed: true };
     }
@@ -667,7 +693,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
   /** The owner accepts a proposal: it joins the roster and its author becomes a member. */
   app.post("/guilds/:id/roster/:entryId/approve", async (request) => {
     const { id, entryId } = z.object({ id: z.string(), entryId: z.string() }).parse(request.params);
-    await requireGuildRole(prisma, id, request.user, "OWNER");
+    await requireGuildRole(prisma, id, request.user, "OFFICER");
     const entry = await prisma.rosterEntry.findFirst({ where: { id: entryId, guildId: id, pending: true } });
     if (!entry) throw notFound("roster_entry_not_found");
     await prisma.$transaction([

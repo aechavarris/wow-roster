@@ -34,8 +34,10 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
   // Classes, specs, buffs and the API all come from the roster's game version.
   const version = versionOf(config, guild.gameVersion);
 
-  // Signed-in outsiders of a published roster send their entries as proposals for the owner.
-  const proposing = viewerRole === null && guild.published && me.user !== null;
+  // Non-members of a roster open to proposals (public or published) send entries as proposals: signed in they
+  // can also propose a real own character; anonymous visitors can only propose a planned one. (If the page
+  // rendered for an anonymous visitor the roster is public, since private ones 404 for outsiders.)
+  const proposing = viewerRole === null && (guild.public || guild.published);
 
   const inRoster = new Set(
     [...roster.players.flatMap((p) => [p.main, ...p.alts]), ...roster.pending].flatMap((c) => (c.characterId ? [c.characterId] : [])),
@@ -87,7 +89,7 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
           )}
         </div>
       </div>
-      <PendingPanel guildId={guild.id} profile={version} entries={roster.pending} isOwner={viewerRole === "OWNER"} />
+      <PendingPanel guildId={guild.id} profile={version} entries={roster.pending} canModerate={isOfficer} />
       <Composition players={roster.players} profile={version} />
       <RosterTable
         guildId={guild.id}
@@ -97,14 +99,17 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
         viewerUserId={me.user?.id ?? null}
         showRank={guild.kind === "guild"}
       />
-      <RosterTools
-        guildId={guild.id}
-        region={guild.region}
-        profile={version}
-        viewerRole={viewerRole}
-        myCharacters={myCharacters}
-        proposing={proposing}
-      />
+      {(viewerRole || proposing) && (
+        <RosterTools
+          guildId={guild.id}
+          region={guild.region}
+          profile={version}
+          viewerRole={viewerRole}
+          myCharacters={myCharacters}
+          proposing={proposing}
+          isLoggedIn={me.user !== null}
+        />
+      )}
     </div>
   );
 }
