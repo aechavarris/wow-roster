@@ -3,6 +3,7 @@ import { loadServerGameVersions } from "@wow/config/node";
 import {
   QUEUES,
   RaiderIoClient,
+  WarcraftLogsClient,
   blizzardFactory,
   characterJobId,
   guildSchedulerId,
@@ -32,6 +33,11 @@ const ctx: CoreContext = {
     clientSecret: env.BLIZZARD_CLIENT_SECRET ?? "",
   }),
   raiderIo: new RaiderIoClient(),
+  // Optional: without credentials, versions that read raid kills from Warcraft Logs show none.
+  warcraftLogs:
+    env.WARCRAFTLOGS_CLIENT_ID && env.WARCRAFTLOGS_CLIENT_SECRET
+      ? new WarcraftLogsClient({ clientId: env.WARCRAFTLOGS_CLIENT_ID, clientSecret: env.WARCRAFTLOGS_CLIENT_SECRET })
+      : undefined,
 };
 
 const characterQueue = new Queue<CharacterSyncJob>(QUEUES.characterSync, { connection: createRedis(redisUrl) });

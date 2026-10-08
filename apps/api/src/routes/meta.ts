@@ -15,7 +15,12 @@ const publicVersion = (v: GameProfile) => ({
     ? []
     : v.api.characterEndpoints.includes("encounterStatistics")
       ? [...new Set([...v.api.characterEndpoints, "raids", "dungeons"])]
-      : v.api.characterEndpoints,
+      : // Raid kills read from Warcraft Logs count as raids data (Classic versions without progress in the API).
+        v.api.warcraftLogs
+        ? [...new Set([...v.api.characterEndpoints, "raids"])]
+        : v.api.characterEndpoints,
+  /** Site the version's raid kills come from, if any (shown as the data source). */
+  warcraftLogsHost: v.api.warcraftLogs?.host ?? null,
   /** Sections not shown even though the API provides the data (still synced: other sections may use it). */
   hiddenDetails: v.hiddenDetails,
   details: v.details,

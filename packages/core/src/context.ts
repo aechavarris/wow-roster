@@ -1,6 +1,6 @@
-import { BlizzardClient, RaiderIoClient } from "@wow/blizzard";
+import { BlizzardClient, RaiderIoClient, WarcraftLogsClient } from "@wow/blizzard";
 
-export { RaiderIoClient };
+export { RaiderIoClient, WarcraftLogsClient };
 import { versionOf, type GameProfile, type GameVersions } from "@wow/config";
 import type { PrismaClient } from "@wow/db";
 
@@ -12,6 +12,8 @@ export interface CoreContext {
   blizzard(version: string, region: string): BlizzardClient;
   /** Raider.IO, for versions whose profile enables it; without it those versions use Blizzard's data only. */
   raiderIo?: RaiderIoClient;
+  /** Warcraft Logs, when its API credentials are configured; versions that enable it read raid kills from there. */
+  warcraftLogs?: WarcraftLogsClient;
 }
 
 /** The game version has no public Blizzard API yet (Forever): only planned characters are possible. */

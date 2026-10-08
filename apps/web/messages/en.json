@@ -498,7 +498,8 @@
     "requirementsDone": "Done",
     "requirementDone": "Done",
     "requirementMissing": "Missing",
-    "requirementsLegend": "Requirements are not in the API: each player ticks them on their character's sheet."
+    "requirementsLegend": "Requirements are not in the API: each player ticks them on their character's sheet.",
+    "fromWarcraftLogs": "Raids come from the recent logs uploaded to {host}: only bosses of raids logged on Warcraft Logs count."
   },
   "weekly": {
     "title": "Weekly audit",

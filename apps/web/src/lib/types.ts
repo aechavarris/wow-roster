@@ -14,6 +14,8 @@ export interface GameVersion {
   apiAvailable: boolean;
   /** Character data the version's API provides (equipment, raids, mythicPlus…); empty without an API. */
   characterEndpoints: string[];
+  /** Warcraft Logs site the raid kills come from, where the API has no raid progress (Classic). */
+  warcraftLogsHost: string | null;
   /** Details sections the version hides although its API has the data. */
   hiddenDetails: string[];
   /** What the details pages highlight: resistances column, raid reputations. */

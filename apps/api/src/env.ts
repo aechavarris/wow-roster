@@ -7,6 +7,9 @@ const envSchema = z.object({
   BLIZZARD_CLIENT_ID: z.string().default(""),
   BLIZZARD_CLIENT_SECRET: z.string().default(""),
   BLIZZARD_REGION: z.enum(REGIONS).default("eu"),
+  /** Warcraft Logs API client; without it, versions that read raid kills from there show none. */
+  WARCRAFTLOGS_CLIENT_ID: z.string().default(""),
+  WARCRAFTLOGS_CLIENT_SECRET: z.string().default(""),
   PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   API_PORT: z.coerce.number().default(4000),
 });

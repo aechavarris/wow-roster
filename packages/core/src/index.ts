@@ -5,3 +5,4 @@ export * from "./roster";
 export * from "./static";
 export * from "./weekly";
 export * from "./encounterStatistics";
+export * from "./warcraftLogs";

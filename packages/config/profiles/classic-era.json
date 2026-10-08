@@ -9,7 +9,8 @@
     "staticNamespace": "static-classic1x-{region}",
     "dynamicNamespace": "dynamic-classic1x-{region}",
     "hasRealms": true,
-    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"]
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"],
+    "warcraftLogs": {"host": "vanilla.warcraftlogs.com"}
   },
   "wowheadDomain": "classic",
   "roles": [
@@ -161,13 +162,13 @@
   ],
   "raidSizes": [{"size": 20, "groupSize": 5, "enabled": true}, {"size": 40, "groupSize": 5, "enabled": true}],
   "raids": [
-    {"key": "molten-core", "name": {"en": "Molten Core", "es": "Núcleo de Magma"}, "size": 40, "enabled": true},
-    {"key": "onyxias-lair", "name": {"en": "Onyxia's Lair", "es": "Guarida de Onyxia"}, "size": 40, "enabled": true},
-    {"key": "blackwing-lair", "name": {"en": "Blackwing Lair", "es": "Guarida Alanegra"}, "size": 40, "enabled": true},
-    {"key": "zul-gurub", "name": {"en": "Zul'Gurub", "es": "Zul'Gurub"}, "size": 20, "enabled": true},
-    {"key": "ruins-of-ahnqiraj", "name": {"en": "Ruins of Ahn'Qiraj", "es": "Ruinas de Ahn'Qiraj"}, "size": 20, "enabled": true},
-    {"key": "temple-of-ahnqiraj", "name": {"en": "Temple of Ahn'Qiraj", "es": "Templo de Ahn'Qiraj"}, "size": 40, "enabled": true},
-    {"key": "naxxramas", "name": {"en": "Naxxramas", "es": "Naxxramas"}, "size": 40, "enabled": true}
+    {"key": "molten-core", "name": {"en": "Molten Core", "es": "Núcleo de Magma"}, "size": 40, "enabled": true, "bossCount": 10, "warcraftLogsZone": 2000},
+    {"key": "onyxias-lair", "name": {"en": "Onyxia's Lair", "es": "Guarida de Onyxia"}, "size": 40, "enabled": true, "bossCount": 1, "warcraftLogsZone": 2001},
+    {"key": "blackwing-lair", "name": {"en": "Blackwing Lair", "es": "Guarida Alanegra"}, "size": 40, "enabled": true, "bossCount": 8, "warcraftLogsZone": 2002},
+    {"key": "zul-gurub", "name": {"en": "Zul'Gurub", "es": "Zul'Gurub"}, "size": 20, "enabled": true, "bossCount": 10, "warcraftLogsZone": 2003},
+    {"key": "ruins-of-ahnqiraj", "name": {"en": "Ruins of Ahn'Qiraj", "es": "Ruinas de Ahn'Qiraj"}, "size": 20, "enabled": true, "bossCount": 6, "warcraftLogsZone": 2004},
+    {"key": "temple-of-ahnqiraj", "name": {"en": "Temple of Ahn'Qiraj", "es": "Templo de Ahn'Qiraj"}, "size": 40, "enabled": true, "bossCount": 9, "warcraftLogsZone": 2005},
+    {"key": "naxxramas", "name": {"en": "Naxxramas", "es": "Naxxramas"}, "size": 40, "enabled": true, "bossCount": 15, "warcraftLogsZone": 2006}
   ],
   "rosterStatuses": [
     {"key": "raider", "name": {"en": "Raider", "es": "Raider"}, "color": "#4caf50", "raiding": true},

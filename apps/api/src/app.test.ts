@@ -1,4 +1,4 @@
-import { BlizzardClient } from "@wow/blizzard";
+import { BlizzardClient, WarcraftLogsClient } from "@wow/blizzard";
 import { loadGameVersions } from "@wow/config";
 import { ApiUnavailableError, syncCharacter, syncGuild, type CoreContext } from "@wow/core";
 import { createPrismaClient } from "@wow/db";
@@ -189,6 +189,8 @@ beforeAll(async () => {
       BLIZZARD_CLIENT_ID: "id",
       BLIZZARD_CLIENT_SECRET: "secret",
       BLIZZARD_REGION: "eu",
+      WARCRAFTLOGS_CLIENT_ID: "",
+      WARCRAFTLOGS_CLIENT_SECRET: "",
       PUBLIC_URL: "http://localhost:3000",
       API_PORT: 0,
     },
@@ -236,7 +238,15 @@ describe("config", () => {
     // MoP Classic has no /encounters: its raid and dungeon tabs come from the boss kill statistics.
     const endpoints = (id: string) => (body.versions as { id: string; characterEndpoints: string[] }[]).find((v) => v.id === id)!.characterEndpoints;
     expect(endpoints("progression")).toEqual(expect.arrayContaining(["encounterStatistics", "raids", "dungeons"]));
-    expect(endpoints("classic-era")).not.toContain("raids");
+    // Classic Era has no raid progress in the API: its raids come from Warcraft Logs.
+    expect(endpoints("classic-era")).toContain("raids");
+    expect(endpoints("classic-era")).not.toContain("dungeons");
+    const hosts = body.versions as { id: string; warcraftLogsHost: string | null }[];
+    expect(Object.fromEntries(hosts.map((v) => [v.id, v.warcraftLogsHost]))).toMatchObject({
+      "classic-era": "vanilla.warcraftlogs.com",
+      anniversary: "fresh.warcraftlogs.com",
+      retail: null,
+    });
   });
 });
 
@@ -621,7 +631,7 @@ describe("meta and session", () => {
   it("reports unhealthy when the database is unreachable, so the container gets restarted", async () => {
     const deadPrisma = createPrismaClient("postgresql://wow:wow@127.0.0.1:1/nothing");
     const broken = await buildApp({
-      env: { DATABASE_URL: "unused", REDIS_URL: "redis://unused", BLIZZARD_CLIENT_ID: "id", BLIZZARD_CLIENT_SECRET: "secret", BLIZZARD_REGION: "eu", PUBLIC_URL: "http://localhost:3000", API_PORT: 0 },
+      env: { DATABASE_URL: "unused", REDIS_URL: "redis://unused", BLIZZARD_CLIENT_ID: "id", BLIZZARD_CLIENT_SECRET: "secret", BLIZZARD_REGION: "eu", WARCRAFTLOGS_CLIENT_ID: "", WARCRAFTLOGS_CLIENT_SECRET: "", PUBLIC_URL: "http://localhost:3000", API_PORT: 0 },
       prisma: deadPrisma,
       versions,
       core: { ...core, prisma: deadPrisma },
@@ -1248,5 +1258,69 @@ describe("weekly audit", () => {
     expect(old.characters[garrosh.id]).toMatchObject({ itemLevel: 690, vault: { raid: 0, dungeons: 1 } });
     expect(old.history[garrosh.id].map((h: { runs: number }) => h.runs)).toEqual([1, 1]);
     expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/weekly?week=nope` })).statusCode).toBe(400);
+  });
+});
+
+describe("Warcraft Logs", () => {
+  it("gives Classic Era characters raid progress and weekly kills from their logs, refreshed after a while", async () => {
+    const owner = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: owner }, payload: { name: "Era", gameVersion: "classic-era", region: "eu" } })).json().guild;
+    const character = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "los-errantes", name: "Garrosh", nameKey: "garrosh" },
+    });
+    await prisma.rosterEntry.create({ data: { guildId: roster.id, characterId: character.id, source: "manual" } });
+
+    const killedAt = Date.now() - 60_000;
+    const wclRequests: string[] = [];
+    const wclFetch = (async (input: string | URL) => {
+      if (input.toString().endsWith("/oauth/token")) return Response.json({ access_token: "w", expires_in: 3600 });
+      wclRequests.push(input.toString());
+      const fight = { encounterID: 51118, name: "Patchwerk", difficulty: 3, size: 40, endTime: 1000, friendlyPlayers: [1] };
+      const report = { code: "abc", startTime: killedAt - 1000, zone: { id: 2006, name: "Naxxramas" }, fights: [fight], masterData: { actors: [{ id: 1, name: "Garrosh" }] } };
+      return Response.json({ data: { characterData: { character: { id: 1, recentReports: { data: [report] } } } } });
+    }) as typeof fetch;
+    // The fake Blizzard API only answers retail namespaces: the Era client is pointed at the same payloads.
+    const eraFetch = (async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(input.toString());
+      if (url.searchParams.has("namespace")) url.searchParams.set("namespace", "profile-eu");
+      return fakeFetch(url, init);
+    }) as typeof fetch;
+    const eraCore: CoreContext = {
+      ...core,
+      blizzard: (version, region) =>
+        new BlizzardClient({ clientId: "id", clientSecret: "secret", region, api: versions.byId.get(version)!.api, fetch: eraFetch, retryDelayMs: 0 }),
+      warcraftLogs: new WarcraftLogsClient({ clientId: "w", clientSecret: "s", fetch: wclFetch }),
+    };
+
+    expect(await syncCharacter(eraCore, character.id)).toBe("updated");
+    expect(wclRequests).toEqual(["https://vanilla.warcraftlogs.com/api/v2/client"]);
+    const stored = (await prisma.character.findUniqueOrThrow({ where: { id: character.id } })).profile as { raids: unknown[] };
+    expect(stored.raids).toEqual([
+      {
+        id: 2006,
+        name: { en: "Naxxramas", es: "Naxxramas" },
+        modes: [
+          {
+            difficulty: "NORMAL",
+            difficultyName: { en: "40-player", es: "40 j." },
+            completed: 1,
+            total: 15,
+            encounters: [{ id: 51118, name: { en: "Patchwerk" }, kills: 1, lastKillAt: new Date(killedAt).toISOString() }],
+          },
+        ],
+      },
+    ]);
+    const weekly = (await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/weekly` })).json();
+    expect(weekly.characters[character.id].activity.raids).toMatchObject([{ instanceId: 2006, bosses: [{ id: 51118, name: { en: "Patchwerk" } }] }]);
+
+    // Without a new login the profile is kept, and the logs are reused until they are old.
+    expect(await syncCharacter(eraCore, character.id)).toBe("unchanged");
+    expect(wclRequests).toHaveLength(1);
+    const aged = { ...stored, warcraftLogs: { url: "u", fetchedAt: "2026-01-01T00:00:00.000Z", kills: [] } };
+    await prisma.character.update({ where: { id: character.id }, data: { profile: aged as object } });
+    expect(await syncCharacter(eraCore, character.id)).toBe("unchanged");
+    expect(wclRequests).toHaveLength(2);
+    const refreshed = (await prisma.character.findUniqueOrThrow({ where: { id: character.id } })).profile as { warcraftLogs: { kills: unknown[] } };
+    expect(refreshed.warcraftLogs.kills).toHaveLength(1);
   });
 });

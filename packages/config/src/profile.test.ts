@@ -136,6 +136,11 @@ describe("details configuration", () => {
       expect(used.filter((key) => !entries.has(key)), id).toEqual([]);
       const raids = new Set(profile.raids.map((r) => r.key));
       expect(profile.requirements.filter((r) => r.raid && !raids.has(r.raid)).map((r) => r.key), id).toEqual([]);
+      // Raids split out of a shared Warcraft Logs zone need their zone; versions reading logs map every enabled raid.
+      expect(profile.raids.filter((r) => r.warcraftLogsEncounters && !r.warcraftLogsZone).map((r) => r.key), id).toEqual([]);
+      if (profile.api.warcraftLogs) {
+        expect(profile.raids.filter((r) => r.enabled && !r.warcraftLogsZone).map((r) => r.key), id).toEqual([]);
+      }
     }
   });
 

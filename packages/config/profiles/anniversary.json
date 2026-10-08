@@ -9,7 +9,8 @@
     "staticNamespace": "static-classicann-{region}",
     "dynamicNamespace": "dynamic-classicann-{region}",
     "hasRealms": true,
-    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"]
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations"],
+    "warcraftLogs": {"host": "fresh.warcraftlogs.com"}
   },
   "wowheadDomain": "tbc",
   "roles": [
@@ -161,13 +162,13 @@
   ],
   "raidSizes": [{"size": 10, "groupSize": 5, "enabled": true}, {"size": 25, "groupSize": 5, "enabled": true}],
   "raids": [
-    {"key": "karazhan", "name": {"en": "Karazhan", "es": "Karazhan"}, "size": 10, "enabled": true},
-    {"key": "gruuls-lair", "name": {"en": "Gruul's Lair", "es": "Guarida de Gruul"}, "size": 25, "enabled": true},
-    {"key": "magtheridons-lair", "name": {"en": "Magtheridon's Lair", "es": "Guarida de Magtheridon"}, "size": 25, "enabled": true},
-    {"key": "serpentshrine-cavern", "name": {"en": "Serpentshrine Cavern", "es": "Caverna Santuario Serpiente"}, "size": 25, "enabled": true},
-    {"key": "tempest-keep", "name": {"en": "Tempest Keep: The Eye", "es": "El Castillo de la Tempestad: El Ojo"}, "size": 25, "enabled": true},
-    {"key": "mount-hyjal", "name": {"en": "Battle for Mount Hyjal", "es": "Batalla por el Monte Hyjal"}, "size": 25, "enabled": true},
-    {"key": "black-temple", "name": {"en": "Black Temple", "es": "El Templo Oscuro"}, "size": 25, "enabled": true},
+    {"key": "karazhan", "name": {"en": "Karazhan", "es": "Karazhan"}, "size": 10, "enabled": true, "bossCount": 11, "warcraftLogsZone": 1007},
+    {"key": "gruuls-lair", "name": {"en": "Gruul's Lair", "es": "Guarida de Gruul"}, "size": 25, "enabled": true, "bossCount": 2, "warcraftLogsZone": 1008, "warcraftLogsEncounters": [649, 650]},
+    {"key": "magtheridons-lair", "name": {"en": "Magtheridon's Lair", "es": "Guarida de Magtheridon"}, "size": 25, "enabled": true, "bossCount": 1, "warcraftLogsZone": 1008, "warcraftLogsEncounters": [651]},
+    {"key": "serpentshrine-cavern", "name": {"en": "Serpentshrine Cavern", "es": "Caverna Santuario Serpiente"}, "size": 25, "enabled": true, "bossCount": 6, "warcraftLogsZone": 1010, "warcraftLogsEncounters": [623, 624, 625, 626, 627, 628]},
+    {"key": "tempest-keep", "name": {"en": "Tempest Keep: The Eye", "es": "El Castillo de la Tempestad: El Ojo"}, "size": 25, "enabled": true, "bossCount": 4, "warcraftLogsZone": 1010, "warcraftLogsEncounters": [730, 731, 732, 733]},
+    {"key": "mount-hyjal", "name": {"en": "Battle for Mount Hyjal", "es": "Batalla por el Monte Hyjal"}, "size": 25, "enabled": true, "bossCount": 5, "warcraftLogsZone": 1011, "warcraftLogsEncounters": [618, 619, 620, 621, 622]},
+    {"key": "black-temple", "name": {"en": "Black Temple", "es": "El Templo Oscuro"}, "size": 25, "enabled": true, "bossCount": 9, "warcraftLogsZone": 1011, "warcraftLogsEncounters": [601, 602, 603, 604, 605, 606, 607, 608, 609]},
     {
       "key": "zul-aman",
       "name": {"en": "Zul'Aman", "es": "Zul'Aman"},

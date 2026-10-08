@@ -4,3 +4,4 @@ export * from "./oauth";
 export * from "./normalize";
 export * from "./text";
 export * from "./raiderio";
+export * from "./warcraftlogs";

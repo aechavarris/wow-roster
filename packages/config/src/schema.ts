@@ -51,6 +51,10 @@ export const raidSchema = z.object({
   bosses: z.array(z.object({ key: z.string(), name: localizedSchema })).default([]),
   /** Number of bosses, for progress ("12/14") where the API only lists the bosses a character killed. */
   bossCount: z.number().int().positive().optional(),
+  /** Warcraft Logs zone id of the raid, where the version reads its kills from there. */
+  warcraftLogsZone: z.number().int().positive().optional(),
+  /** Encounter ids of the raid, where its Warcraft Logs zone holds two raids (TBC "BT / Hyjal"…). */
+  warcraftLogsEncounters: z.array(z.number().int().positive()).optional(),
   note: z.string().optional(),
 });
 
@@ -91,6 +95,11 @@ export const apiSchema = z.object({
   ),
   /** Also read Mythic+ runs from Raider.IO (every run of the week, not only the best per dungeon). Retail only. */
   raiderIo: z.boolean().default(false),
+  /**
+   * Also read boss kills from Warcraft Logs on this site (`vanilla.warcraftlogs.com`…): raid progress and the weekly
+   * audit where the API has none. Raids map to the site's zones through `raids[].warcraftLogsZone`.
+   */
+  warcraftLogs: z.object({ host: z.string() }).optional(),
 });
 
 /**

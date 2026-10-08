@@ -305,6 +305,25 @@ export interface RaiderIoProfile {
   bestRuns: RaiderIoRun[];
 }
 
+/** One boss kill of the character in a Warcraft Logs report. */
+export interface WarcraftLogsKill {
+  report: string;
+  zoneId?: number;
+  encounterId: number;
+  name: string;
+  difficulty?: number;
+  size?: number;
+  killedAt: string;
+}
+
+/** The character's recent boss kills on Warcraft Logs, for versions whose API has no raid progress. */
+export interface WarcraftLogsProfile {
+  /** The character's page on the site. */
+  url: string;
+  fetchedAt: string;
+  kills: WarcraftLogsKill[];
+}
+
 /** Everything fetched in one character sync; endpoints the game version lacks stay undefined. */
 export interface CharacterProfile {
   summary: CharacterSummary;
@@ -321,6 +340,8 @@ export interface CharacterProfile {
   encounterStatistics?: EncounterStatistic[];
   /** Mythic+ runs from Raider.IO, for versions that enable it (retail). */
   raiderIo?: RaiderIoProfile;
+  /** Boss kills from Warcraft Logs, for versions that enable it (Classic raids without progress in the API). */
+  warcraftLogs?: WarcraftLogsProfile;
   /** Endpoints that failed or are unsupported, with the reason. */
   missing: Record<string, string>;
 }

@@ -642,19 +642,22 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
   }
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <label className="text-sm" htmlFor={`${kind}-expansion`}>{t("expansion")}</label>
-        <select
-          id={`${kind}-expansion`}
-          className="input w-auto max-w-full"
-          value={expansion ?? ""}
-          onChange={(e) => setExpansion(Number(e.target.value))}
-        >
-          {expansions.map(([id, name]) => (
-            <option key={id} value={id}>{name}</option>
-          ))}
-        </select>
-      </div>
+      {/* Raids read from Warcraft Logs have no expansion to choose. */}
+      {expansions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+          <label className="text-sm" htmlFor={`${kind}-expansion`}>{t("expansion")}</label>
+          <select
+            id={`${kind}-expansion`}
+            className="input w-auto max-w-full"
+            value={expansion ?? ""}
+            onChange={(e) => setExpansion(Number(e.target.value))}
+          >
+            {expansions.map(([id, name]) => (
+              <option key={id} value={id}>{name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <Table
         head={
           <>
@@ -663,7 +666,11 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
             <Th className={SM}>{t(kind === "raids" ? "bestPerRaid" : "bestPerDungeon")}</Th>
           </>
         }
-        footer={t("instanceLegend")}
+        footer={
+          kind === "raids" && version.warcraftLogsHost
+            ? `${t("instanceLegend")} ${t("fromWarcraftLogs", { host: version.warcraftLogsHost })}`
+            : t("instanceLegend")
+        }
       >
         {rows.map((row) => {
           const own = (instance: InstanceProgress) => row.details?.[kind]?.find((i) => i.id === instance.id);
