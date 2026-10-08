@@ -53,6 +53,15 @@ describe("weekActivity", () => {
     expect(weekActivity(null, start)).toEqual({ raids: [], dungeons: [], mythicPlus: [] });
   });
 
+  it("merges a raid listed under more than one expansion block, counting each boss once", () => {
+    // Retail's /encounters/raids can repeat the same instance (e.g. a 'current season' grouping besides its
+    // expansion): the weekly list must show the raid once per difficulty, not twice.
+    const mode = { difficulty: "HEROIC", completed: 1, total: 8, encounters: [kill("Ulgrax", "2026-10-07T20:00:00Z")] };
+    const dup = { id: 1273, name: { en: "Nerub-ar Palace" }, modes: [mode] };
+    const week = weekActivity({ raids: [dup, { ...dup }] }, start);
+    expect(week.raids).toEqual([{ instanceId: 1273, name: { en: "Nerub-ar Palace" }, difficulty: "HEROIC", difficultyName: undefined, bosses: [{ id: 6, name: { en: "Ulgrax" } }] }]);
+  });
+
   it("counts Great Vault slots where the version has a vault", () => {
     const week = weekActivity(profile, start);
     expect(vaultSlots(retail.weekly, week)).toEqual({ raid: 1, dungeons: 1, bosses: 2, runs: 1 });
