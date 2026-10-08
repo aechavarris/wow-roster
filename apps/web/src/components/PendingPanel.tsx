@@ -11,12 +11,12 @@ interface Props {
   guildId: string;
   profile: GameVersion;
   entries: PendingEntry[];
-  /** The owner accepts or rejects every proposal; anyone else only sees and withdraws their own. */
-  isOwner: boolean;
+  /** Owners and officers accept or reject every proposal; a proposer only sees and withdraws their own. */
+  canModerate: boolean;
 }
 
-/** Proposals sent to a published roster, waiting for the owner. */
-export function PendingPanel({ guildId, profile, entries, isOwner }: Props) {
+/** Proposals sent to a roster open to them, waiting for an officer. */
+export function PendingPanel({ guildId, profile, entries, canModerate }: Props) {
   const t = useTranslations("pending");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -43,9 +43,9 @@ export function PendingPanel({ guildId, profile, entries, isOwner }: Props) {
     <section className="card space-y-3 border-warning/60" aria-labelledby="pending-title">
       <div>
         <h2 id="pending-title" className="heading text-lg">
-          {t(isOwner ? "titleOwner" : "titleMine", { count: entries.length })}
+          {t(canModerate ? "titleOwner" : "titleMine", { count: entries.length })}
         </h2>
-        <p className="text-xs text-muted">{t(isOwner ? "helpOwner" : "helpMine", { count: entries.length })}</p>
+        <p className="text-xs text-muted">{t(canModerate ? "helpOwner" : "helpMine", { count: entries.length })}</p>
       </div>
       <ul className="divide-y divide-border">
         {entries.map((e) => (
@@ -61,13 +61,14 @@ export function PendingPanel({ guildId, profile, entries, isOwner }: Props) {
                 </span>
               </p>
               <p className="text-xs text-muted">
-                {isOwner && e.submittedBy ? `${t("by", { name: e.submittedBy })} · ` : ""}
+                {/* Logged-in proposers show their battletag; anonymous ones the name they typed. */}
+                {canModerate && (e.submittedBy ?? e.playerName) ? `${t("by", { name: (e.submittedBy ?? e.playerName)! })} · ` : ""}
                 {format.relativeTime(new Date(e.submittedAt))}
                 {e.note ? ` · ${e.note}` : ""}
               </p>
             </div>
             <div className="flex gap-2">
-              {isOwner && (
+              {canModerate && (
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -82,12 +83,12 @@ export function PendingPanel({ guildId, profile, entries, isOwner }: Props) {
                 className="btn"
                 disabled={busy !== null}
                 onClick={() => {
-                  if (window.confirm(t(isOwner ? "confirmReject" : "confirmWithdraw", { name: e.name }))) {
+                  if (window.confirm(t(canModerate ? "confirmReject" : "confirmWithdraw", { name: e.name }))) {
                     void act(e.entryId, () => apiSend("DELETE", `/guilds/${guildId}/roster/${e.entryId}`));
                   }
                 }}
               >
-                {t(isOwner ? "reject" : "withdraw")}
+                {t(canModerate ? "reject" : "withdraw")}
               </button>
             </div>
           </li>

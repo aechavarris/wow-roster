@@ -587,17 +587,16 @@ describe("published rosters", () => {
     const entryId = strangerView.pending[0].entryId as string;
     expect((await send("PATCH", `/api/guilds/${roster.id}/roster/${entryId}`, stranger, { note: "hola" })).statusCode).toBe(403);
 
-    // Others only see their own proposals; the owner sees all of them.
+    // Others only see their own proposals; officers (and the owner) see all of them.
     const other = await login(4004);
     expect((await send("GET", `/api/guilds/${roster.id}/roster`, other)).json().pending).toEqual([]);
+    expect((await send("GET", `/api/guilds/${roster.id}/roster`, officer)).json().pending).toHaveLength(1);
     expect((await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json().pending).toHaveLength(1);
-    // Officers cannot accept nor reject; strangers cannot touch others' proposals.
-    expect((await send("POST", `/api/guilds/${roster.id}/roster/${entryId}/approve`, officer)).statusCode).toBe(403);
-    expect((await send("DELETE", `/api/guilds/${roster.id}/roster/${entryId}`, officer)).statusCode).toBe(403);
+    // Strangers cannot touch others' proposals.
     expect((await send("DELETE", `/api/guilds/${roster.id}/roster/${entryId}`, other)).statusCode).toBe(403);
 
-    // Accepting adds it to the roster and makes the author a member.
-    expect((await send("POST", `/api/guilds/${roster.id}/roster/${entryId}/approve`, owner)).statusCode).toBe(200);
+    // An officer (not only the owner) accepts it; the author becomes a member.
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/${entryId}/approve`, officer)).statusCode).toBe(200);
     const after = (await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json();
     expect(after.pending).toEqual([]);
     expect(after.players[0].main).toMatchObject({ classId: 2, specKey: "holy", planned: true });
@@ -626,6 +625,42 @@ describe("published rosters", () => {
     expect((await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json().pending).toHaveLength(8);
     // The author never became a member.
     expect((await send("GET", `/api/guilds/${roster.id}/members`, owner)).json().members).toHaveLength(1);
+  });
+
+  it("takes anonymous planned proposals on any public roster, needing a name and capped per roster", async () => {
+    const owner = await login(1001);
+    // Public but NOT published: still open to proposals.
+    const roster = (await send("POST", "/api/rosters", owner, { name: "Público", gameVersion: "retail", region: "eu", public: true })).json().guild;
+
+    // A logged-in non-member proposes on a public (unpublished) roster.
+    const member = await login(5005);
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, member, { classId: 1 })).json().entry.pending).toBe(true);
+
+    // Anonymous (no session): a planned proposal needs a name, then goes in pending with no author.
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/planned`, null, { classId: 2 })).statusCode).toBe(400);
+    const anon = await send("POST", `/api/guilds/${roster.id}/roster/planned`, null, { classId: 2, specKey: "holy", plannedName: "Anónimo" });
+    expect(anon.statusCode).toBe(201);
+    expect(anon.json().entry).toMatchObject({ pending: true, userId: null, plannedName: "Anónimo" });
+    // Anonymous visitors cannot add a real character.
+    expect((await send("POST", `/api/guilds/${roster.id}/roster`, null, { realm: "x", name: "y" })).statusCode).toBe(401);
+
+    // Officers see all pending; accepting an anonymous one adds nobody as a member.
+    const pending = (await send("GET", `/api/guilds/${roster.id}/roster`, owner)).json().pending as Pending[];
+    expect(pending).toHaveLength(2);
+    const anonId = pending.find((p) => p.submittedBy === null)!.entryId;
+    expect((await send("POST", `/api/guilds/${roster.id}/roster/${anonId}/approve`, owner)).statusCode).toBe(200);
+    expect((await send("GET", `/api/guilds/${roster.id}/members`, owner)).json().members).toHaveLength(1);
+
+    // Anonymous proposals are bounded per roster (20).
+    for (let i = 0; i < 20; i++) {
+      await send("POST", `/api/guilds/${roster.id}/roster/planned`, null, { classId: 1, plannedName: `A${i}` });
+    }
+    const capped = await send("POST", `/api/guilds/${roster.id}/roster/planned`, null, { classId: 1, plannedName: "extra" });
+    expect(capped.statusCode).toBe(429);
+
+    // A private roster takes no anonymous proposals (invisible to outsiders).
+    const priv = (await send("POST", "/api/rosters", owner, { name: "Privado", gameVersion: "retail", region: "eu", public: false })).json().guild;
+    expect((await send("POST", `/api/guilds/${priv.id}/roster/planned`, null, { classId: 1, plannedName: "x" })).statusCode).toBe(404);
   });
 });
 
@@ -888,7 +923,7 @@ describe("guild management", () => {
 
   it("lets members add their own Battle.net characters and outsiders propose them to published rosters", async () => {
     const owner = await login();
-    const { guild } = (await send("POST", "/api/rosters", owner, { name: "Mios", gameVersion: "retail", region: "eu" })).json();
+    const { guild } = (await send("POST", "/api/rosters", owner, { name: "Mios", gameVersion: "retail", region: "eu", public: false })).json();
     const thrall = await prisma.character.findFirstOrThrow({ where: { nameKey: "thrall" } });
 
     const added = await send("POST", `/api/guilds/${guild.id}/roster/mine`, owner, { characterIds: [thrall.id] });
@@ -904,7 +939,8 @@ describe("guild management", () => {
     const strangerChar = await prisma.character.create({
       data: { gameVersion: "retail", region: "eu", realm: "los-errantes", name: "Jaina", nameKey: "jaina", ownerId: strangerUser.id },
     });
-    expect((await send("POST", `/api/guilds/${guild.id}/roster/mine`, stranger, { characterIds: [strangerChar.id] })).statusCode).toBe(403);
+    // Private and unpublished: invisible to the stranger.
+    expect((await send("POST", `/api/guilds/${guild.id}/roster/mine`, stranger, { characterIds: [strangerChar.id] })).statusCode).toBe(404);
     await send("PATCH", `/api/guilds/${guild.id}`, owner, { published: true });
     expect((await send("POST", `/api/guilds/${guild.id}/roster/mine`, stranger, { characterIds: [thrall.id] })).json().error).toBe("not_your_characters");
     const proposed = await send("POST", `/api/guilds/${guild.id}/roster/mine`, stranger, { characterIds: [strangerChar.id] });
