@@ -309,6 +309,8 @@ export interface RaiderIoProfile {
 export interface WarcraftLogsKill {
   report: string;
   zoneId?: number;
+  /** Zone (raid/dungeon) name as Warcraft Logs reports it, for the roster Logs view. */
+  zoneName?: LocalizedText;
   encounterId: number;
   name: string;
   difficulty?: number;

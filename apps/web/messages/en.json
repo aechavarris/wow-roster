@@ -80,7 +80,8 @@
     "linkedRoster": "linked to the guild",
     "published": "Published",
     "details": "Details",
-    "weekly": "Weekly"
+    "weekly": "Weekly",
+    "logs": "Logs"
   },
   "roster": {
     "raiders": "{count, plural, =0 {No raiders} one {# raider} other {# raiders}}",
@@ -626,5 +627,17 @@
       "world": "World",
       "other": "Other"
     }
+  },
+  "logs": {
+    "title": "Logs",
+    "help": "Recent dungeons and raids of the roster characters, from Warcraft Logs. When several roster characters appear in one log, all of them are listed.",
+    "unavailable": "This game version does not use Warcraft Logs.",
+    "empty": "No recent logs yet.",
+    "byCharacter": "By character",
+    "chronological": "Chronological",
+    "with": "with",
+    "raid": "Raid",
+    "dungeon": "Dungeon",
+    "bosses": "{count, plural, one {# boss} other {# bosses}}"
   }
 }

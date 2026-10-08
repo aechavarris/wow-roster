@@ -3,6 +3,7 @@ import { REGIONS, blizzardSlug } from "@wow/config";
 import {
   averageEquippedItemLevel,
   buildRoster,
+  buildRosterLogs,
   defaultStatusForRank,
   fitsGameVersion,
   gameVersion,
@@ -390,6 +391,33 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       }
     }
     return { week: selected.toISOString(), current: current.toISOString(), weeks, vault: rules?.vault ?? null, characters, history };
+  });
+
+  /**
+   * The roster's recent Warcraft Logs reports, available only for versions that read from Warcraft Logs
+   * (Classic Era, Anniversary, and Forever via the API stand-in). Reports are grouped across the roster, so a
+   * log several members raided together lists all of them. Visible to anyone who can see the roster.
+   */
+  app.get("/guilds/:id/logs", async (request) => {
+    const { id } = idParams.parse(request.params);
+    const { guild } = await loadVisibleGuild(prisma, id, request.user);
+    const host = gameVersion(core, guild.gameVersion).api.warcraftLogs?.host;
+    if (!host) return { available: false, logs: [] };
+    const entries = await prisma.rosterEntry.findMany({
+      where: { guildId: id, pending: false, characterId: { not: null } },
+      select: { character: { select: { id: true, name: true, classId: true, profile: true } } },
+    });
+    const characters = entries.flatMap((e) =>
+      e.character
+        ? [{
+            characterId: e.character.id,
+            name: e.character.name,
+            classId: e.character.classId,
+            warcraftLogs: (e.character.profile as Partial<CharacterProfile> | null)?.warcraftLogs ?? null,
+          }]
+        : [],
+    );
+    return { available: true, logs: buildRosterLogs(gameVersion(core, guild.gameVersion), characters, host) };
   });
 
   /** Published rosters for signed-in users, newest first; optionally of one game version. */

@@ -575,6 +575,45 @@ describe("BiS wishlists", () => {
   });
 });
 
+describe("roster logs", () => {
+  const wclProfile = (kills: unknown[]) => ({ warcraftLogs: { url: "https://vanilla.warcraftlogs.com/character/eu/x/y", fetchedAt: new Date().toISOString(), kills }, missing: {} });
+
+  it("groups Warcraft Logs reports across the roster and tells which members are in each", async () => {
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Logs", gameVersion: "classic-era", region: "eu" } })).json().guild;
+    const mk = (name: string, classId: number, kills: unknown[]) =>
+      prisma.character.create({
+        data: { gameVersion: "classic-era", region: "eu", realm: "living-flame", name, nameKey: name.toLowerCase(), classId, profile: JSON.parse(JSON.stringify(wclProfile(kills))) },
+      });
+    const a = await mk("Logger", 7, [
+      { report: "RPT1", zoneId: 2000, zoneName: { en: "Molten Core" }, encounterId: 663, name: "Lucifron", killedAt: "2026-10-01T20:00:00.000Z" },
+    ]);
+    const b = await mk("Alt", 1, [
+      { report: "RPT1", zoneId: 2000, zoneName: { en: "Molten Core" }, encounterId: 663, name: "Lucifron", killedAt: "2026-10-01T20:01:00.000Z" },
+    ]);
+    await prisma.rosterEntry.createMany({
+      data: [
+        { guildId: roster.id, characterId: a.id, source: "manual" },
+        { guildId: roster.id, characterId: b.id, source: "manual" },
+      ],
+    });
+
+    const res = await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/logs` });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.available).toBe(true);
+    expect(body.logs).toHaveLength(1);
+    expect(body.logs[0]).toMatchObject({ report: "RPT1", type: "raid", zoneKey: "molten-core", url: "https://vanilla.warcraftlogs.com/reports/RPT1" });
+    expect(body.logs[0].members.map((m: { name: string }) => m.name).sort()).toEqual(["Alt", "Logger"]);
+  });
+
+  it("reports logs as unavailable for versions without Warcraft Logs (retail)", async () => {
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "NoLogs", gameVersion: "retail", region: "eu" } })).json().guild;
+    expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/logs` })).json()).toEqual({ available: false, logs: [] });
+  });
+});
+
 describe("game versions", () => {
   const send = (method: "POST" | "PATCH", url: string, session: string, payload?: object) =>
     app.inject({ method, url, cookies: { wr_session: session }, payload });

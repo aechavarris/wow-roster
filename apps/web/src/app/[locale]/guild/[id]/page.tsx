@@ -81,6 +81,11 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
               </Link>
             </>
           )}
+          {version.warcraftLogsHost && (
+            <Link href={`/guild/${guild.id}/logs`} className="btn">
+              {t("logs")}
+            </Link>
+          )}
           {isOfficer && version.apiAvailable && <SyncGuildButton guildId={guild.id} />}
           {isOfficer && (
             <Link href={`/guild/${guild.id}/settings`} className="btn">
