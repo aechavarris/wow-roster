@@ -1,5 +1,7 @@
 import type { EncounterProgress, InstanceProgress, WarcraftLogsProfile } from "@wow/blizzard";
 import type { GameProfile, Localized } from "@wow/config";
+import { Prisma } from "@wow/db";
+import type { CoreContext } from "./context";
 
 /** How long Warcraft Logs kills are reused before asking again: logs are uploaded after the raid, not live. */
 export const WARCRAFT_LOGS_TTL_MS = 6 * 3_600_000;
@@ -50,83 +52,97 @@ export interface RosterLogMember {
   classId: number | null;
 }
 
-/** One Warcraft Logs report a roster character appears in, with every roster member in it and its boss kills. */
+/** One Warcraft Logs report a roster character appears in, with every roster member seen in it. */
 export interface RosterLog {
   /** Warcraft Logs report code. */
   report: string;
   /** The report's page on the site. */
   url: string;
   type: "raid" | "dungeon";
-  zoneId?: number;
   zoneName: Localized;
-  /** Profile raid key, when the zone maps to one. */
-  zoneKey?: string;
-  /** Earliest boss kill in the report, as the log's date. */
+  /** Earliest boss kill in the report, as the log's date (ISO). */
   date: string;
   members: RosterLogMember[];
-  bosses: { encounterId: number; name: Localized; killedAt: string }[];
-}
-
-/** A roster character with its stored Warcraft Logs kills, as buildRosterLogs expects. */
-export interface RosterLogCharacter extends RosterLogMember {
-  warcraftLogs?: WarcraftLogsProfile | null;
 }
 
 /**
- * Builds the roster's recent logs from each character's stored Warcraft Logs kills. Reports are grouped by their
- * code across the whole roster, so a report several roster members raided together lists all of them ("this log is
- * those players'"). Within a report, bosses are deduplicated keeping the latest kill, and the date is the earliest
- * kill. Raids are told from dungeons by the version's `raids[].warcraftLogsZone`. Sorted newest first.
+ * Persists the reports a character appears in, so a roster's Logs view is a growing history rather than only the
+ * handful of recent reports the API returns. One row per report (deduped from the character's kills); the character
+ * is linked to each. Raids are told from dungeons by the version's `raids[].warcraftLogsZone`. Best effort: a
+ * failure here never breaks a sync.
  */
-export function buildRosterLogs(
-  profile: Pick<GameProfile, "raids">,
-  characters: RosterLogCharacter[],
-  host: string,
-): RosterLog[] {
+export async function persistWarcraftLogsReports(
+  ctx: CoreContext,
+  character: { id: string },
+  logs: WarcraftLogsProfile | null | undefined,
+  profile: Pick<GameProfile, "raids" | "api">,
+): Promise<void> {
+  const host = profile.api.warcraftLogs?.host;
+  if (!host || !logs?.kills?.length) return;
   const raidByZone = new Map(profile.raids.filter((r) => r.warcraftLogsZone).map((r) => [r.warcraftLogsZone!, r]));
-  const byReport = new Map<string, RosterLog & { seenMembers: Set<string>; seenBosses: Map<number, string> }>();
-
-  for (const character of characters) {
-    for (const kill of character.warcraftLogs?.kills ?? []) {
-      if (!kill.report) continue;
-      let log = byReport.get(kill.report);
-      if (!log) {
-        const raid = kill.zoneId !== undefined ? raidByZone.get(kill.zoneId) : undefined;
-        log = {
-          report: kill.report,
-          url: `https://${host}/reports/${kill.report}`,
-          type: raid ? "raid" : "dungeon",
-          zoneId: kill.zoneId,
-          zoneName: raid ? raid.name : (kill.zoneName ?? { en: kill.zoneId ? `Zone ${kill.zoneId}` : "—" }),
-          zoneKey: raid?.key,
-          date: kill.killedAt,
-          members: [],
-          bosses: [],
-          seenMembers: new Set(),
-          seenBosses: new Map(),
-        };
-        byReport.set(kill.report, log);
-      }
-      if (!log.seenMembers.has(character.characterId)) {
-        log.seenMembers.add(character.characterId);
-        log.members.push({ characterId: character.characterId, name: character.name, classId: character.classId });
-      }
-      if (kill.killedAt < log.date) log.date = kill.killedAt;
-      const seenAt = log.seenBosses.get(kill.encounterId);
-      if (seenAt === undefined) {
-        log.seenBosses.set(kill.encounterId, kill.killedAt);
-        log.bosses.push({ encounterId: kill.encounterId, name: { en: kill.name }, killedAt: kill.killedAt });
-      } else if (kill.killedAt > seenAt) {
-        log.seenBosses.set(kill.encounterId, kill.killedAt);
-        const boss = log.bosses.find((b) => b.encounterId === kill.encounterId);
-        if (boss) boss.killedAt = kill.killedAt;
-      }
+  const byReport = new Map<string, { zoneId?: number; zoneName: Localized; type: string; date: string }>();
+  for (const kill of logs.kills) {
+    if (!kill.report) continue;
+    const existing = byReport.get(kill.report);
+    if (existing) {
+      if (kill.killedAt < existing.date) existing.date = kill.killedAt;
+      continue;
     }
+    const raid = kill.zoneId !== undefined ? raidByZone.get(kill.zoneId) : undefined;
+    byReport.set(kill.report, {
+      zoneId: kill.zoneId,
+      zoneName: raid ? raid.name : (kill.zoneName ?? { en: kill.zoneId ? `Zone ${kill.zoneId}` : "—" }),
+      type: raid ? "raid" : "dungeon",
+      date: kill.killedAt,
+    });
   }
+  try {
+    for (const [code, r] of byReport) {
+      await ctx.prisma.warcraftLogsReport.upsert({
+        where: { code },
+        create: { code, host, zoneId: r.zoneId ?? null, zoneName: r.zoneName as Prisma.InputJsonValue, type: r.type, date: new Date(r.date) },
+        // The report's facts are stable; only touch updatedAt so re-syncs do not flip the first-seen date.
+        update: {},
+      });
+      await ctx.prisma.warcraftLogsReportCharacter.upsert({
+        where: { reportCode_characterId: { reportCode: code, characterId: character.id } },
+        create: { reportCode: code, characterId: character.id },
+        update: {},
+      });
+    }
+  } catch {
+    // History is best effort and must never fail a sync.
+  }
+}
 
-  return [...byReport.values()]
-    .map(({ seenMembers: _m, seenBosses: _b, ...log }) => ({ ...log, bosses: log.bosses.sort((a, b) => a.killedAt.localeCompare(b.killedAt)) }))
-    .sort((a, b) => b.date.localeCompare(a.date));
+/** A persisted report linked to one roster character, as groupReportLinks expects (already filtered to the roster). */
+export interface ReportLink {
+  report: { code: string; host: string; zoneName: Localized; type: string; date: string };
+  character: RosterLogMember;
+}
+
+/**
+ * Groups report-character links into the roster's logs: one entry per report, listing every roster member seen in
+ * it ("this log is those players'"), newest first. Links must already be limited to the roster's characters.
+ */
+export function groupReportLinks(links: ReportLink[]): RosterLog[] {
+  const byCode = new Map<string, RosterLog>();
+  for (const link of links) {
+    let log = byCode.get(link.report.code);
+    if (!log) {
+      log = {
+        report: link.report.code,
+        url: `https://${link.report.host}/reports/${link.report.code}`,
+        type: link.report.type === "raid" ? "raid" : "dungeon",
+        zoneName: link.report.zoneName,
+        date: link.report.date,
+        members: [],
+      };
+      byCode.set(link.report.code, log);
+    }
+    if (!log.members.some((m) => m.characterId === link.character.characterId)) log.members.push(link.character);
+  }
+  return [...byCode.values()].sort((a, b) => b.date.localeCompare(a.date));
 }
 
 /** Whether stored Warcraft Logs kills should be fetched again (missing, or older than the TTL). */

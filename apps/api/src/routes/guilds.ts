@@ -1,9 +1,9 @@
 import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
-import { REGIONS, blizzardSlug, progressEventsSchema } from "@wow/config";
+import { REGIONS, blizzardSlug, progressEventsSchema, type Localized } from "@wow/config";
 import {
   averageEquippedItemLevel,
   buildRoster,
-  buildRosterLogs,
+  groupReportLinks,
   defaultStatusForRank,
   fitsGameVersion,
   gameVersion,
@@ -407,19 +407,27 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     if (!host) return { available: false, logs: [] };
     const entries = await prisma.rosterEntry.findMany({
       where: { guildId: id, pending: false, characterId: { not: null } },
-      select: { character: { select: { id: true, name: true, classId: true, profile: true } } },
+      select: { characterId: true },
     });
-    const characters = entries.flatMap((e) =>
-      e.character
-        ? [{
-            characterId: e.character.id,
-            name: e.character.name,
-            classId: e.character.classId,
-            warcraftLogs: (e.character.profile as Partial<CharacterProfile> | null)?.warcraftLogs ?? null,
-          }]
-        : [],
+    const characterIds = entries.flatMap((e) => (e.characterId ? [e.characterId] : []));
+    if (characterIds.length === 0) return { available: true, logs: [] };
+    // The persisted report history, limited to this roster's characters, newest first.
+    const links = await prisma.warcraftLogsReportCharacter.findMany({
+      where: { characterId: { in: characterIds } },
+      orderBy: { report: { date: "desc" } },
+      take: 2000,
+      include: {
+        report: { select: { code: true, host: true, zoneName: true, type: true, date: true } },
+        character: { select: { id: true, name: true, classId: true } },
+      },
+    });
+    const logs = groupReportLinks(
+      links.map((l) => ({
+        report: { code: l.report.code, host: l.report.host, zoneName: l.report.zoneName as Localized, type: l.report.type, date: l.report.date.toISOString() },
+        character: { characterId: l.character.id, name: l.character.name, classId: l.character.classId },
+      })),
     );
-    return { available: true, logs: buildRosterLogs(gameVersion(core, guild.gameVersion), characters, host) };
+    return { available: true, logs };
   });
 
   // Discord webhooks that announce character progress. Officers manage them; the URL (a secret) is never read back.

@@ -225,17 +225,14 @@ export interface RosterWebhook {
   enabled: boolean;
 }
 
-/** GET /guilds/:id/logs — the roster's recent Warcraft Logs reports, grouped across members. */
+/** GET /guilds/:id/logs — the roster's Warcraft Logs report history, grouped across members. */
 export interface RosterLog {
   report: string;
   url: string;
   type: "raid" | "dungeon";
-  zoneId?: number;
   zoneName: Localized;
-  zoneKey?: string;
   date: string;
   members: { characterId: string; name: string; classId: number | null }[];
-  bosses: { encounterId: number; name: Localized; killedAt: string }[];
 }
 
 export interface RosterLogsResponse {

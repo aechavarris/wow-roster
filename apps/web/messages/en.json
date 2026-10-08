@@ -637,15 +637,14 @@
   },
   "logs": {
     "title": "Logs",
-    "help": "Recent dungeons and raids of the roster characters, from Warcraft Logs. When several roster characters appear in one log, all of them are listed.",
+    "help": "A growing history of the roster characters' dungeons and raids, from Warcraft Logs. When several roster characters appear in one log, all of them are listed.",
     "unavailable": "This game version does not use Warcraft Logs.",
     "empty": "No recent logs yet.",
     "byCharacter": "By character",
     "chronological": "Chronological",
     "with": "with",
     "raid": "Raid",
-    "dungeon": "Dungeon",
-    "bosses": "{count, plural, one {# boss} other {# bosses}}"
+    "dungeon": "Dungeon"
   },
   "webhooks": {
     "title": "Progress announcements (Discord)",
