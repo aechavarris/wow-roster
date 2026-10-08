@@ -639,5 +639,31 @@
     "raid": "Banda",
     "dungeon": "Mazmorra",
     "bosses": "{count, plural, one {# jefe} other {# jefes}}"
+  },
+  "webhooks": {
+    "title": "Anuncios de progreso (Discord)",
+    "help": "Publica el progreso de los personajes del roster en canales de Discord mediante webhooks. Puedes añadir varios (distintos servidores o canales).",
+    "empty": "Aún no hay webhooks configurados.",
+    "disabled": "Desactivado",
+    "edit": "Editar",
+    "delete": "Borrar",
+    "test": "Probar",
+    "allCharacters": "Todos los personajes",
+    "someCharacters": "{count} personajes",
+    "noEvents": "Sin progresos",
+    "add": "Añadir webhook",
+    "confirmDelete": "¿Borrar el webhook \"{label}\"?",
+    "label": "Nombre",
+    "messageLanguage": "Idioma de los mensajes",
+    "url": "URL del webhook de Discord",
+    "urlKeep": "Déjalo vacío para conservar el actual",
+    "urlHelp": "En Discord: Ajustes del canal → Integraciones → Webhooks → Copiar URL.",
+    "events": "Progresos a anunciar",
+    "characters": "Personajes",
+    "noCharacters": "Este roster no tiene personajes reales todavía.",
+    "enabled": "Activado",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "cancel": "Cancelar"
   }
 }

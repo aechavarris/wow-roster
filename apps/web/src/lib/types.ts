@@ -213,6 +213,18 @@ export interface BisItem {
   note?: string;
 }
 
+/** A Discord webhook announcing roster progress (GET /guilds/:id/webhooks); the URL is only ever returned masked. */
+export interface RosterWebhook {
+  id: string;
+  label: string;
+  urlMasked: string;
+  events: string[];
+  locale: string;
+  allCharacters: boolean;
+  characterIds: string[];
+  enabled: boolean;
+}
+
 /** GET /guilds/:id/logs — the roster's recent Warcraft Logs reports, grouped across members. */
 export interface RosterLog {
   report: string;

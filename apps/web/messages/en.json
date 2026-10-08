@@ -639,5 +639,31 @@
     "raid": "Raid",
     "dungeon": "Dungeon",
     "bosses": "{count, plural, one {# boss} other {# bosses}}"
+  },
+  "webhooks": {
+    "title": "Progress announcements (Discord)",
+    "help": "Posts the roster characters' progress to Discord channels via webhooks. You can add several (different servers or channels).",
+    "empty": "No webhooks configured yet.",
+    "disabled": "Disabled",
+    "edit": "Edit",
+    "delete": "Delete",
+    "test": "Test",
+    "allCharacters": "All characters",
+    "someCharacters": "{count} characters",
+    "noEvents": "No events",
+    "add": "Add webhook",
+    "confirmDelete": "Delete the webhook \"{label}\"?",
+    "label": "Name",
+    "messageLanguage": "Message language",
+    "url": "Discord webhook URL",
+    "urlKeep": "Leave empty to keep the current one",
+    "urlHelp": "In Discord: Channel settings → Integrations → Webhooks → Copy URL.",
+    "events": "Events to announce",
+    "characters": "Characters",
+    "noCharacters": "This roster has no real characters yet.",
+    "enabled": "Enabled",
+    "saving": "Saving…",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }

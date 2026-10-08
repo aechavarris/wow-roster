@@ -575,6 +575,62 @@ describe("BiS wishlists", () => {
   });
 });
 
+describe("roster webhooks (progress announcements)", () => {
+  const url = "https://discord.com/api/webhooks/123456789/abcDEF-_token";
+  const create = (session: string, guildId: string, over: Record<string, unknown> = {}) =>
+    app.inject({ method: "POST", url: `/api/guilds/${guildId}/webhooks`, cookies: { wr_session: session }, payload: { label: "Raids", url, events: ["level_up", "raid_boss"], ...over } });
+
+  it("lets officers manage webhooks, masks the URL and rejects non-Discord URLs", async () => {
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Hooks", gameVersion: "classic-era", region: "eu" } })).json().guild;
+
+    const created = await create(session, roster.id);
+    expect(created.statusCode).toBe(201);
+    const webhook = created.json().webhook;
+    expect(webhook.urlMasked).toBe("https://discord.com/api/webhooks/123456789/•••");
+    expect(JSON.stringify(webhook)).not.toContain("abcDEF-_token");
+    expect(webhook.events).toEqual(["level_up", "raid_boss"]);
+
+    // Read back, still masked.
+    const list = (await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/webhooks`, cookies: { wr_session: session } })).json();
+    expect(list.webhooks[0].urlMasked).toContain("•••");
+
+    // A non-Discord URL is refused.
+    expect((await create(session, roster.id, { url: "https://evil.example/api/webhooks/1/x" })).statusCode).toBe(400);
+    // Unknown event keys are refused.
+    expect((await create(session, roster.id, { events: ["not_a_real_event"] })).statusCode).toBe(400);
+
+    // Patch (keeping the stored URL by omitting it) and delete.
+    const patched = await app.inject({ method: "PATCH", url: `/api/guilds/${roster.id}/webhooks/${webhook.id}`, cookies: { wr_session: session }, payload: { enabled: false, events: ["max_level"] } });
+    expect(patched.json().webhook).toMatchObject({ enabled: false, events: ["max_level"] });
+    expect((await app.inject({ method: "DELETE", url: `/api/guilds/${roster.id}/webhooks/${webhook.id}`, cookies: { wr_session: session } })).statusCode).toBe(200);
+
+    // A stranger cannot manage them.
+    const other = await login(2002);
+    expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/webhooks`, cookies: { wr_session: other } })).statusCode).toBe(403);
+  });
+
+  it("sends a test message to the webhook", async () => {
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Test", gameVersion: "classic-era", region: "eu" } })).json().guild;
+    const webhook = (await create(session, roster.id)).json().webhook;
+
+    const realFetch = globalThis.fetch;
+    let posted: string | null = null;
+    globalThis.fetch = (async (target: string | URL, init?: RequestInit) => {
+      posted = target.toString();
+      return new Response(null, { status: 204 });
+    }) as typeof fetch;
+    try {
+      const res = await app.inject({ method: "POST", url: `/api/guilds/${roster.id}/webhooks/${webhook.id}/test`, cookies: { wr_session: session } });
+      expect(res.statusCode).toBe(200);
+      expect(posted).toBe(url);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
 describe("roster logs", () => {
   const wclProfile = (kills: unknown[]) => ({ warcraftLogs: { url: "https://vanilla.warcraftlogs.com/character/eu/x/y", fetchedAt: new Date().toISOString(), kills }, missing: {} });
 
