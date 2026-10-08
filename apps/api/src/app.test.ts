@@ -119,7 +119,8 @@ const blizzardRoutes: Record<string, unknown> = {
     page: 1,
     pageCount: 1,
     results: [
-      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, media: { id: 600 } } },
+      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, item_subclass: { name: { en_US: "Two-Handed Maces" } }, media: { id: 600 } } },
+      { data: { id: 601, name: { en_US: "Band of Fire" }, quality: { type: "EPIC" }, level: 78, required_level: 60, inventory_type: { type: "FINGER" }, item_subclass: { name: { en_US: "Miscellaneous" } }, media: { id: 601 } } },
     ],
   },
 };
@@ -513,16 +514,24 @@ describe("BiS wishlists", () => {
       cookies: { wr_session: session },
     });
     expect(result.statusCode).toBe(200);
+    expect(result.json().truncated).toBe(false);
+    // Default sort is item level descending, so the ilvl 80 mace comes first.
     expect(result.json().items[0]).toEqual({
       id: 600,
       name: { en: "Sulfuras", es: "Sulfuras" },
       slot: "mainHand",
+      subclass: { en: "Two-Handed Maces" },
       quality: "LEGENDARY",
       itemLevel: 80,
       requiredLevel: 60,
       icon: "https://render/icons/sword.jpg",
       source: { type: "raid", zoneKey: "molten-core", zoneName: { en: "Molten Core" }, bossName: { en: "Ragnaros" }, auto: true },
     });
+
+    // Filtering by slot narrows to the matching items only.
+    const rings = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&minLevel=60&maxLevel=69&slot=finger", cookies: { wr_session: session } });
+    expect(rings.json().items.map((i: { id: number }) => i.id)).toEqual([601]);
+
     // Versions without an API cannot search items.
     expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);
   });

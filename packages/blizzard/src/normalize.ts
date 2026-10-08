@@ -307,6 +307,7 @@ export function normalizeItem(raw: Raw): ItemResult | undefined {
     itemLevel: num(raw?.level),
     requiredLevel: num(raw?.required_level),
     inventoryType: str(raw?.inventory_type?.type),
+    subclass: localized(raw?.item_subclass?.name),
     mediaId: num(raw?.media?.id) ?? idFromHref(raw?.media?.key?.href) ?? id,
   };
 }

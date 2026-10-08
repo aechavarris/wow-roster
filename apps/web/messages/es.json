@@ -626,7 +626,14 @@
       "pvp": "JcJ",
       "world": "Mundo",
       "other": "Otros"
-    }
+    },
+    "slotFilter": "Hueco",
+    "slotAll": "Todos",
+    "sortBy": "Ordenar por",
+    "sortLevel": "Nivel de objeto",
+    "sortRarity": "Rareza",
+    "sortType": "Tipo",
+    "truncated": "Hay más resultados; afina la búsqueda (nombre, hueco o rango de nivel)."
   },
   "logs": {
     "title": "Logs",

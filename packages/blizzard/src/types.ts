@@ -338,6 +338,8 @@ export interface ItemResult {
   requiredLevel?: number;
   /** Blizzard `inventory_type.type` enum (HEAD, TRINKET, WEAPONMAINHAND…), mapped to a BiS slot by @wow/config. */
   inventoryType?: string;
+  /** Armor or weapon subclass name (Plate, Leather, Sword, Axe…), for the BiS picker's "by type" sort. */
+  subclass?: LocalizedText;
   /** Media id for the icon lookup (equals the item id for items). */
   mediaId?: number;
 }
