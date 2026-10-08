@@ -134,7 +134,9 @@ function PlannedForm({ guildId, profile, isOfficer, anon, run }: { guildId: stri
             style={classText(classColor(profile, classId))}
           >
             {profile.classes.map((c) => (
-              <option key={c.id} value={c.id}>{localize(c.name, locale)}</option>
+              <option key={c.id} value={c.id} className="text-class" style={classText(c.color)}>
+                {localize(c.name, locale)}
+              </option>
             ))}
           </select>
         </div>
