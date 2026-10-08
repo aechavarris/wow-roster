@@ -626,7 +626,14 @@
       "pvp": "PvP",
       "world": "World",
       "other": "Other"
-    }
+    },
+    "slotFilter": "Slot",
+    "slotAll": "All",
+    "sortBy": "Sort by",
+    "sortLevel": "Item level",
+    "sortRarity": "Rarity",
+    "sortType": "Type",
+    "truncated": "More results matched; narrow the search (name, slot or level range)."
   },
   "logs": {
     "title": "Logs",

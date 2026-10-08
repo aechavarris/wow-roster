@@ -1,4 +1,5 @@
-import { REGIONS, blizzardSlug, slotForInventoryType } from "@wow/config";
+import { REGIONS, bisSlotKeys, blizzardSlug, slotForInventoryType } from "@wow/config";
+import type { ItemResult } from "@wow/blizzard";
 import { gameVersion, getBisSourceIndex, getIcons, getTalentTree, lookupBisSource, nameKey, syncCharacter, warmBisSourceIndex } from "@wow/core";
 import { Prisma } from "@wow/db";
 import type { FastifyInstance } from "fastify";
@@ -73,6 +74,10 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
    * [minLevel, maxLevel] bracket the UI defaults to. Hits the version's Blizzard API, so it needs a login (like
    * building a talent tree). Each result carries its BiS slot, icon and, when the journal index is warm, its zone.
    */
+  // Item quality order (worst to best) for the "by rarity" sort.
+  const RARITY_ORDER: Record<string, number> = { POOR: 0, COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 4, LEGENDARY: 5, ARTIFACT: 6, HEIRLOOM: 7 };
+  const MAX_RESULTS = 48;
+
   app.get("/items/search", async (request) => {
     if (!request.user) throw unauthorized();
     const q = z
@@ -82,30 +87,51 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
         q: z.string().trim().max(60).optional(),
         minLevel: z.coerce.number().int().min(0).max(999).optional(),
         maxLevel: z.coerce.number().int().min(0).max(999).optional(),
-        page: z.coerce.number().int().min(1).max(50).default(1),
+        slot: z.enum(bisSlotKeys() as [string, ...string[]]).optional(),
+        sort: z.enum(["level", "rarity", "type"]).default("level"),
       })
       .parse(request.query);
     // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
     const client = core.blizzard(q.version, q.region);
-    const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, page: q.page, pageSize: 24 });
+    // Gather a window of candidates (more pages when a slot filter will thin them out), then filter and sort here:
+    // the Blizzard item search cannot filter by our grouped slots nor sort by rarity/subclass.
+    const pages = q.slot ? 3 : 1;
+    const candidates = new Map<number, ItemResult>();
+    for (let page = 1; page <= pages; page++) {
+      const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, page, pageSize: 100 });
+      for (const item of result.items) candidates.set(item.id, item);
+      if (page >= result.pageCount) break;
+    }
+
+    let rows = [...candidates.values()].map((i) => ({ item: i, slot: slotForInventoryType(i.inventoryType) }));
+    if (q.slot) rows = rows.filter((r) => r.slot === q.slot);
+    rows.sort((a, b) => {
+      if (q.sort === "rarity") return (RARITY_ORDER[b.item.quality ?? ""] ?? -1) - (RARITY_ORDER[a.item.quality ?? ""] ?? -1) || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
+      if (q.sort === "type") return (a.item.subclass?.en ?? "").localeCompare(b.item.subclass?.en ?? "") || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
+      return (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
+    });
+    const truncated = rows.length > MAX_RESULTS;
+    rows = rows.slice(0, MAX_RESULTS);
+
     const target = { version: q.version, region: q.region };
     const [icons, index] = await Promise.all([
-      getIcons(core, target, "item", result.items.map((i) => i.id)).catch(() => new Map<number, string>()),
+      getIcons(core, target, "item", rows.map((r) => r.item.id)).catch(() => new Map<number, string>()),
       getBisSourceIndex(core, target, { fetchIfMissing: false }),
     ]);
     // Warm the zone index in the background so a second search returns sources.
     if (!index) warmBisSourceIndex(core, target);
-    const items = result.items.map((i) => ({
-      id: i.id,
-      name: i.name,
-      slot: slotForInventoryType(i.inventoryType),
-      quality: i.quality ?? null,
-      itemLevel: i.itemLevel ?? null,
-      requiredLevel: i.requiredLevel ?? null,
-      icon: icons.get(i.id) ?? null,
-      source: lookupBisSource(index, i.id) ?? null,
+    const items = rows.map(({ item, slot }) => ({
+      id: item.id,
+      name: item.name,
+      slot,
+      subclass: item.subclass ?? null,
+      quality: item.quality ?? null,
+      itemLevel: item.itemLevel ?? null,
+      requiredLevel: item.requiredLevel ?? null,
+      icon: icons.get(item.id) ?? null,
+      source: lookupBisSource(index, item.id) ?? null,
     }));
-    return { items, page: result.page, pageCount: result.pageCount };
+    return { items, truncated };
   });
 
   /**

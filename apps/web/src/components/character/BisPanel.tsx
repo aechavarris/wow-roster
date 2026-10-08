@@ -239,26 +239,27 @@ function ItemSearch({
   const defaultIndex = Math.max(0, ranges.findIndex((r) => defaultLevel >= r.min && defaultLevel <= r.max));
   const [bracket, setBracket] = useState(defaultIndex);
   const [query, setQuery] = useState("");
+  const [slot, setSlot] = useState("");
+  const [sort, setSort] = useState<"level" | "rarity" | "type">("level");
   const [results, setResults] = useState<ItemSearchResult[] | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageCount, setPageCount] = useState(1);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<number>>(new Set());
 
-  async function run(toPage = 1) {
+  async function run() {
     const range = ranges[bracket]!;
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ version: version.id, region, minLevel: String(range.min), maxLevel: String(range.max), page: String(toPage) });
+      const params = new URLSearchParams({ version: version.id, region, minLevel: String(range.min), maxLevel: String(range.max), sort });
       if (query.trim()) params.set("q", query.trim());
+      if (slot) params.set("slot", slot);
       const res = await fetch(`/api/items/search?${params}`, { credentials: "same-origin" });
-      const data = (await res.json().catch(() => ({}))) as { items?: ItemSearchResult[]; page?: number; pageCount?: number; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { items?: ItemSearchResult[]; truncated?: boolean; error?: string };
       if (!res.ok) throw new ApiError(res.status, data.error ?? "unknown_error");
       setResults(data.items ?? []);
-      setPage(data.page ?? toPage);
-      setPageCount(data.pageCount ?? 1);
+      setTruncated(data.truncated ?? false);
     } catch (err) {
       setError(err instanceof ApiError && tErrors.has(err.code) ? tErrors(err.code) : tErrors("unknown_error"));
       setResults([]);
@@ -294,7 +295,7 @@ function ItemSearch({
           className="flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            void run(1);
+            void run();
           }}
         >
           <div className="grow">
@@ -313,6 +314,29 @@ function ItemSearch({
                   {t("bracket", { min: r.min, max: r.max })}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="bis-slot">
+              {t("slotFilter")}
+            </label>
+            <select id="bis-slot" className="input !w-auto" value={slot} onChange={(e) => setSlot(e.target.value)}>
+              <option value="">{t("slotAll")}</option>
+              {BIS_SLOTS.filter((s) => s.key !== "other").map((s) => (
+                <option key={s.key} value={s.key}>
+                  {localize(s.name, locale)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="bis-sort">
+              {t("sortBy")}
+            </label>
+            <select id="bis-sort" className="input !w-auto" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+              <option value="level">{t("sortLevel")}</option>
+              <option value="rarity">{t("sortRarity")}</option>
+              <option value="type">{t("sortType")}</option>
             </select>
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -350,6 +374,7 @@ function ItemSearch({
                       {tr(r.name, locale)}
                     </a>
                     <span className="text-xs text-muted">{localize(bisSlot(r.slot)?.name ?? {}, locale)}</span>
+                    {r.subclass ? <span className="text-xs text-muted">{tr(r.subclass, locale)}</span> : null}
                     {r.itemLevel ? <span className="text-xs text-muted">{t("ilvl", { level: r.itemLevel })}</span> : null}
                     <button type="button" className="btn ml-auto" disabled={added.has(r.id)} onClick={() => addResult(r)}>
                       {added.has(r.id) ? t("addedLabel") : t("addLabel")}
@@ -358,17 +383,7 @@ function ItemSearch({
                 ))}
               </ul>
             )}
-            {pageCount > 1 && (
-              <div className="flex items-center justify-between text-sm">
-                <button type="button" className="btn" disabled={page <= 1 || loading} onClick={() => void run(page - 1)}>
-                  {t("prev")}
-                </button>
-                <span className="text-muted">{t("page", { page, pages: pageCount })}</span>
-                <button type="button" className="btn" disabled={page >= pageCount || loading} onClick={() => void run(page + 1)}>
-                  {t("next")}
-                </button>
-              </div>
-            )}
+            {truncated && <p className="text-xs text-muted">{t("truncated")}</p>}
           </>
         )}
       </div>

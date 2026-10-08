@@ -248,11 +248,19 @@ export interface ItemSearchResult {
   id: number;
   name: Localized;
   slot: string;
+  /** Armor/weapon subclass (Plate, Sword…), shown and used for the "by type" sort. */
+  subclass: Localized | null;
   quality: string | null;
   itemLevel: number | null;
   requiredLevel: number | null;
   icon: string | null;
   source: BisSource | null;
+}
+
+export interface ItemSearchResponse {
+  items: ItemSearchResult[];
+  /** True when more items matched than were returned; the user should narrow the search. */
+  truncated: boolean;
 }
 
 /** GET /guilds/:id/roster/:entryId — a roster entry's detail for the character/planned details view. */
