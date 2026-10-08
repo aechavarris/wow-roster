@@ -498,7 +498,8 @@
     "requirementsDone": "Completados",
     "requirementDone": "Completado",
     "requirementMissing": "Pendiente",
-    "requirementsLegend": "Los requisitos no salen en la API: cada jugador los marca en la ficha de su personaje."
+    "requirementsLegend": "Los requisitos no salen en la API: cada jugador los marca en la ficha de su personaje.",
+    "fromWarcraftLogs": "Las raids salen de los logs recientes subidos a {host}: solo cuentan los jefes de raids registradas en Warcraft Logs."
   },
   "weekly": {
     "title": "Auditoría semanal",

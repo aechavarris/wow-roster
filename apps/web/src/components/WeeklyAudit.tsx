@@ -128,6 +128,7 @@ function Runs({ runs }: { runs: WeeklyResponse["characters"][string]["activity"]
 
 function WeekTable({ version, rows, weekly }: { version: GameVersion; rows: WeeklyRow[]; weekly: WeeklyResponse }) {
   const t = useTranslations("weekly");
+  const tDetails = useTranslations("details");
   const format = useFormatter();
   const has = (e: string) => version.characterEndpoints.includes(e) && !version.hiddenDetails.includes(e);
   const vaultDungeons = weekly.vault && has("mythicPlus");
@@ -146,7 +147,7 @@ function WeekTable({ version, rows, weekly }: { version: GameVersion; rows: Week
           <Th className={LG}>{t("updated")}</Th>
         </>
       }
-      footer={t(weekly.vault ? "legendVault" : "legend")}
+      footer={[t(weekly.vault ? "legendVault" : "legend"), version.warcraftLogsHost ? tDetails("fromWarcraftLogs", { host: version.warcraftLogsHost }) : ""].join(" ").trim()}
     >
       {rows.map((row) => {
         const week = row.character.characterId ? weekly.characters[row.character.characterId] : undefined;

@@ -1,9 +1,18 @@
-import { BlizzardApiError, RaiderIoError, type CharacterProfile, type CharacterSummary, type AccountCharacter } from "@wow/blizzard";
+import {
+  BlizzardApiError,
+  RaiderIoError,
+  WarcraftLogsError,
+  type AccountCharacter,
+  type CharacterProfile,
+  type CharacterSummary,
+  type WarcraftLogsProfile,
+} from "@wow/blizzard";
 import { resolveSpec, type GameProfile } from "@wow/config";
 import type { Prisma } from "@wow/db";
 import { gameVersion, type CoreContext } from "./context";
 import { enrichProfile } from "./static";
 import { instancesFromStatistics } from "./encounterStatistics";
+import { instancesFromWarcraftLogs, warcraftLogsStale } from "./warcraftLogs";
 import { recordWeek } from "./weekly";
 
 /** Ranks up to this index default to a raiding status; officers can remap them later. */
@@ -204,6 +213,33 @@ export function profileIncomplete(profile: GameProfile, stored: Partial<Characte
 }
 
 /**
+ * The character's recent boss kills from Warcraft Logs, for versions that read raids from there. A character the
+ * site does not know gets an empty result, so it is asked again only after the TTL; other failures are retried.
+ */
+async function fetchWarcraftLogs(
+  ctx: CoreContext,
+  profile: GameProfile,
+  character: { region: string; realm: string; name: string },
+): Promise<{ data?: WarcraftLogsProfile; missing?: string }> {
+  const host = profile.api.warcraftLogs?.host;
+  if (!host || !ctx.warcraftLogs) return {};
+  try {
+    return { data: await ctx.warcraftLogs.getCharacterKills(host, character.region, character.realm, character.name) };
+  } catch (error) {
+    if (error instanceof WarcraftLogsError && error.notFound) {
+      return { data: { url: `https://${host}/character/${character.region}/${character.realm}/${character.name.toLowerCase()}`, fetchedAt: new Date().toISOString(), kills: [] } };
+    }
+    return { missing: error instanceof WarcraftLogsError ? String(error.status) : "error" };
+  }
+}
+
+/** Raid progress from Warcraft Logs where the version's API gives none (neither /encounters nor statistics). */
+const raidsFromLogs = (profile: GameProfile, stored: Partial<CharacterProfile>) =>
+  !profile.api.characterEndpoints.includes("raids") && !stored.encounterStatistics && stored.warcraftLogs
+    ? instancesFromWarcraftLogs(profile, stored.warcraftLogs)
+    : stored.raids;
+
+/**
  * Refreshes one character. When it has not logged in since the last full sync,
  * only the summary is stored to save API quota.
  */
@@ -236,13 +272,28 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     new Date(summary.lastLoginAt).getTime() === character.lastLoginAt.getTime();
 
   if (unchanged) {
+    let stored = character.profile as Partial<CharacterProfile> | null;
+    // Logs are uploaded after the raid, often once the players have logged out: they are refreshed on their own.
+    if (profile.api.warcraftLogs && ctx.warcraftLogs && stored && warcraftLogsStale(stored)) {
+      const logs = await fetchWarcraftLogs(ctx, profile, character);
+      if (logs.data) {
+        stored = { ...stored, warcraftLogs: logs.data, missing: { ...stored.missing } };
+        delete stored.missing!.warcraftLogs;
+        stored.raids = raidsFromLogs(profile, stored);
+      }
+    }
     const updated = await prisma.character.update({
       where: { id: characterId },
-      // The stored profile keeps the gear-based item level for versions whose summary has none.
-      data: { ...summaryFields(profile, summary, (character.profile ?? undefined) as CharacterProfile | undefined), lastSyncedAt: new Date(), syncError: null },
+      data: {
+        // The stored profile keeps the gear-based item level for versions whose summary has none.
+        ...summaryFields(profile, summary, (stored ?? undefined) as CharacterProfile | undefined),
+        ...(stored !== character.profile ? { profile: JSON.parse(JSON.stringify(stored)) as Prisma.InputJsonValue } : {}),
+        lastSyncedAt: new Date(),
+        syncError: null,
+      },
     });
     // A new week starts with nothing done, even for characters that have not logged in.
-    await recordWeek(ctx, updated, character.profile as Partial<CharacterProfile> | null);
+    await recordWeek(ctx, updated, stored);
     return "unchanged";
   }
 
@@ -260,6 +311,14 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
       // Best effort: Blizzard's data still covers the rating and weekly bests. Unknown characters are not retried.
       details.missing.raiderIo = error instanceof RaiderIoError ? (error.notFound ? "404" : String(error.status)) : "error";
     }
+  }
+  if (profile.api.warcraftLogs && ctx.warcraftLogs) {
+    const previous = (character.profile as Partial<CharacterProfile> | null)?.warcraftLogs;
+    const logs = await fetchWarcraftLogs(ctx, profile, character);
+    // A failed request keeps the kills already known rather than wiping the raid progress.
+    details.warcraftLogs = logs.data ?? previous;
+    if (logs.missing) details.missing.warcraftLogs = logs.missing;
+    details.raids = raidsFromLogs(profile, details);
   }
   await enrichProfile(ctx, { version: character.gameVersion, region: character.region }, details);
   const { summary: _summary, ...stored } = details;
