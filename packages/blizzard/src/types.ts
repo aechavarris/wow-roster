@@ -325,6 +325,43 @@ export interface WarcraftLogsProfile {
 }
 
 /** Everything fetched in one character sync; endpoints the game version lacks stay undefined. */
+/** An item returned by the Blizzard item search or item detail, for the BiS item picker. */
+export interface ItemResult {
+  id: number;
+  name: LocalizedText;
+  /** Blizzard quality type (POOR…LEGENDARY). */
+  quality?: string;
+  /** Item level. */
+  itemLevel?: number;
+  requiredLevel?: number;
+  /** Blizzard `inventory_type.type` enum (HEAD, TRINKET, WEAPONMAINHAND…), mapped to a BiS slot by @wow/config. */
+  inventoryType?: string;
+  /** Media id for the icon lookup (equals the item id for items). */
+  mediaId?: number;
+}
+
+/** A dungeon or raid in the Blizzard journal (the in-game Adventure Guide), the source index for BiS zones. */
+export interface JournalInstanceRef {
+  id: number;
+  name?: LocalizedText;
+}
+
+export interface JournalInstance {
+  id: number;
+  name: LocalizedText;
+  /** Category type: "RAID" or "DUNGEON". */
+  type?: string;
+  encounterIds: number[];
+}
+
+/** One journal encounter (boss) with the items it drops, used to map an item to its instance. */
+export interface JournalEncounter {
+  id: number;
+  name: LocalizedText;
+  instanceId?: number;
+  itemIds: number[];
+}
+
 export interface CharacterProfile {
   summary: CharacterSummary;
   equipment?: EquippedItem[];

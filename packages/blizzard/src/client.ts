@@ -6,6 +6,11 @@ import {
   normalizeGuild,
   normalizeGuildRoster,
   normalizeIcon,
+  normalizeItem,
+  normalizeItemSearch,
+  normalizeJournalEncounter,
+  normalizeJournalIndex,
+  normalizeJournalInstance,
   normalizeMedia,
   normalizeMythicPlus,
   normalizeMythicPlusSeason,
@@ -25,6 +30,10 @@ import type {
   CharacterSummary,
   GuildInfo,
   GuildRosterMember,
+  ItemResult,
+  JournalEncounter,
+  JournalInstance,
+  JournalInstanceRef,
   TalentTreeLayout,
 } from "./types";
 
@@ -249,6 +258,76 @@ export class BlizzardClient {
       ]),
     );
     return normalizeTalentTree(Object.fromEntries(entries));
+  }
+
+  /**
+   * Searches the version's item database for the BiS picker. `query` matches the item name in the client locale;
+   * `minLevel`/`maxLevel` bound the required level (the 10-level bracket the UI defaults to). Items are returned
+   * highest item level first. Returns the page's items and the total page count for simple paging.
+   */
+  async searchItems(opts: {
+    query?: string;
+    minLevel?: number;
+    maxLevel?: number;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ items: ItemResult[]; page: number; pageCount: number }> {
+    const params = new URLSearchParams();
+    params.set("_page", String(opts.page ?? 1));
+    if (opts.pageSize) params.set("_pageSize", String(opts.pageSize));
+    params.set("orderby", "level:desc");
+    if (opts.query) {
+      const blizzardLocale = BLIZZARD_LOCALES[this.options.locale ?? "en"] ?? "en_US";
+      params.set(`name.${blizzardLocale}`, opts.query);
+    }
+    if (opts.minLevel !== undefined || opts.maxLevel !== undefined) {
+      params.set("required_level", `[${opts.minLevel ?? 0},${opts.maxLevel ?? 999}]`);
+    }
+    // No locale so search results carry every language for the stored name.
+    const raw = await this.request<{ page?: number; pageCount?: number }>(`/data/wow/search/item?${params.toString()}`, {
+      namespace: "static",
+      locale: null,
+    });
+    return {
+      items: normalizeItemSearch(raw),
+      page: typeof raw.page === "number" ? raw.page : (opts.page ?? 1),
+      pageCount: typeof raw.pageCount === "number" ? raw.pageCount : 1,
+    };
+  }
+
+  /** One item's details for the BiS picker; undefined when the version's API does not know it. */
+  async getItem(itemId: number): Promise<ItemResult | undefined> {
+    try {
+      return normalizeItem(await this.request(`/data/wow/item/${itemId}`, { namespace: "static", locale: null }));
+    } catch (error) {
+      if (error instanceof BlizzardApiError && error.notFound) return undefined;
+      throw error;
+    }
+  }
+
+  /** Every raid and dungeon in the journal (Adventure Guide); the roots of the BiS source index. */
+  async getJournalInstances(): Promise<JournalInstanceRef[]> {
+    return normalizeJournalIndex(await this.request("/data/wow/journal-instance/index", { namespace: "static", locale: null }));
+  }
+
+  /** One journal instance with its encounter ids. */
+  async getJournalInstance(id: number): Promise<JournalInstance | undefined> {
+    try {
+      return normalizeJournalInstance(await this.request(`/data/wow/journal-instance/${id}`, { namespace: "static", locale: null }));
+    } catch (error) {
+      if (error instanceof BlizzardApiError && error.notFound) return undefined;
+      throw error;
+    }
+  }
+
+  /** One journal encounter (boss) with the items it drops. */
+  async getJournalEncounter(id: number): Promise<JournalEncounter | undefined> {
+    try {
+      return normalizeJournalEncounter(await this.request(`/data/wow/journal-encounter/${id}`, { namespace: "static", locale: null }));
+    } catch (error) {
+      if (error instanceof BlizzardApiError && error.notFound) return undefined;
+      throw error;
+    }
   }
 
   /** Icon URL for an item, spell or profession; undefined when the game version has no media for it. */

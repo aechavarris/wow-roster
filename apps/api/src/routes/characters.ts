@@ -1,8 +1,9 @@
-import { REGIONS, blizzardSlug } from "@wow/config";
-import { gameVersion, getTalentTree, nameKey, syncCharacter } from "@wow/core";
+import { REGIONS, blizzardSlug, slotForInventoryType } from "@wow/config";
+import { gameVersion, getBisSourceIndex, getIcons, getTalentTree, lookupBisSource, nameKey, syncCharacter, warmBisSourceIndex } from "@wow/core";
 import { Prisma } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { resolveBisList } from "../bis";
 import type { AppDeps } from "../deps";
 import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from "../errors";
 
@@ -65,6 +66,62 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     if (!layout) throw notFound("talent_tree_not_found");
     reply.header("Cache-Control", "public, max-age=86400");
     return { layout };
+  });
+
+  /**
+   * Item search for the BiS picker: matches `q` in the item name and bounds the required level to the
+   * [minLevel, maxLevel] bracket the UI defaults to. Hits the version's Blizzard API, so it needs a login (like
+   * building a talent tree). Each result carries its BiS slot, icon and, when the journal index is warm, its zone.
+   */
+  app.get("/items/search", async (request) => {
+    if (!request.user) throw unauthorized();
+    const q = z
+      .object({
+        version,
+        region: z.enum(REGIONS),
+        q: z.string().trim().max(60).optional(),
+        minLevel: z.coerce.number().int().min(0).max(999).optional(),
+        maxLevel: z.coerce.number().int().min(0).max(999).optional(),
+        page: z.coerce.number().int().min(1).max(50).default(1),
+      })
+      .parse(request.query);
+    // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
+    const client = core.blizzard(q.version, q.region);
+    const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, page: q.page, pageSize: 24 });
+    const target = { version: q.version, region: q.region };
+    const [icons, index] = await Promise.all([
+      getIcons(core, target, "item", result.items.map((i) => i.id)).catch(() => new Map<number, string>()),
+      getBisSourceIndex(core, target, { fetchIfMissing: false }),
+    ]);
+    // Warm the zone index in the background so a second search returns sources.
+    if (!index) warmBisSourceIndex(core, target);
+    const items = result.items.map((i) => ({
+      id: i.id,
+      name: i.name,
+      slot: slotForInventoryType(i.inventoryType),
+      quality: i.quality ?? null,
+      itemLevel: i.itemLevel ?? null,
+      requiredLevel: i.requiredLevel ?? null,
+      icon: icons.get(i.id) ?? null,
+      source: lookupBisSource(index, i.id) ?? null,
+    }));
+    return { items, page: result.page, pageCount: result.pageCount };
+  });
+
+  /**
+   * The owner keeps a best-in-slot wishlist on their character. The whole list is replaced; items without a
+   * source get their drop zone filled from the cached journal index.
+   */
+  app.put("/characters/:id/bis", async (request) => {
+    if (!request.user) throw unauthorized();
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ bis: z.unknown() }).parse(request.body);
+    const character = await prisma.character.findUnique({ where: { id } });
+    if (!character) throw notFound("character_not_found");
+    if (character.ownerId !== request.user.id) throw forbidden();
+    const list = await resolveBisList(core, { version: character.gameVersion, region: character.region }, body.bis);
+    await prisma.character.update({ where: { id }, data: { bis: list.length > 0 ? list : Prisma.DbNull } });
+    return { character: serialize((await detail(id))!) };
   });
 
   /**

@@ -13,9 +13,10 @@ import {
   weekStart,
   type WeekActivity,
 } from "@wow/core";
-import type { User } from "@wow/db";
+import { Prisma, type User } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { resolveBisList } from "../bis";
 import type { AppDeps } from "../deps";
 import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from "../errors";
 import { atLeast, loadVisibleGuild, requireGuildRole, type ViewerRole } from "../permissions";
@@ -709,6 +710,61 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         : []),
     ]);
     return { approved: true };
+  });
+
+  /**
+   * One roster entry's detail, for the character/planned details view. Visible to anyone who sees the roster;
+   * planned entries carry their BiS list here (real ones keep theirs on the Character). `canEdit` tells the UI
+   * whether the viewer (the entry's player, or an officer) may change the BiS list.
+   */
+  app.get("/guilds/:id/roster/:entryId", async (request) => {
+    const { id, entryId } = z.object({ id: z.string(), entryId: z.string() }).parse(request.params);
+    const { guild, role } = await loadVisibleGuild(prisma, id, request.user);
+    const entry = await prisma.rosterEntry.findFirst({
+      where: { id: entryId, guildId: id },
+      include: { character: { select: { id: true, gameVersion: true, region: true, realm: true, name: true, ownerId: true, bis: true } } },
+    });
+    if (!entry) throw notFound("roster_entry_not_found");
+    const officer = atLeast(role, "OFFICER");
+    const ownsEntry = request.user !== null && (entry.userId === request.user.id || entry.character?.ownerId === request.user.id);
+    return {
+      entry: {
+        id: entry.id,
+        gameVersion: guild.gameVersion,
+        region: guild.region,
+        pending: entry.pending,
+        planned: entry.characterId === null,
+        plannedName: entry.plannedName,
+        plannedClassId: entry.plannedClassId,
+        plannedSpec: entry.plannedSpec,
+        playerName: entry.playerName,
+        note: entry.note,
+        // Planned entries keep the list on the entry; real ones on their Character.
+        bis: (entry.characterId ? entry.character?.bis : entry.bis) ?? null,
+        character: entry.character
+          ? { version: entry.character.gameVersion, region: entry.character.region, realm: entry.character.realm, name: entry.character.name }
+          : null,
+        canEdit: officer || ownsEntry,
+      },
+    };
+  });
+
+  /**
+   * Best-in-slot wishlist of a planned entry (real entries keep theirs on the Character via
+   * PUT /characters/:id/bis). Set by the entry's own player or an officer.
+   */
+  app.put("/guilds/:id/roster/:entryId/bis", async (request) => {
+    const { id, entryId } = z.object({ id: z.string(), entryId: z.string() }).parse(request.params);
+    const { guild, role } = await requireGuildRole(prisma, id, request.user, "MEMBER");
+    const entry = await prisma.rosterEntry.findFirst({ where: { id: entryId, guildId: id } });
+    if (!entry) throw notFound("roster_entry_not_found");
+    if (entry.pending) throw new HttpError(400, "entry_pending");
+    if (entry.characterId) throw new HttpError(400, "bis_on_character");
+    if (!atLeast(role, "OFFICER") && entry.userId !== request.user!.id) throw forbidden();
+    const body = z.object({ bis: z.unknown() }).parse(request.body);
+    const list = await resolveBisList(core, { version: guild.gameVersion, region: guild.region }, body.bis);
+    const entryData: Prisma.RosterEntryUpdateInput = { bis: list.length > 0 ? list : Prisma.DbNull };
+    return { entry: await prisma.rosterEntry.update({ where: { id: entryId }, data: entryData }) };
   });
 
   app.post("/guilds/:id/sync", async (request) => {

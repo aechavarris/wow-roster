@@ -290,6 +290,56 @@ describe("BlizzardClient endpoints", () => {
   });
 });
 
+describe("BiS item search and journal", () => {
+  const itemData = (over: Record<string, unknown> = {}) => ({
+    id: 19019,
+    name: { en_US: "Thunderfury", es_ES: "Vengatormentas" },
+    quality: { type: "LEGENDARY" },
+    level: 80,
+    required_level: 60,
+    inventory_type: { type: "WEAPONMAINHAND" },
+    media: { id: 19019 },
+    ...over,
+  });
+
+  it("searches items in a required-level bracket, newest item level first, keeping every locale", async () => {
+    const { impl, apiCalls } = fakeFetch({
+      "/data/wow/search/item": { body: { page: 1, pageCount: 3, results: [{ data: itemData() }, { data: { id: 0 } }] } },
+    });
+    const result = await clientFor(impl).searchItems({ query: "thunder", minLevel: 60, maxLevel: 69, page: 1 });
+    expect(result).toEqual({
+      items: [{ id: 19019, name: { en: "Thunderfury", es: "Vengatormentas" }, quality: "LEGENDARY", itemLevel: 80, requiredLevel: 60, inventoryType: "WEAPONMAINHAND", mediaId: 19019 }],
+      page: 1,
+      pageCount: 3,
+    });
+    const query = apiCalls()[0]!.query;
+    expect(query.get("namespace")).toBe("static-eu");
+    expect(query.get("orderby")).toBe("level:desc");
+    expect(query.get("required_level")).toBe("[60,69]");
+    expect(query.get("name.en_US")).toBe("thunder");
+    expect(query.has("locale")).toBe(false);
+  });
+
+  it("reads one item's details and treats a missing item as undefined", async () => {
+    const { impl } = fakeFetch({ "/data/wow/item/19019": { body: itemData() } });
+    expect(await clientFor(impl).getItem(19019)).toMatchObject({ id: 19019, inventoryType: "WEAPONMAINHAND", requiredLevel: 60 });
+    const { impl: missing } = fakeFetch({ "/data/wow/item/1": { status: 404 } });
+    expect(await clientFor(missing).getItem(1)).toBeUndefined();
+  });
+
+  it("reads the journal index, an instance and an encounter's loot", async () => {
+    const { impl } = fakeFetch({
+      "/data/wow/journal-instance/index": { body: { instances: [{ id: 741, name: { en_US: "Molten Core" } }] } },
+      "/data/wow/journal-instance/741": { body: { id: 741, name: { en_US: "Molten Core" }, category: { type: "RAID" }, encounters: [{ id: 332 }] } },
+      "/data/wow/journal-encounter/332": { body: { id: 332, name: { en_US: "Ragnaros" }, instance: { id: 741 }, items: [{ item: { id: 17182 } }, { item: { id: 18563 } }] } },
+    });
+    const client = clientFor(impl);
+    expect(await client.getJournalInstances()).toEqual([{ id: 741, name: { en: "Molten Core" } }]);
+    expect(await client.getJournalInstance(741)).toEqual({ id: 741, name: { en: "Molten Core" }, type: "RAID", encounterIds: [332] });
+    expect(await client.getJournalEncounter(332)).toEqual({ id: 332, name: { en: "Ragnaros" }, instanceId: 741, itemIds: [17182, 18563] });
+  });
+});
+
 describe("Battle.net OAuth", () => {
   const config = { clientId: "id", clientSecret: "secret", redirectUri: "https://roster.example/api/auth/callback" };
 
