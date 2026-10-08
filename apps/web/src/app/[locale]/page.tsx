@@ -7,6 +7,7 @@ import { MyCharacters } from "@/components/MyCharacters";
 import { PublishedRosters } from "@/components/PublishedRosters";
 import { VersionBadge } from "@/components/VersionSelect";
 import { Link } from "@/i18n/routing";
+import { localize } from "@wow/config";
 import { apiGet, getConfig, getMe } from "@/lib/api";
 import { versionOf } from "@/lib/game";
 import type { PublishedRoster } from "@/lib/types";
@@ -15,6 +16,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
+  const tInfo = await getTranslations("versionInfo");
   const [config, me] = await Promise.all([getConfig(), getMe()]);
   // Published rosters are only listed for signed-in users.
   const published = me.user ? ((await apiGet<{ rosters: PublishedRoster[] }>("/rosters/published"))?.rosters ?? []) : [];
@@ -22,6 +24,18 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const withApi = config.versions
     .filter((v) => v.apiAvailable)
     .sort((a, b) => Number(b.id === config.defaultVersion) - Number(a.id === config.defaultVersion));
+  // Versions still being revealed (Forever) have an overview page with what is known so far.
+  const overviews = (
+    <>
+      {config.versions
+        .filter((v) => v.timeline.length > 0)
+        .map((v) => (
+          <Link key={v.id} href={`/versions/${v.id}`} className="card block font-medium hover:border-accent hover:text-accent">
+            {tInfo("homeLink", { name: localize(v.name, locale) })} →
+          </Link>
+        ))}
+    </>
+  );
 
   if (!me.user) {
     return (
@@ -31,6 +45,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <div className="mt-8">
           {config.loginEnabled ? <LoginButton className="btn btn-primary px-6 py-2 text-base" /> : <p className="text-warning">{t("loginDisabled")}</p>}
         </div>
+        <div className="mt-8 text-left">{overviews}</div>
         <ul className="mt-12 grid gap-4 text-left sm:grid-cols-3">
           {(["roster", "armory", "sheet"] as const).map((key) => (
             <li key={key} className="card">
@@ -74,6 +89,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <MyCharacters characters={me.characters ?? []} config={config} />
       </section>
       <aside className="space-y-6">
+        {overviews}
         <CreateRosterForm regions={config.regions} defaultRegion={config.defaultRegion} versions={config.versions} defaultVersion={config.defaultVersion} />
         <GuildRegisterForm regions={config.regions} defaultRegion={config.defaultRegion} versions={withApi} />
         <CharacterSearch regions={config.regions} defaultRegion={config.defaultRegion} versions={withApi} />

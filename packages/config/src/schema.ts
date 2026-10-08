@@ -43,6 +43,12 @@ export const raidSizeSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * How sure a piece of game data is, for versions still being revealed (Forever): stated by Blizzard, reported by
+ * press and guide sites, read from beta files, or a guess from past patterns. Pages show it next to the data.
+ */
+export const sourceSchema = z.enum(["official", "reported", "datamined", "estimate"]);
+
 export const raidSchema = z.object({
   key: z.string(),
   name: localizedSchema,
@@ -55,6 +61,32 @@ export const raidSchema = z.object({
   warcraftLogsZone: z.number().int().positive().optional(),
   /** Encounter ids of the raid, where its Warcraft Logs zone holds two raids (TBC "BT / Hyjal"…). */
   warcraftLogsEncounters: z.array(z.number().int().positive()).optional(),
+  /** Confidence in the raid's details (size, boss count), where they are not final yet. */
+  source: sourceSchema.optional(),
+  note: z.string().optional(),
+});
+
+/** A dungeon of the version, listed on its overview page; levels are the suggested range. */
+export const dungeonSchema = z.object({
+  key: z.string(),
+  name: localizedSchema,
+  minLevel: z.number().int().positive().optional(),
+  maxLevel: z.number().int().positive().optional(),
+  source: sourceSchema.optional(),
+  note: z.string().optional(),
+});
+
+/**
+ * A dated milestone of the version (launch, raid unlocks…). `date`/`endDate` are ISO days when known; otherwise
+ * `period` says what was announced ("Winter", "Spring 2027").
+ */
+export const timelineEventSchema = z.object({
+  key: z.string(),
+  name: localizedSchema,
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  period: localizedSchema.optional(),
+  source: sourceSchema,
   note: z.string().optional(),
 });
 
@@ -100,6 +132,8 @@ export const apiSchema = z.object({
    * audit where the API has none. Raids map to the site's zones through `raids[].warcraftLogsZone`.
    */
   warcraftLogs: z.object({ host: z.string() }).optional(),
+  /** Set by the API stand-in (testing only): the version whose API and logs serve this one. Never in profile files. */
+  standIn: z.string().optional(),
 });
 
 /**
@@ -152,6 +186,9 @@ export const buffSchema = z.object({
 export type Buff = z.infer<typeof buffSchema>;
 export type Requirement = z.infer<typeof requirementSchema>;
 export type Ruleset = z.infer<typeof rulesetSchema>;
+export type Dungeon = z.infer<typeof dungeonSchema>;
+export type TimelineEvent = z.infer<typeof timelineEventSchema>;
+export type DataSource = z.infer<typeof sourceSchema>;
 export type StatEntry = z.infer<typeof statEntrySchema>;
 export type StatSection = z.infer<typeof statSectionSchema>;
 
@@ -198,6 +235,10 @@ export const gameProfileSchema = z.object({
   classes: z.array(classSchema),
   raidSizes: z.array(raidSizeSchema),
   raids: z.array(raidSchema),
+  /** Dungeons shown on the version's overview page (only where it has one, as Forever before launch). */
+  dungeons: z.array(dungeonSchema).default([]),
+  /** Milestones shown on the version's overview page, in order. */
+  timeline: z.array(timelineEventSchema).default([]),
   /** Rulesets offered instead of a free-text realm where the version has no realms; disabled ones are not offered yet. */
   rulesets: z.array(rulesetSchema).default([]),
   rosterStatuses: z.array(rosterStatusSchema),

@@ -1,9 +1,9 @@
-import { DEFAULT_LOCALE, REGIONS, SUPPORTED_LOCALES, type GameProfile } from "@wow/config";
+import { DEFAULT_LOCALE, REGIONS, SUPPORTED_LOCALES, type GameProfile, type GameVersions } from "@wow/config";
 import type { FastifyInstance } from "fastify";
 import type { AppDeps } from "../deps";
 
 /** What the web app needs from a game version's rules (no API namespaces). */
-const publicVersion = (v: GameProfile) => ({
+const publicVersion = (v: GameProfile, all: GameVersions) => ({
   id: v.id,
   label: v.label,
   name: v.name,
@@ -28,11 +28,16 @@ const publicVersion = (v: GameProfile) => ({
   hasRealms: v.api.hasRealms,
   /** Offered instead of a free-text realm where the version has no realms (Forever). */
   rulesets: v.rulesets.filter((r) => r.enabled),
+  /** Version whose API stands in for this one while it has none (testing only), or null. */
+  apiStandIn: v.api.standIn ? { id: v.api.standIn, name: all.byId.get(v.api.standIn)?.name ?? { en: v.api.standIn } } : null,
   wowheadDomain: v.wowheadDomain,
   roles: v.roles,
   classes: v.classes,
   raidSizes: v.raidSizes,
-  raids: v.raids,
+  // Stand-in raids only map the source version's logs; they are not this version's content.
+  raids: v.raids.filter((r) => !r.key.startsWith("standin-")),
+  dungeons: v.dungeons,
+  timeline: v.timeline,
   rosterStatuses: v.rosterStatuses,
   statPanel: v.statPanel,
   buffs: v.buffs,
@@ -59,7 +64,7 @@ export async function metaRoutes(app: FastifyInstance, { versions, env, prisma }
 
   /** Public game configuration the web app renders from (no secrets). */
   app.get("/config", async () => ({
-    versions: versions.list.map(publicVersion),
+    versions: versions.list.map((v) => publicVersion(v, versions)),
     defaultVersion: versions.defaultId,
     regions: REGIONS,
     defaultRegion: env.BLIZZARD_REGION,
