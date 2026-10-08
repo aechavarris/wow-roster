@@ -390,7 +390,9 @@
     "confirm": "Change this roster's game version?",
     "changed": "Version changed.",
     "save": "Change version",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "standIn": "Testing with {source} data",
+    "standInHint": "This version has no public API yet: for testing, its real characters are read from {source} (Blizzard API and Warcraft Logs). It goes away once Blizzard publishes its own."
   },
   "pending": {
     "titleOwner": "{count, plural, one {# pending request} other {# pending requests}}",
@@ -535,5 +537,49 @@
     "saved": "Changes saved",
     "deleted": "Deleted",
     "done": "Done"
+  },
+  "versionInfo": {
+    "back": "Home",
+    "intro": "What is known about this version and how the app uses it. Each fact says where it comes from; it is updated as Blizzard publishes more.",
+    "apiTitle": "Character data",
+    "api": {
+      "available": "Blizzard's API is available: rosters can hold real characters.",
+      "missing": "Blizzard has not published this version's API yet: rosters only hold planned characters.",
+      "standIn": "Blizzard has not published this version's API yet. For testing, real characters are read from {source} (Blizzard API and Warcraft Logs), with this version's rules."
+    },
+    "apiNext": "When Blizzard publishes the API (or Warcraft Logs supports it), enabling it is a configuration change: planned rosters can then be linked to the real characters.",
+    "timeline": "Timeline",
+    "raids": "Raids",
+    "dungeons": "Dungeons",
+    "rules": "Rules",
+    "maxLevel": "Level cap",
+    "raidSizes": "Raid sizes",
+    "rulesets": "Rulesets",
+    "classes": "Classes",
+    "players": "{count} players",
+    "bosses": "{count, plural, one {# boss} other {# bosses}}",
+    "levels": "Lvl {min}-{max}",
+    "unconfirmed": "Unconfirmed",
+    "source": {
+      "official": "Official",
+      "reported": "Reported",
+      "datamined": "Beta data",
+      "estimate": "Estimate"
+    },
+    "sourceHint": {
+      "official": "Announced by Blizzard.",
+      "reported": "Published by press or guide sites citing Blizzard; may change.",
+      "datamined": "Read from beta files; may change before launch.",
+      "estimate": "A guess based on earlier versions."
+    },
+    "inApp": "What you can do in the app already",
+    "inAppItems": {
+      "plan": "Plan the roster with characters that do not exist yet: class, spec, off-spec (dual spec from level 40) and player.",
+      "composition": "See the raid composition for 10 and 20 players with Forever's buffs (many become baseline) and who could switch role with their off-spec.",
+      "export": "Copy the composition as text for Discord or notes, without relying on addons.",
+      "later": "Once there is an API: raid progress, weekly audit and character sheet, as in the other versions."
+    },
+    "sourcesLegend": "Official: announced by Blizzard. Reported: guides and press citing Blizzard. Beta data: read from the client files; may change.",
+    "homeLink": "What we know about {name}"
   }
 }

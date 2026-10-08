@@ -24,10 +24,11 @@
       "key": "warrior",
       "color": "#C69B6D",
       "name": {"en": "Warrior", "es": "Guerrero"},
+      "summaryStats": ["hit", "crit", "attack-power"],
       "specs": [
         {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Arms"]},
         {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Fury"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"]}
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"]}
       ]
     },
     {
@@ -35,9 +36,10 @@
       "key": "paladin",
       "color": "#F48CBA",
       "name": {"en": "Paladin", "es": "Paladín"},
+      "summaryStats": ["hit", "crit", "attack-power"],
       "specs": [
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"]},
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"], "summaryStats": ["bonus-healing", "crit", "mana-regen"]},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"]},
         {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Retribution"]}
       ]
     },
@@ -46,6 +48,7 @@
       "key": "hunter",
       "color": "#AAD372",
       "name": {"en": "Hunter", "es": "Cazador"},
+      "summaryStats": ["hit", "crit", "ranged-attack-power"],
       "specs": [
         {
           "key": "beast-mastery",
@@ -63,6 +66,7 @@
       "key": "rogue",
       "color": "#FFF468",
       "name": {"en": "Rogue", "es": "Pícaro"},
+      "summaryStats": ["hit", "crit", "attack-power"],
       "specs": [
         {
           "key": "assassination",
@@ -80,10 +84,11 @@
       "key": "priest",
       "color": "#FFFFFF",
       "name": {"en": "Priest", "es": "Sacerdote"},
+      "summaryStats": ["bonus-healing", "crit", "mana-regen"],
       "specs": [
         {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Discipline"]},
         {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"]},
-        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Shadow"]}
+        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Shadow"], "summaryStats": ["hit", "crit", "spell-power"]}
       ]
     },
     {
@@ -91,9 +96,10 @@
       "key": "shaman",
       "color": "#0070DD",
       "name": {"en": "Shaman", "es": "Chamán"},
+      "summaryStats": ["bonus-healing", "crit", "mana-regen"],
       "specs": [
-        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Elemental"]},
-        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Enhancement"]},
+        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Elemental"], "summaryStats": ["hit", "crit", "spell-power"]},
+        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Enhancement"], "summaryStats": ["hit", "crit", "attack-power"]},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
@@ -108,6 +114,7 @@
       "key": "mage",
       "color": "#3FC7EB",
       "name": {"en": "Mage", "es": "Mago"},
+      "summaryStats": ["hit", "crit", "spell-power"],
       "specs": [
         {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Arcane"]},
         {"key": "fire", "name": {"en": "Fire", "es": "Fuego"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Fire"]},
@@ -119,6 +126,7 @@
       "key": "warlock",
       "color": "#8788EE",
       "name": {"en": "Warlock", "es": "Brujo"},
+      "summaryStats": ["hit", "crit", "spell-power"],
       "specs": [
         {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Affliction"]},
         {"key": "demonology", "name": {"en": "Demonology", "es": "Demonología"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Demonology"]},
@@ -130,14 +138,16 @@
       "key": "druid",
       "color": "#FF7C0A",
       "name": {"en": "Druid", "es": "Druida"},
+      "summaryStats": ["bonus-healing", "crit", "mana-regen"],
       "specs": [
-        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Balance"]},
+        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Balance"], "summaryStats": ["hit", "crit", "spell-power"]},
         {
           "key": "feral",
           "name": {"en": "Feral Combat", "es": "Combate feral"},
           "roles": ["mdps", "tank"],
           "blizzardIds": [],
-          "apiNames": ["Feral Combat", "Feral"]
+          "apiNames": ["Feral Combat", "Feral"],
+          "summaryStats": ["hit", "crit", "attack-power", "dodge"]
         },
         {
           "key": "restoration",
@@ -155,14 +165,62 @@
     {"size": 40, "groupSize": 5, "enabled": false, "note": "Paused: no official text confirms 40-player raids yet."}
   ],
   "raids": [
-    {"key": "barrow-deeps", "name": {"en": "Barrow Deeps", "es": "Barrow Deeps"}, "size": 10, "enabled": true},
-    {"key": "hyjal-summit", "name": {"en": "Hyjal Summit", "es": "Hyjal Summit"}, "size": 20, "enabled": true},
+    {
+      "key": "barrow-deeps",
+      "name": {"en": "Barrow Deeps", "es": "Barrow Deeps"},
+      "size": 10,
+      "enabled": true,
+      "bossCount": 8,
+      "source": "reported",
+      "note": "Size and unlock date official (BlizzCon 2026); 8 bosses per guides citing the Legacy system, names not final."
+    },
+    {
+      "key": "hyjal-summit",
+      "name": {"en": "Hyjal Summit", "es": "Hyjal Summit"},
+      "size": 20,
+      "enabled": true,
+      "bossCount": 13,
+      "source": "datamined",
+      "note": "Size and unlock date official; 13 encounters from beta files, Blizzard withholds the encounter journal."
+    },
     {
       "key": "onyxias-lair",
       "name": {"en": "Onyxia's Lair", "es": "Guarida de Onyxia"},
       "size": 40,
       "enabled": false,
-      "note": "Only reported by fan sites citing a roadmap image."
+      "bossCount": 1,
+      "source": "reported",
+      "note": "Only on a roadmap slide cited by guide sites; no official text confirms 40-player raids."
+    }
+  ],
+  "dungeons": [
+    {"key": "hall-of-thanes", "name": {"en": "Hall of Thanes", "es": "Hall of Thanes"}, "minLevel": 13, "maxLevel": 18, "source": "reported"},
+    {"key": "ruins-of-lordaeron", "name": {"en": "Ruins of Lordaeron", "es": "Ruins of Lordaeron"}, "minLevel": 15, "maxLevel": 20, "source": "reported"},
+    {"key": "excavation-site", "name": {"en": "Excavation Site", "es": "Excavation Site"}, "minLevel": 24, "maxLevel": 29, "source": "reported"},
+    {"key": "city-of-dalaran", "name": {"en": "City of Dalaran", "es": "City of Dalaran"}, "minLevel": 28, "maxLevel": 33, "source": "reported"},
+    {"key": "drowned-city", "name": {"en": "The Drowned City", "es": "The Drowned City"}, "minLevel": 35, "maxLevel": 40, "source": "reported"},
+    {"key": "krol-dok-stronghold", "name": {"en": "Krol'dok Stronghold", "es": "Krol'dok Stronghold"}, "minLevel": 40, "maxLevel": 45, "source": "reported"},
+    {"key": "alcaz-prison", "name": {"en": "Alcaz Prison", "es": "Alcaz Prison"}, "minLevel": 48, "maxLevel": 53, "source": "reported"},
+    {"key": "blackmaw-hold", "name": {"en": "Blackmaw Hold", "es": "Blackmaw Hold"}, "minLevel": 55, "maxLevel": 60, "source": "reported"},
+    {"key": "shapers-terrace", "name": {"en": "Shaper's Terrace", "es": "Shaper's Terrace"}, "minLevel": 58, "maxLevel": 60, "source": "reported"}
+  ],
+  "timeline": [
+    {"key": "beta", "name": {"en": "Beta", "es": "Beta"}, "date": "2026-09-17", "endDate": "2026-10-21", "source": "reported", "note": "Start official; end date from guide sites."},
+    {"key": "name-reservation", "name": {"en": "Early name reservation", "es": "Reserva anticipada de nombres"}, "date": "2026-10-27", "endDate": "2026-11-03", "source": "reported"},
+    {"key": "launch", "name": {"en": "Launch (level 60, rulesets Normal, PvP, RP)", "es": "Lanzamiento (nivel 60, reglas Normal, JcJ, Rol)"}, "date": "2026-11-04", "source": "official"},
+    {"key": "first-raids", "name": {"en": "Barrow Deeps (10) and Hyjal Summit (20) open", "es": "Abren Barrow Deeps (10) y Hyjal Summit (20)"}, "date": "2026-12-09", "source": "official", "note": "10 December in Korea and Taiwan."},
+    {"key": "hardcore", "name": {"en": "Hardcore ruleset", "es": "Reglas Hardcore"}, "period": {"en": "Winter, after launch", "es": "Invierno, tras el lanzamiento"}, "source": "official"},
+    {
+      "key": "spring-2027",
+      "name": {"en": "Two raids (10 and 20), two dungeons, new zone, legendary questline", "es": "Dos raids (10 y 20), dos mazmorras, zona nueva, misión legendaria"},
+      "period": {"en": "Spring 2027", "es": "Primavera de 2027"},
+      "source": "reported"
+    },
+    {
+      "key": "summer-2027",
+      "name": {"en": "Revamped classic raid, a new raid, two dungeons", "es": "Raid clásica renovada, una raid nueva, dos mazmorras"},
+      "period": {"en": "Summer 2027", "es": "Verano de 2027"},
+      "source": "reported"
     }
   ],
   "rulesets": [
@@ -193,32 +251,34 @@
       ]
     },
     {
-      "key": "melee",
-      "name": {"en": "Melee", "es": "Cuerpo a cuerpo"},
+      "key": "offense",
+      "name": {"en": "Attack", "es": "Ataque"},
       "entries": [
-        {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["attack_power"]},
-        {"key": "melee-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["melee_hit"], "format": "percent"},
-        {"key": "melee-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["melee_crit"], "format": "percent"}
-      ]
-    },
-    {
-      "key": "ranged",
-      "name": {"en": "Ranged", "es": "A distancia"},
-      "entries": [
-        {"key": "ranged-attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "stats": ["ranged_attack_power"]},
-        {"key": "ranged-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["ranged_hit"], "format": "percent"},
-        {"key": "ranged-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["ranged_crit"], "format": "percent"}
+        {"key": "attack-power", "label": {"en": "Attack Power", "es": "Poder de ataque"}, "short": {"en": "AP", "es": "PA"}, "stats": ["attack_power"]},
+        {"key": "ranged-attack-power", "label": {"en": "Ranged Attack Power", "es": "Poder de ataque a distancia"}, "short": {"en": "Ranged AP", "es": "PA dist."}, "stats": ["ranged_attack_power"]},
+        {
+          "key": "hit",
+          "label": {"en": "Hit Chance", "es": "Prob. de golpe"},
+          "short": {"en": "Hit", "es": "Golpe"},
+          "stats": ["hit", "melee_hit", "ranged_hit", "spell_hit"],
+          "format": "percent"
+        },
+        {
+          "key": "crit",
+          "label": {"en": "Crit Chance", "es": "Prob. de crítico"},
+          "short": {"en": "Crit", "es": "Crít."},
+          "stats": ["crit", "melee_crit", "ranged_crit", "spell_crit"],
+          "format": "percent"
+        }
       ]
     },
     {
       "key": "spell",
       "name": {"en": "Spell", "es": "Hechizos"},
       "entries": [
-        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "stats": ["spell_power"]},
-        {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "stats": ["bonus_healing"]},
-        {"key": "spell-hit", "label": {"en": "Hit Chance", "es": "Prob. de golpe"}, "stats": ["spell_hit"], "format": "percent"},
-        {"key": "spell-crit", "label": {"en": "Crit Chance", "es": "Prob. de crítico"}, "stats": ["spell_crit"], "format": "percent"},
-        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "stats": ["mana_regen"]}
+        {"key": "spell-power", "label": {"en": "Bonus Damage", "es": "Bonificación de daño"}, "short": {"en": "Spell dmg", "es": "Daño hech."}, "stats": ["spell_power"]},
+        {"key": "bonus-healing", "label": {"en": "Bonus Healing", "es": "Bonificación de sanación"}, "short": {"en": "Healing", "es": "Sanación"}, "stats": ["bonus_healing"]},
+        {"key": "mana-regen", "label": {"en": "Mana Regen", "es": "Regeneración de maná"}, "short": {"en": "Mana regen", "es": "Reg. maná"}, "stats": ["mana_regen"]}
       ]
     },
     {

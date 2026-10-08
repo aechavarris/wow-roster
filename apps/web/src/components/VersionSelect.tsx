@@ -45,5 +45,17 @@ export function VersionSelect({ id, versions, defaultValue, value, onChange, req
 /** Small badge with the version's short name. */
 export function VersionBadge({ version }: { version: GameVersion }) {
   const locale = useLocale();
-  return <span className="badge border border-accent/40 text-accent">{localize(version.name, locale)}</span>;
+  const t = useTranslations("versions");
+  const badge = <span className="badge border border-accent/40 text-accent">{localize(version.name, locale)}</span>;
+  if (!version.apiStandIn) return badge;
+  // Test mode: the characters are real, but from another version's API (Forever before its API is public).
+  const source = localize(version.apiStandIn.name, locale);
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {badge}
+      <span className="badge border border-dashed border-warning/60 text-warning" title={t("standInHint", { source })}>
+        {t("standIn", { source })}
+      </span>
+    </span>
+  );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blizzardSlug, enabledRaidSizes, loadGameVersions, resolveProfile, resolveSpec, versionOf } from "./index";
+import { blizzardSlug, enabledRaidSizes, loadGameVersions, resolveProfile, resolveSpec, versionOf, withApiStandIns } from "./index";
 
 describe("resolveProfile", () => {
   it("loads the forever profile with only 10 and 20 player raids enabled", () => {
@@ -158,5 +158,29 @@ describe("details configuration", () => {
     expect(tbc.classes.find((c) => c.key === "rogue")?.summaryStats).toContain("expertise");
     expect(tbc.details.keyReputations).toEqual([967, 989, 990, 1012]);
     expect(tbc.requirements.map((r) => r.key)).toEqual(["mount-hyjal", "black-temple"]);
+  });
+});
+
+describe("withApiStandIns", () => {
+  const versions = () => loadGameVersions("retail");
+
+  it("lets Forever read Classic Era characters while keeping its own rules", () => {
+    const tested = withApiStandIns(versions(), "forever=classic-era");
+    const forever = tested.byId.get("forever")!;
+    const era = tested.byId.get("classic-era")!;
+    expect(forever.api).toMatchObject({ available: true, profileNamespace: era.api.profileNamespace, standIn: "classic-era" });
+    expect(forever.api.warcraftLogs).toEqual(era.api.warcraftLogs);
+    expect(forever.wowheadDomain).toBe(era.wowheadDomain);
+    // Forever's own raids stay; Era's log-mapped raids are only there to read kills.
+    expect(forever.raids.filter((r) => r.enabled).map((r) => r.key)).toEqual(versions().byId.get("forever")!.raids.filter((r) => r.enabled).map((r) => r.key));
+    expect(forever.raids.find((r) => r.key === "standin-naxxramas")).toMatchObject({ enabled: false, warcraftLogsZone: 2006 });
+    expect(forever.classes).toEqual(versions().byId.get("forever")!.classes);
+    expect(tested.list.map((v) => v.id)).toEqual(versions().list.map((v) => v.id));
+  });
+
+  it("does nothing without a setting, never replaces a real API and refuses sources without one", () => {
+    expect(withApiStandIns(versions(), "")).toEqual(versions());
+    expect(withApiStandIns(versions(), "retail=classic-era").byId.get("retail")!.api.standIn).toBeUndefined();
+    expect(() => withApiStandIns(versions(), "forever=nope")).toThrow();
   });
 });

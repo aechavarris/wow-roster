@@ -14,14 +14,15 @@ export function RealmField({
   className = "input",
   label,
 }: {
-  version: Pick<GameVersion, "rulesets">;
+  version: Pick<GameVersion, "rulesets" | "hasRealms">;
   id?: string;
   className?: string;
   /** Accessible name and placeholder when there is no visible label. */
   label?: string;
 }) {
   const locale = useLocale();
-  if (version.rulesets.length === 0) {
+  // A stand-in API (testing Forever with Classic Era characters) has realms even where the game has rulesets.
+  if (version.hasRealms || version.rulesets.length === 0) {
     return <input id={id} name="realm" required className={className} placeholder={label} aria-label={label} />;
   }
   return (

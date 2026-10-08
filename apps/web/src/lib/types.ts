@@ -1,5 +1,7 @@
 import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, RaiderIoProfile, Reputation, StatValue } from "@wow/blizzard";
-import type { Buff, GameClass, GameRole, Localized, RaidSize, Requirement, RosterStatus, StatSection } from "@wow/config";
+import type { Buff, DataSource, Dungeon, GameClass, GameRole, Localized, RaidSize, Requirement, RosterStatus, StatSection, TimelineEvent } from "@wow/config";
+
+export type { DataSource };
 
 /** Shapes returned by the API (see apps/api/src/routes). */
 
@@ -23,13 +25,18 @@ export interface GameVersion {
   /** Attunements tracked by hand, if the version has any. */
   requirements: Requirement[];
   hasRealms: boolean;
-  /** Rulesets offered instead of a free-text realm (Forever); empty where the version has realms. */
+  /** Version whose real characters stand in for this one while it has no API (testing), or null. */
+  apiStandIn: { id: string; name: Localized } | null;
+  /** Rulesets the version has instead of realms (Forever); realm inputs pick one unless the API has realms. */
   rulesets: { key: string; name: Localized }[];
   wowheadDomain: string;
   roles: GameRole[];
   classes: GameClass[];
   raidSizes: RaidSize[];
-  raids: { key: string; name: Localized; size: number; enabled: boolean }[];
+  raids: { key: string; name: Localized; size: number; enabled: boolean; bossCount?: number; source?: DataSource; note?: string }[];
+  /** Dungeons and milestones for the version's overview page (Forever before launch). */
+  dungeons: Dungeon[];
+  timeline: TimelineEvent[];
   rosterStatuses: RosterStatus[];
   statPanel: StatSection[];
   buffs: Buff[];

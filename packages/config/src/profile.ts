@@ -29,6 +29,8 @@ const MERGE_KEYS: Record<string, string> = {
   raidSizes: "size",
   raids: "key",
   rulesets: "key",
+  dungeons: "key",
+  timeline: "key",
   rosterStatuses: "key",
   professions: "key",
   // statPanel is replaced as a whole: a different game version means a different panel.
@@ -104,6 +106,37 @@ export function loadGameVersions(defaultId: string, extra: Record<string, unknow
   const resolvedDefault = ALIASES[defaultId] ?? defaultId;
   if (!byId.has(resolvedDefault)) throw new Error(`Unknown default game version "${defaultId}"`);
   return { list, byId, defaultId: resolvedDefault };
+}
+
+/**
+ * Test mode for versions without a public API (Forever): `spec` ("forever=classic-era,…") makes each target read
+ * real characters from the source version's API and Warcraft Logs, keeping its own rules (classes, buffs, raids…).
+ * The source's log-mapped raids are added disabled so its kills still show as raid progress. A target that has
+ * its own API keeps it, so a forgotten setting cannot hide the real data once it is published.
+ */
+export function withApiStandIns(versions: GameVersions, spec: string | undefined): GameVersions {
+  const pairs = (spec ?? "")
+    .split(",")
+    .map((pair) => pair.split("=").map((s) => s.trim()))
+    .filter((pair): pair is [string, string] => pair.length === 2 && Boolean(pair[0]) && Boolean(pair[1]));
+  if (pairs.length === 0) return versions;
+  const list = versions.list.map((target) => {
+    const sourceId = pairs.find(([targetId]) => targetId === target.id)?.[1];
+    if (!sourceId || target.api.available) return target;
+    const source = versions.byId.get(sourceId);
+    if (!source?.api.available) throw new Error(`API stand-in "${sourceId}" for "${target.id}" is not a version with an API`);
+    return {
+      ...target,
+      api: { ...source.api, standIn: source.id },
+      // Item ids come from the source's game data, so tooltips must too.
+      wowheadDomain: source.wowheadDomain,
+      raids: [
+        ...target.raids,
+        ...source.raids.filter((r) => r.warcraftLogsZone).map((r) => ({ ...r, key: `standin-${r.key}`, enabled: false })),
+      ],
+    };
+  });
+  return { ...versions, list, byId: new Map(list.map((p) => [p.id, p])) };
 }
 
 /** The version with that id, or the default one for unknown or missing ids (older data). */

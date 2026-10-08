@@ -235,6 +235,12 @@ describe("config", () => {
     const rulesets = (id: string) => (body.versions as { id: string; rulesets: { key: string }[] }[]).find((v) => v.id === id)!.rulesets;
     expect(rulesets("forever").map((r) => r.key)).toEqual(["normal", "pvp", "rp"]);
     expect(rulesets("retail")).toEqual([]);
+    // Forever's overview data; no API stand-in unless GAME_API_STAND_IN sets one.
+    const forever = (body.versions as { id: string; apiStandIn: unknown; timeline: { key: string }[]; dungeons: unknown[]; raids: { key: string }[] }[]).find((v) => v.id === "forever")!;
+    expect(forever.apiStandIn).toBeNull();
+    expect(forever.timeline.map((e) => e.key)).toContain("launch");
+    expect(forever.dungeons.length).toBeGreaterThan(0);
+    expect(forever.raids.some((r) => r.key.startsWith("standin-"))).toBe(false);
     // MoP Classic has no /encounters: its raid and dungeon tabs come from the boss kill statistics.
     const endpoints = (id: string) => (body.versions as { id: string; characterEndpoints: string[] }[]).find((v) => v.id === id)!.characterEndpoints;
     expect(endpoints("progression")).toEqual(expect.arrayContaining(["encounterStatistics", "raids", "dungeons"]));
