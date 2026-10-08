@@ -10,7 +10,8 @@
     "dynamicNamespace": "dynamic-{region}",
     "hasRealms": true,
     "characterEndpoints": ["equipment", "specializations", "media", "statistics", "professions", "reputations", "raids", "dungeons", "mythicPlus"],
-    "raiderIo": true
+    "raiderIo": true,
+    "warcraftLogs": { "host": "www.warcraftlogs.com" }
   },
   "hiddenDetails": ["dungeons"],
   "wowheadDomain": "",

@@ -138,7 +138,11 @@ describe("details configuration", () => {
       expect(profile.requirements.filter((r) => r.raid && !raids.has(r.raid)).map((r) => r.key), id).toEqual([]);
       // Raids split out of a shared Warcraft Logs zone need their zone; versions reading logs map every enabled raid.
       expect(profile.raids.filter((r) => r.warcraftLogsEncounters && !r.warcraftLogsZone).map((r) => r.key), id).toEqual([]);
-      if (profile.api.warcraftLogs) {
+      // Only versions that derive raid progress from Warcraft Logs (no /encounters, no statistics) must map every
+      // enabled raid to a zone; versions that read logs only for the Logs history match raids by name instead.
+      const raidProgressFromLogs =
+        profile.api.warcraftLogs && !profile.api.characterEndpoints.includes("raids") && !profile.api.characterEndpoints.includes("encounterStatistics");
+      if (raidProgressFromLogs) {
         expect(profile.raids.filter((r) => r.enabled && !r.warcraftLogsZone).map((r) => r.key), id).toEqual([]);
       }
     }

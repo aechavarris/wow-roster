@@ -72,6 +72,18 @@ describe("persistWarcraftLogsReports", () => {
     ]);
   });
 
+  it("recognises a raid by its zone name when no zone id is mapped (MoP)", async () => {
+    const mop = resolveProfile("progression");
+    const { ctx, reports } = fakeCtx();
+    await persistWarcraftLogsReports(ctx, { id: "c1" }, wcl([
+      { report: "SOO", zoneId: 12345, zoneName: { en: "Siege of Orgrimmar" }, encounterId: 1, name: "Immerseus", killedAt: "2026-10-01T20:00:00.000Z" },
+    ]), mop);
+    const soo = reports[0] as { type: string; zoneName: { en: string }; host: string };
+    expect(soo).toMatchObject({ type: "raid", host: "classic.warcraftlogs.com" });
+    // The zone name comes from the profile raid, not the raw Warcraft Logs string.
+    expect(soo.zoneName.en).toBe("Siege of Orgrimmar");
+  });
+
   it("does nothing without a Warcraft Logs host or kills", async () => {
     const { ctx, reports } = fakeCtx();
     await persistWarcraftLogsReports(ctx, { id: "c1" }, wcl([]), era);

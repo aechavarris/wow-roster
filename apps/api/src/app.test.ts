@@ -220,7 +220,7 @@ beforeEach(async () => {
   failingRoutes.clear();
   accountInEveryVersion = false;
   await prisma.$executeRawUnsafe(
-    'TRUNCATE "RosterInvite", "RosterEntry", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User", "StaticCache" CASCADE',
+    'TRUNCATE "RosterInvite", "RosterEntry", "WarcraftLogsReport", "Character", "GuildRank", "GuildMembership", "Guild", "Session", "User", "StaticCache" CASCADE',
   );
 });
 
@@ -260,7 +260,8 @@ describe("config", () => {
     expect(Object.fromEntries(hosts.map((v) => [v.id, v.warcraftLogsHost]))).toMatchObject({
       "classic-era": "vanilla.warcraftlogs.com",
       anniversary: "fresh.warcraftlogs.com",
-      retail: null,
+      progression: "classic.warcraftlogs.com",
+      retail: "www.warcraftlogs.com",
     });
   });
 });
@@ -680,9 +681,9 @@ describe("roster logs", () => {
     expect(body.logs[0].members.map((m: { name: string }) => m.name).sort()).toEqual(["Alt", "Logger"]);
   });
 
-  it("reports logs as unavailable for versions without Warcraft Logs (retail)", async () => {
+  it("reports logs as unavailable for versions without Warcraft Logs (Forever)", async () => {
     const session = await login();
-    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "NoLogs", gameVersion: "retail", region: "eu" } })).json().guild;
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "NoLogs", gameVersion: "forever", region: "eu" } })).json().guild;
     expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/logs` })).json()).toEqual({ available: false, logs: [] });
   });
 });
