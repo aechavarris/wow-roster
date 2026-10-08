@@ -188,6 +188,58 @@ export interface CharacterDetail {
   profile: Omit<CharacterProfile, "summary"> | null;
   manualProfessions: ManualProfession[] | null;
   manualRequirements: string[] | null;
+  bis: BisItem[] | null;
+}
+
+/** Where a BiS item is obtained (from the journal or set by hand). */
+export interface BisSource {
+  type: "raid" | "dungeon" | "quest" | "vendor" | "crafted" | "pvp" | "world" | "other";
+  zoneKey?: string;
+  zoneName?: Localized;
+  bossName?: Localized;
+  auto?: boolean;
+}
+
+/** One best-in-slot item on a character or planned entry. */
+export interface BisItem {
+  slot: string;
+  itemId: number;
+  name: string;
+  icon?: string;
+  quality?: string;
+  itemLevel?: number;
+  requiredLevel?: number;
+  source?: BisSource;
+  note?: string;
+}
+
+/** A row from GET /items/search for the BiS item picker. */
+export interface ItemSearchResult {
+  id: number;
+  name: Localized;
+  slot: string;
+  quality: string | null;
+  itemLevel: number | null;
+  requiredLevel: number | null;
+  icon: string | null;
+  source: BisSource | null;
+}
+
+/** GET /guilds/:id/roster/:entryId — a roster entry's detail for the character/planned details view. */
+export interface RosterEntryDetail {
+  id: string;
+  gameVersion: string;
+  region: string;
+  pending: boolean;
+  planned: boolean;
+  plannedName: string | null;
+  plannedClassId: number | null;
+  plannedSpec: string | null;
+  playerName: string | null;
+  note: string | null;
+  bis: BisItem[] | null;
+  character: { version: string; region: string; realm: string; name: string } | null;
+  canEdit: boolean;
 }
 
 export interface RosterMember {

@@ -146,6 +146,8 @@ model Character {
   manualProfessions  Json?
   /// Requirements (attunements) the owner ticked, as requirement keys of the game version's profile.
   manualRequirements Json?
+  /// Best-in-slot wishlist the owner keeps ([{ slot, itemId, name, ... }]); see @wow/config bisListSchema.
+  bis                Json?
   lastSyncedAt       DateTime?
   syncError          String?
   createdAt          DateTime        @default(now())
@@ -187,6 +189,8 @@ model RosterEntry {
   playerName     String?
   userId         String?
   user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Best-in-slot wishlist for a planned entry (real entries keep theirs on the Character); see bisListSchema.
+  bis         Json?
   /// Overrides the status derived from the guild rank.
   status      String?
   /// Overrides the role derived from the spec.

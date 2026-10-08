@@ -10,6 +10,10 @@ import type {
   GuildRosterMember,
   InstanceMode,
   InstanceProgress,
+  ItemResult,
+  JournalEncounter,
+  JournalInstance,
+  JournalInstanceRef,
   MythicPlusProfile,
   MythicPlusRun,
   Profession,
@@ -289,6 +293,63 @@ export function normalizeTalentTree(rawByLocale: Record<string, Raw>): TalentTre
 /** Icon URL from a media payload (item, spell, profession…). */
 export function normalizeIcon(raw: Raw): string | undefined {
   return list(raw?.assets).find((a) => a.key === "icon")?.value;
+}
+
+/** One item from the item search or item detail API (for the BiS picker). Returns undefined for non-equippable rows. */
+export function normalizeItem(raw: Raw): ItemResult | undefined {
+  const id = num(raw?.id);
+  const name = localized(raw?.name);
+  if (id === undefined || !name) return undefined;
+  return {
+    id,
+    name,
+    quality: str(raw?.quality?.type),
+    itemLevel: num(raw?.level),
+    requiredLevel: num(raw?.required_level),
+    inventoryType: str(raw?.inventory_type?.type),
+    mediaId: num(raw?.media?.id) ?? idFromHref(raw?.media?.key?.href) ?? id,
+  };
+}
+
+/** The item search response: `{ results: [{ data: <item> }] }`, each result normalized and non-items dropped. */
+export function normalizeItemSearch(raw: Raw): ItemResult[] {
+  return compact(list(raw?.results).map((r) => normalizeItem(r?.data)));
+}
+
+/** The journal instance index: every raid and dungeon with its id and name. */
+export function normalizeJournalIndex(raw: Raw): JournalInstanceRef[] {
+  return compact(
+    list(raw?.instances).map((i) => {
+      const id = num(i?.id);
+      return id === undefined ? undefined : { id, name: localized(i?.name) };
+    }),
+  );
+}
+
+/** A journal instance (raid or dungeon) with the ids of its encounters, for building the BiS source index. */
+export function normalizeJournalInstance(raw: Raw): JournalInstance | undefined {
+  const id = num(raw?.id);
+  const name = localized(raw?.name);
+  if (id === undefined || !name) return undefined;
+  return {
+    id,
+    name,
+    type: str(raw?.category?.type) ?? str(raw?.type),
+    encounterIds: compact(list(raw?.encounters).map((e) => num(e?.id))),
+  };
+}
+
+/** A journal encounter (boss) with the ids of the items it drops. */
+export function normalizeJournalEncounter(raw: Raw): JournalEncounter | undefined {
+  const id = num(raw?.id);
+  const name = localized(raw?.name);
+  if (id === undefined || !name) return undefined;
+  return {
+    id,
+    name,
+    instanceId: num(raw?.instance?.id),
+    itemIds: compact(list(raw?.items).map((entry) => num(entry?.item?.id))),
+  };
 }
 
 export function normalizeMedia(raw: Raw): CharacterMedia {

@@ -113,7 +113,15 @@ const blizzardRoutes: Record<string, unknown> = {
   },
   "/data/wow/media/spell/7384": { assets: [{ key: "icon", value: "https://render/icons/overpower.jpg" }] },
   "/data/wow/media/item/500": { assets: [{ key: "icon", value: "https://render/icons/helm.jpg" }] },
+  "/data/wow/media/item/600": { assets: [{ key: "icon", value: "https://render/icons/sword.jpg" }] },
   "/data/wow/media/spell/355": { assets: [{ key: "icon", value: "https://render/icons/taunt.jpg" }] },
+  "/data/wow/search/item": {
+    page: 1,
+    pageCount: 1,
+    results: [
+      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, media: { id: 600 } } },
+    ],
+  },
 };
 
 /** The fake game data lives in retail; every other game version's namespace answers 404. */
@@ -479,6 +487,91 @@ describe("characters", () => {
 
     // Uncached trees are only built for signed-in users.
     expect((await app.inject({ method: "GET", url: "/api/talent-trees/retail/eu/790/71" })).statusCode).toBe(404);
+  });
+});
+
+describe("BiS wishlists", () => {
+  /** Pre-seeds the cached journal source index so item 600 resolves to a raid zone without a live crawl. */
+  async function seedSourceIndex() {
+    await prisma.staticCache.upsert({
+      where: { key: "retail:eu:bis-source-index" },
+      create: {
+        key: "retail:eu:bis-source-index",
+        data: { available: true, items: { "600": { type: "raid", zoneName: { en: "Molten Core" }, zoneKey: "molten-core", bossName: { en: "Ragnaros" } } } },
+      },
+      update: {},
+    });
+  }
+
+  it("searches items in a bracket with their slot, icon and zone, for signed-in users only", async () => {
+    await seedSourceIndex();
+    expect((await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&q=sulf&minLevel=60&maxLevel=69" })).statusCode).toBe(401);
+    const session = await login();
+    const result = await app.inject({
+      method: "GET",
+      url: "/api/items/search?version=retail&region=eu&q=sulf&minLevel=60&maxLevel=69",
+      cookies: { wr_session: session },
+    });
+    expect(result.statusCode).toBe(200);
+    expect(result.json().items[0]).toEqual({
+      id: 600,
+      name: { en: "Sulfuras", es: "Sulfuras" },
+      slot: "mainHand",
+      quality: "LEGENDARY",
+      itemLevel: 80,
+      requiredLevel: 60,
+      icon: "https://render/icons/sword.jpg",
+      source: { type: "raid", zoneKey: "molten-core", zoneName: { en: "Molten Core" }, bossName: { en: "Ragnaros" }, auto: true },
+    });
+    // Versions without an API cannot search items.
+    expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);
+  });
+
+  it("lets the owner save a BiS list, auto-filling the zone, and refuses non-owners", async () => {
+    await seedSourceIndex();
+    const session = await login();
+    const user = await prisma.user.findFirstOrThrow({ where: { bnetId: 1001 } });
+    const character = await prisma.character.create({
+      data: { gameVersion: "retail", region: "eu", realm: "los-errantes", name: "Biser", nameKey: "biser", classId: 1, ownerId: user.id },
+    });
+    const put = await app.inject({
+      method: "PUT",
+      url: `/api/characters/${character.id}/bis`,
+      cookies: { wr_session: session },
+      payload: { bis: [{ slot: "mainHand", itemId: 600, name: "Sulfuras" }] },
+    });
+    expect(put.statusCode).toBe(200);
+    expect(put.json().character.bis[0]).toMatchObject({ itemId: 600, slot: "mainHand", source: { type: "raid", zoneKey: "molten-core", auto: true } });
+
+    const other = await login(2002);
+    const forbidden = await app.inject({ method: "PUT", url: `/api/characters/${character.id}/bis`, cookies: { wr_session: other }, payload: { bis: [] } });
+    expect(forbidden.statusCode).toBe(403);
+  });
+
+  it("keeps a planned entry's BiS list on the entry, editable by its player", async () => {
+    await seedSourceIndex();
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Plan", gameVersion: "retail", region: "eu" } })).json().guild;
+    const entry = (
+      await app.inject({ method: "POST", url: `/api/guilds/${roster.id}/roster/planned`, cookies: { wr_session: session }, payload: { classId: 1, specKey: "protection", forSelf: true } })
+    ).json().entry;
+
+    const put = await app.inject({
+      method: "PUT",
+      url: `/api/guilds/${roster.id}/roster/${entry.id}/bis`,
+      cookies: { wr_session: session },
+      payload: { bis: [{ slot: "mainHand", itemId: 600, name: "Sulfuras" }] },
+    });
+    expect(put.statusCode).toBe(200);
+
+    const detail = await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/roster/${entry.id}` });
+    expect(detail.json().entry).toMatchObject({ planned: true, bis: [{ itemId: 600, source: { zoneKey: "molten-core" } }], canEdit: false });
+    // The owner sees canEdit true.
+    expect((await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/roster/${entry.id}`, cookies: { wr_session: session } })).json().entry.canEdit).toBe(true);
+
+    // A stranger cannot edit it.
+    const other = await login(2002);
+    expect((await app.inject({ method: "PUT", url: `/api/guilds/${roster.id}/roster/${entry.id}/bis`, cookies: { wr_session: other }, payload: { bis: [] } })).statusCode).toBe(403);
   });
 });
 

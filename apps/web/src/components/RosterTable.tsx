@@ -103,6 +103,7 @@ export function RosterTable({ guildId, players, profile, viewerRole, viewerUserI
 
   const rowProps = (c: RosterCharacter, player: RosterPlayer) => ({
     character: c,
+    guildId,
     profile,
     showRank,
     isOfficer,
@@ -219,6 +220,7 @@ interface RowActions {
 
 interface RowProps {
   character: RosterCharacter;
+  guildId: string;
   profile: Profile;
   showRank: boolean;
   canLink: boolean;
@@ -233,7 +235,7 @@ interface RowProps {
   actions: RowActions;
 }
 
-function Row({ character: c, profile, showRank, canLink, isOfficer, canEditPlanning, canEditOffSpec, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
+function Row({ character: c, guildId, profile, showRank, canLink, isOfficer, canEditPlanning, canEditOffSpec, canRemove, showActions, isAlt, altCount = 0, mainOptions, actions }: RowProps) {
   const t = useTranslations("roster");
   const locale = useLocale();
   const format = useFormatter();
@@ -319,7 +321,12 @@ function Row({ character: c, profile, showRank, canLink, isOfficer, canEditPlann
               ?
             </span>
           ) : null}
-          {c.planned || !c.gameVersion || !c.region || !c.realm ? (
+          {c.planned ? (
+            // Planned characters have a details page showing their BiS list.
+            <Link href={`/guild/${guildId}/entry/${c.entryId}`} className="text-class font-medium italic hover:underline" style={classText(color)}>
+              {c.name}
+            </Link>
+          ) : !c.gameVersion || !c.region || !c.realm ? (
             <span className="text-class font-medium italic" style={classText(color)}>{c.name}</span>
           ) : (
             <Link href={characterPath({ gameVersion: c.gameVersion, region: c.region, realm: c.realm, name: c.name })} className="text-class font-medium hover:underline" style={classText(color)}>

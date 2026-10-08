@@ -1,5 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { BisPanel } from "@/components/character/BisPanel";
 import { GearPanel } from "@/components/character/GearPanel";
 import { ProfessionsPanel, ReputationsPanel } from "@/components/character/ProfessionsPanel";
 import { RefreshCharacterButton } from "@/components/character/RefreshCharacterButton";
@@ -100,6 +101,14 @@ export default async function CharacterPage({ params }: Props) {
           />
         </>
       )}
+      <BisPanel
+        version={game}
+        region={c.region}
+        bis={c.bis ?? []}
+        canEdit={me.characters?.some((own) => own.id === c.id) ?? false}
+        endpoint={`/characters/${c.id}/bis`}
+        level={c.level}
+      />
     </div>
   );
 }
