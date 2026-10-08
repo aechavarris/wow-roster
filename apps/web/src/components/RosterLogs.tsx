@@ -52,7 +52,6 @@ export function RosterLogs({ version, logs }: { version: GameVersion; logs: Rost
       <span className={`badge ${log.type === "raid" ? "border border-accent/60 text-accent" : "bg-surface-2 text-muted"}`}>
         {t(log.type)}
       </span>
-      <span className="text-xs text-muted">{t("bosses", { count: log.bosses.length })}</span>
       <Members log={log} exclude={exclude} />
     </li>
   );

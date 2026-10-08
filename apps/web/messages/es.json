@@ -637,15 +637,14 @@
   },
   "logs": {
     "title": "Logs",
-    "help": "Mazmorras y bandas recientes de los personajes del roster, según Warcraft Logs. Si varios personajes del roster aparecen en un mismo log, se listan todos.",
+    "help": "Histórico de mazmorras y bandas de los personajes del roster, según Warcraft Logs, que va creciendo. Si varios personajes del roster aparecen en un mismo log, se listan todos.",
     "unavailable": "Esta versión del juego no usa Warcraft Logs.",
     "empty": "Todavía no hay logs recientes.",
     "byCharacter": "Por personaje",
     "chronological": "Cronológico",
     "with": "con",
     "raid": "Banda",
-    "dungeon": "Mazmorra",
-    "bosses": "{count, plural, one {# jefe} other {# jefes}}"
+    "dungeon": "Mazmorra"
   },
   "webhooks": {
     "title": "Anuncios de progreso (Discord)",

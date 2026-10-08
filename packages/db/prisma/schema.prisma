@@ -155,6 +155,7 @@ model Character {
   updatedAt          DateTime        @updatedAt
   rosterEntries      RosterEntry[]
   weeks              CharacterWeek[]
+  logReports         WarcraftLogsReportCharacter[]
 
   @@unique([gameVersion, region, realm, nameKey])
   @@index([guildId])
@@ -184,6 +185,40 @@ model RosterWebhook {
   updatedAt     DateTime @updatedAt
 
   @@index([guildId])
+}
+
+/// A Warcraft Logs report seen while syncing a roster character, kept so a roster's Logs view is a growing
+/// history instead of only the handful of recent reports the API returns. One row per report; the characters
+/// seen in it accumulate in WarcraftLogsReportCharacter.
+model WarcraftLogsReport {
+  /// Warcraft Logs report code (the id in its URL).
+  code       String                        @id
+  /// Site the report lives on (vanilla.warcraftlogs.com…), for building its URL.
+  host       String
+  zoneId     Int?
+  /// Localized zone name (profile raid name when it matches one, else the site's).
+  zoneName   Json
+  /// "raid" or "dungeon".
+  type       String
+  /// Earliest boss kill in the report, as the log's date.
+  date       DateTime
+  createdAt  DateTime                       @default(now())
+  updatedAt  DateTime                       @updatedAt
+  characters WarcraftLogsReportCharacter[]
+
+  @@index([date])
+}
+
+/// Links a Warcraft Logs report to a character seen in it; membership accumulates as rosters sync.
+model WarcraftLogsReportCharacter {
+  reportCode  String
+  report      WarcraftLogsReport @relation(fields: [reportCode], references: [code], onDelete: Cascade)
+  characterId String
+  character   Character          @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+
+  @@id([reportCode, characterId])
+  @@index([characterId])
 }
 
 /// Static game data (icons, talent trees) fetched once from the Blizzard API.

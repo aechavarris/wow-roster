@@ -13,7 +13,7 @@ import { gameVersion, type CoreContext } from "./context";
 import { announceProgress, detectProgressEvents, type ProgressSnapshot } from "./progress";
 import { enrichProfile } from "./static";
 import { instancesFromStatistics } from "./encounterStatistics";
-import { instancesFromWarcraftLogs, warcraftLogsStale } from "./warcraftLogs";
+import { instancesFromWarcraftLogs, persistWarcraftLogsReports, warcraftLogsStale } from "./warcraftLogs";
 import { recordWeek } from "./weekly";
 
 /** Ranks up to this index default to a raiding status; officers can remap them later. */
@@ -308,6 +308,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     });
     // A new week starts with nothing done, even for characters that have not logged in.
     await recordWeek(ctx, updated, stored);
+    await persistWarcraftLogsReports(ctx, updated, stored?.warcraftLogs, profile);
     if (character.lastSyncedAt) {
       // Logs refreshed above can add raid kills even when the character did not log in.
       const events = detectProgressEvents(profile, progressSnapshot(character, character.profile as Partial<CharacterProfile> | null), progressSnapshot(updated, stored));
@@ -353,6 +354,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     },
   });
   await recordWeek(ctx, updated, stored);
+  await persistWarcraftLogsReports(ctx, updated, stored.warcraftLogs, profile);
   if (character.lastSyncedAt) {
     const events = detectProgressEvents(profile, progressSnapshot(character, character.profile as Partial<CharacterProfile> | null), progressSnapshot(updated, stored));
     await announceProgress(ctx, updated, events);

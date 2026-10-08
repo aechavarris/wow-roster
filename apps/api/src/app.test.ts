@@ -641,25 +641,32 @@ describe("roster webhooks (progress announcements)", () => {
 });
 
 describe("roster logs", () => {
-  const wclProfile = (kills: unknown[]) => ({ warcraftLogs: { url: "https://vanilla.warcraftlogs.com/character/eu/x/y", fetchedAt: new Date().toISOString(), kills }, missing: {} });
+  const mkChar = (name: string, classId: number) =>
+    prisma.character.create({ data: { gameVersion: "classic-era", region: "eu", realm: "living-flame", name, nameKey: name.toLowerCase(), classId } });
 
-  it("groups Warcraft Logs reports across the roster and tells which members are in each", async () => {
+  it("builds the roster's log history from the persisted reports and tells which members are in each", async () => {
     const session = await login();
     const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Logs", gameVersion: "classic-era", region: "eu" } })).json().guild;
-    const mk = (name: string, classId: number, kills: unknown[]) =>
-      prisma.character.create({
-        data: { gameVersion: "classic-era", region: "eu", realm: "living-flame", name, nameKey: name.toLowerCase(), classId, profile: JSON.parse(JSON.stringify(wclProfile(kills))) },
-      });
-    const a = await mk("Logger", 7, [
-      { report: "RPT1", zoneId: 2000, zoneName: { en: "Molten Core" }, encounterId: 663, name: "Lucifron", killedAt: "2026-10-01T20:00:00.000Z" },
-    ]);
-    const b = await mk("Alt", 1, [
-      { report: "RPT1", zoneId: 2000, zoneName: { en: "Molten Core" }, encounterId: 663, name: "Lucifron", killedAt: "2026-10-01T20:01:00.000Z" },
-    ]);
+    const a = await mkChar("Logger", 7);
+    const b = await mkChar("Alt", 1);
     await prisma.rosterEntry.createMany({
       data: [
         { guildId: roster.id, characterId: a.id, source: "manual" },
         { guildId: roster.id, characterId: b.id, source: "manual" },
+      ],
+    });
+    // Persisted report history (what the sync writes): one report both members appear in, and an older dungeon.
+    await prisma.warcraftLogsReport.createMany({
+      data: [
+        { code: "RPT1", host: "vanilla.warcraftlogs.com", zoneId: 2000, zoneName: { en: "Molten Core" }, type: "raid", date: new Date("2026-10-02T20:00:00.000Z") },
+        { code: "RPT0", host: "vanilla.warcraftlogs.com", zoneId: 9999, zoneName: { en: "Deadmines" }, type: "dungeon", date: new Date("2026-09-20T19:00:00.000Z") },
+      ],
+    });
+    await prisma.warcraftLogsReportCharacter.createMany({
+      data: [
+        { reportCode: "RPT1", characterId: a.id },
+        { reportCode: "RPT1", characterId: b.id },
+        { reportCode: "RPT0", characterId: a.id },
       ],
     });
 
@@ -667,8 +674,9 @@ describe("roster logs", () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.available).toBe(true);
-    expect(body.logs).toHaveLength(1);
-    expect(body.logs[0]).toMatchObject({ report: "RPT1", type: "raid", zoneKey: "molten-core", url: "https://vanilla.warcraftlogs.com/reports/RPT1" });
+    // Newest first; the whole history is returned (not only recent reports).
+    expect(body.logs.map((l: { report: string }) => l.report)).toEqual(["RPT1", "RPT0"]);
+    expect(body.logs[0]).toMatchObject({ report: "RPT1", type: "raid", zoneName: { en: "Molten Core" }, url: "https://vanilla.warcraftlogs.com/reports/RPT1" });
     expect(body.logs[0].members.map((m: { name: string }) => m.name).sort()).toEqual(["Alt", "Logger"]);
   });
 
