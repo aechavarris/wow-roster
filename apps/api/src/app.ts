@@ -27,6 +27,14 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean; rateL
   await app.register(cookie);
   await app.register(rateLimit, { max: options.rateLimit ?? 300, timeWindow: "1 minute" });
 
+  // Hardening headers on every API response. The API only ever returns JSON and is never framed,
+  // so it denies framing outright and stops MIME sniffing; no referrer leaves with cross-site requests.
+  app.addHook("onSend", async (_request, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Referrer-Policy", "no-referrer");
+  });
+
   app.decorateRequest("user", null);
   app.addHook("preHandler", async (request) => {
     request.user = await findSessionUser(deps.prisma, request.cookies[SESSION_COOKIE]);
