@@ -1267,6 +1267,15 @@ describe("weekly audit", () => {
   });
 });
 
+describe("security headers", () => {
+  it("sets hardening headers on API responses", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/config" });
+    expect(res.headers["x-content-type-options"]).toBe("nosniff");
+    expect(res.headers["x-frame-options"]).toBe("DENY");
+    expect(res.headers["referrer-policy"]).toBe("no-referrer");
+  });
+});
+
 describe("Warcraft Logs", () => {
   it("gives Classic Era characters raid progress and weekly kills from their logs, refreshed after a while", async () => {
     const owner = await login();
