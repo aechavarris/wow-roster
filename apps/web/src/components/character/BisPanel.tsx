@@ -23,10 +23,15 @@ interface Props {
   classId?: number | null;
 }
 
-/** 10-level brackets up to the version cap, e.g. [1,10],[11,20]… The last one ends at the cap. */
-function brackets(maxLevel: number): { min: number; max: number }[] {
-  const out: { min: number; max: number }[] = [];
+/**
+ * 10-level brackets up to the version cap, e.g. [1,10],[11,20]… The last one is marked `open`: at max level a
+ * character can equip anything requiring at most the cap, and endgame gear often requires a level below the cap
+ * (a level-80 raid weapon on a level-90 character), so a closed [81,90] window would hide the best items.
+ */
+function brackets(maxLevel: number): { min: number; max: number; open?: boolean }[] {
+  const out: { min: number; max: number; open?: boolean }[] = [];
   for (let min = 1; min <= maxLevel; min += 10) out.push({ min, max: Math.min(min + 9, maxLevel) });
+  if (out.length > 0) out[out.length - 1]!.open = true;
   return out;
 }
 
@@ -268,7 +273,9 @@ function ItemSearch({
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ version: version.id, region, minLevel: String(range.min), maxLevel: String(range.max), sort });
+      const params = new URLSearchParams({ version: version.id, region, maxLevel: String(range.max), sort });
+      // The max-level bracket drops its lower bound so cap-level gear that requires fewer levels still shows.
+      if (!range.open) params.set("minLevel", String(range.min));
       if (query.trim()) params.set("q", query.trim());
       if (slot) params.set("slot", slot);
       if (type) params.set("type", type);
@@ -330,7 +337,7 @@ function ItemSearch({
             <select id="bis-bracket" className="input !w-auto" value={bracket} onChange={(e) => setBracket(Number(e.target.value))}>
               {ranges.map((r, i) => (
                 <option key={i} value={i}>
-                  {t("bracket", { min: r.min, max: r.max })}
+                  {r.open ? t("bracketMax", { min: r.min }) : t("bracket", { min: r.min, max: r.max })}
                 </option>
               ))}
             </select>
@@ -426,6 +433,7 @@ function ItemSearch({
                     <span className="text-xs text-muted">{localize(bisSlot(r.slot)?.name ?? {}, locale)}</span>
                     {r.subclass ? <span className="text-xs text-muted">{tr(r.subclass, locale)}</span> : null}
                     {r.itemLevel ? <span className="text-xs text-muted">{t("ilvl", { level: r.itemLevel })}</span> : null}
+                    {r.requiredLevel ? <span className="text-xs text-muted">{t("reqLevel", { level: r.requiredLevel })}</span> : null}
                     <button type="button" className="btn ml-auto" disabled={added.has(r.id)} onClick={() => addResult(r)}>
                       {added.has(r.id) ? t("addedLabel") : t("addLabel")}
                     </button>

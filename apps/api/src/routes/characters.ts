@@ -1,4 +1,4 @@
-import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemTypeIds, slotForInventoryType } from "@wow/config";
+import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemTypeIds, slotForInventoryType, slotTypeFilter } from "@wow/config";
 import type { ItemResult } from "@wow/blizzard";
 import { gameVersion, getBisSourceIndex, getIcons, getTalentTree, lookupBisSource, nameKey, syncCharacter, warmBisSourceIndex } from "@wow/core";
 import { Prisma } from "@wow/db";
@@ -115,6 +115,9 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
         itemSubclassId = armorTypeId(armorType);
       }
     }
+    // Still unrestricted but a slot is chosen: narrow to that slot's item class (weapon/armour) so the candidate
+    // window is not dominated by higher-item-level gear of other classes, which would hide e.g. the best dagger.
+    if (itemClassId === undefined && q.slot) itemClassId = slotTypeFilter(q.slot)?.itemClassId;
 
     // Gather a window of candidates (more pages when a slot filter will thin them out), then filter and sort here:
     // the Blizzard item search cannot filter by our grouped slots nor sort by rarity/subclass.
