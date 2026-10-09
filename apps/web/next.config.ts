@@ -30,7 +30,8 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       // Wowhead's tooltip widget (power.js on zamimg, tooltip data from *.wowhead.com) powers the BiS item tooltips.
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wow.zamimg.com https://*.wowhead.com",
-      "style-src 'self' 'unsafe-inline'",
+      // Wowhead's tooltip loads its stylesheet from zamimg; without it the tooltip box has no background.
+      "style-src 'self' 'unsafe-inline' https://wow.zamimg.com",
       "img-src 'self' https://render.worldofwarcraft.com https://wow.zamimg.com https://*.wowhead.com data:",
       "font-src 'self'",
       "connect-src 'self' https://*.wowhead.com",
