@@ -34,6 +34,11 @@ export const classSchema = z.object({
    * (spell hit and crit for a mage, melee for a rogue). Without it the overview shows every percent stat.
    */
   summaryStats: z.array(z.string()).optional(),
+  /**
+   * Armour type the class wears (cloth/leather/mail/plate), where the version restricts a class to one (retail):
+   * the BiS item picker hides armour of other types. Unset where a class can wear several (Classic).
+   */
+  armorType: z.enum(["cloth", "leather", "mail", "plate"]).optional(),
 });
 
 export const raidSizeSchema = z.object({

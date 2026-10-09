@@ -1,4 +1,4 @@
-import { REGIONS, bisSlotKeys, blizzardSlug, slotForInventoryType } from "@wow/config";
+import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemTypeIds, slotForInventoryType } from "@wow/config";
 import type { ItemResult } from "@wow/blizzard";
 import { gameVersion, getBisSourceIndex, getIcons, getTalentTree, lookupBisSource, nameKey, syncCharacter, warmBisSourceIndex } from "@wow/core";
 import { Prisma } from "@wow/db";
@@ -89,16 +89,39 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
         maxLevel: z.coerce.number().int().min(0).max(999).optional(),
         slot: z.enum(bisSlotKeys() as [string, ...string[]]).optional(),
         sort: z.enum(["level", "rarity", "type"]).default("level"),
+        /** Armour/weapon type key (plate, dagger…) to filter by, scoped to the slot. */
+        type: z.string().max(20).optional(),
+        /** The character's class; with restrictClass, hides armour of other types the class cannot wear. */
+        classId: z.coerce.number().int().optional(),
+        // A query string "false" must read as false (z.coerce.boolean turns any non-empty string into true).
+        restrictClass: z.string().optional().transform((v) => v !== "false"),
       })
       .parse(request.query);
     // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
     const client = core.blizzard(q.version, q.region);
+
+    // Resolve the Blizzard item_class/item_subclass filter: an explicit type wins; otherwise, for an armour slot,
+    // restrict to the class's armour type (retail) so items the class cannot wear are hidden.
+    let itemClassId: number | undefined;
+    let itemSubclassId: number | undefined;
+    const explicitType = q.slot ? itemTypeIds(q.slot, q.type) : null;
+    if (explicitType) {
+      itemClassId = explicitType.itemClassId;
+      itemSubclassId = explicitType.itemSubclassId;
+    } else if (q.restrictClass && q.slot && isArmorTypeSlot(q.slot) && q.classId !== undefined) {
+      const armorType = gameVersion(core, q.version).classes.find((c) => c.id === q.classId)?.armorType;
+      if (armorType) {
+        itemClassId = ITEM_CLASS.armor;
+        itemSubclassId = armorTypeId(armorType);
+      }
+    }
+
     // Gather a window of candidates (more pages when a slot filter will thin them out), then filter and sort here:
     // the Blizzard item search cannot filter by our grouped slots nor sort by rarity/subclass.
     const pages = q.slot ? 3 : 1;
     const candidates = new Map<number, ItemResult>();
     for (let page = 1; page <= pages; page++) {
-      const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, page, pageSize: 100 });
+      const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, itemClassId, itemSubclassId, page, pageSize: 100 });
       for (const item of result.items) candidates.set(item.id, item);
       if (page >= result.pageCount) break;
     }

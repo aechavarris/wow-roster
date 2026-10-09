@@ -633,7 +633,10 @@
     "sortLevel": "Nivel de objeto",
     "sortRarity": "Rareza",
     "sortType": "Tipo",
-    "truncated": "Hay más resultados; afina la búsqueda (nombre, hueco o rango de nivel)."
+    "truncated": "Hay más resultados; afina la búsqueda (nombre, hueco o rango de nivel).",
+    "typeFilter": "Tipo de objeto",
+    "typeAll": "Cualquiera",
+    "onlyMyClass": "Solo lo que puede llevar mi clase"
   },
   "logs": {
     "title": "Logs",

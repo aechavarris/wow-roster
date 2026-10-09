@@ -1,12 +1,13 @@
 "use client";
 
-import { BIS_SLOTS, bisSlot, localize } from "@wow/config";
+import { BIS_SLOTS, bisSlot, localize, slotTypeFilter } from "@wow/config";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { ApiError, apiSend } from "@/lib/client-api";
 import { QUALITY_COLORS, wowheadItemUrl } from "@/lib/game";
 import { tr } from "@/lib/text";
+import { loadWowheadTooltips, refreshWowheadLinks } from "@/lib/wowhead";
 import type { BisItem, BisSource, GameVersion, ItemSearchResult } from "@/lib/types";
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   endpoint: string;
   /** Character level, to default the search bracket; planned entries pass the version cap. */
   level?: number | null;
+  /** Character class, so the item search can hide armour of other types (retail). */
+  classId?: number | null;
 }
 
 /** 10-level brackets up to the version cap, e.g. [1,10],[11,20]… The last one ends at the cap. */
@@ -28,15 +31,18 @@ function brackets(maxLevel: number): { min: number; max: number }[] {
 }
 
 /** Best-in-slot list with two groupings (slot, zone), a Wowhead link per item and a Raidbots-style item search. */
-export function BisPanel({ version, region, bis, canEdit, endpoint, level }: Props) {
+export function BisPanel({ version, region, bis, canEdit, endpoint, level, classId }: Props) {
   const t = useTranslations("bis");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
   const router = useRouter();
+  // Wowhead tooltips power both the saved list and the picker; load the widget once and rescan when the list changes.
+  useEffect(() => loadWowheadTooltips(), []);
   const [list, setList] = useState<BisItem[]>(bis);
   const [mode, setMode] = useState<"slot" | "zone">("slot");
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => refreshWowheadLinks(), [list, mode]);
 
   async function save(next: BisItem[]) {
     const previous = list;
@@ -167,6 +173,7 @@ export function BisPanel({ version, region, bis, canEdit, endpoint, level }: Pro
         <ItemSearch
           version={version}
           region={region}
+          classId={classId ?? null}
           defaultLevel={level ?? version.maxLevel}
           onClose={() => setPicking(false)}
           onAdd={(item) => add(item)}
@@ -222,12 +229,14 @@ function ZoneSelect({ version, value, onChange }: { version: GameVersion; value:
 function ItemSearch({
   version,
   region,
+  classId,
   defaultLevel,
   onClose,
   onAdd,
 }: {
   version: GameVersion;
   region: string;
+  classId: number | null;
   defaultLevel: number;
   onClose: () => void;
   onAdd: (item: BisItem) => void;
@@ -240,12 +249,19 @@ function ItemSearch({
   const [bracket, setBracket] = useState(defaultIndex);
   const [query, setQuery] = useState("");
   const [slot, setSlot] = useState("");
+  const [type, setType] = useState("");
+  const [onlyMyClass, setOnlyMyClass] = useState(true);
   const [sort, setSort] = useState<"level" | "rarity" | "type">("level");
   const [results, setResults] = useState<ItemSearchResult[] | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<number>>(new Set());
+  // Rescan item links for Wowhead tooltips whenever the results change.
+  useEffect(() => refreshWowheadLinks(), [results]);
+
+  // The type filter (armour/weapon subtypes) only applies to some slots; reset it when the slot changes.
+  const typeOptions = slot ? slotTypeFilter(slot)?.options ?? [] : [];
 
   async function run() {
     const range = ranges[bracket]!;
@@ -255,6 +271,9 @@ function ItemSearch({
       const params = new URLSearchParams({ version: version.id, region, minLevel: String(range.min), maxLevel: String(range.max), sort });
       if (query.trim()) params.set("q", query.trim());
       if (slot) params.set("slot", slot);
+      if (type) params.set("type", type);
+      if (classId != null) params.set("classId", String(classId));
+      if (!onlyMyClass) params.set("restrictClass", "false");
       const res = await fetch(`/api/items/search?${params}`, { credentials: "same-origin" });
       const data = (await res.json().catch(() => ({}))) as { items?: ItemSearchResult[]; truncated?: boolean; error?: string };
       if (!res.ok) throw new ApiError(res.status, data.error ?? "unknown_error");
@@ -320,7 +339,15 @@ function ItemSearch({
             <label className="label" htmlFor="bis-slot">
               {t("slotFilter")}
             </label>
-            <select id="bis-slot" className="input !w-auto" value={slot} onChange={(e) => setSlot(e.target.value)}>
+            <select
+              id="bis-slot"
+              className="input !w-auto"
+              value={slot}
+              onChange={(e) => {
+                setSlot(e.target.value);
+                setType(""); // the available types depend on the slot
+              }}
+            >
               <option value="">{t("slotAll")}</option>
               {BIS_SLOTS.filter((s) => s.key !== "other").map((s) => (
                 <option key={s.key} value={s.key}>
@@ -329,6 +356,21 @@ function ItemSearch({
               ))}
             </select>
           </div>
+          {typeOptions.length > 0 && (
+            <div>
+              <label className="label" htmlFor="bis-type">
+                {t("typeFilter")}
+              </label>
+              <select id="bis-type" className="input !w-auto" value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="">{t("typeAll")}</option>
+                {typeOptions.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {localize(o.name, locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="label" htmlFor="bis-sort">
               {t("sortBy")}
@@ -343,7 +385,15 @@ function ItemSearch({
             {loading ? t("searching") : t("searchButton")}
           </button>
         </form>
-        <p className="text-xs text-muted">{t("searchHint")}</p>
+        <div className="flex flex-wrap items-center gap-3">
+          {classId != null && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={onlyMyClass} onChange={(e) => setOnlyMyClass(e.target.checked)} />
+              {t("onlyMyClass")}
+            </label>
+          )}
+          <p className="text-xs text-muted">{t("searchHint")}</p>
+        </div>
         {error && (
           <p className="text-sm text-danger" role="alert">
             {error}
