@@ -557,6 +557,10 @@ describe("BiS wishlists", () => {
     const clothChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1&type=cloth", cookies: { wr_session: session } });
     expect(clothChest.json().items.map((i: { id: number }) => i.id)).toEqual([701]);
 
+    // A weapon slot with no type still narrows to weapons, so weapons are not crowded out by higher-ilvl armour.
+    const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand", cookies: { wr_session: session } });
+    expect(mainHand.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
+
     // Versions without an API cannot search items.
     expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);
   });

@@ -342,6 +342,14 @@ a {
   margin-top: 6px;
 }
 
+/*
+ * Wowhead appends its tooltip to <body>, so it competes in the root stacking context with our modals (z-50) and
+ * the activity bar (z-60). Lift it above everything, or the item tooltip renders behind the BiS picker modal.
+ */
+.wowhead-tooltip {
+  z-index: 2147483647 !important;
+}
+
 /* Item quality borders on icons. */
 .icon-frame {
   border: 2px solid var(--frame, #3a3f4b);
