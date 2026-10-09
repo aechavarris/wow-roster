@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { armorTypeId, isArmorTypeSlot, itemTypeIds, slotTypeFilter } from "./items";
+import { SECONDARY_STATS, armorTypeId, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotTypeFilter } from "./items";
 import { resolveProfile } from "./profile";
 
 describe("item type filters", () => {
@@ -30,5 +30,27 @@ describe("item type filters", () => {
   it("every retail class has an armour type, Classic classes do not", () => {
     expect(resolveProfile("retail").classes.every((c) => c.armorType)).toBe(true);
     expect(resolveProfile("classic-era").classes.some((c) => c.armorType)).toBe(false);
+  });
+
+  it("reads the primary stats an item grants from its stat codes, handling the flexible primary", () => {
+    expect([...itemPrimaryStats(["INTELLECT", "HASTE_RATING"])]).toEqual(["intellect"]);
+    expect([...itemPrimaryStats(["STRENGTH", "CRIT_RATING"])]).toEqual(["strength"]);
+    // A ring with only secondary stats grants no primary, so it is never hidden by the class filter.
+    expect(itemPrimaryStats(["CRIT_RATING", "HASTE_RATING"]).size).toBe(0);
+    // A flexible primary (STR_AGI_INT) matches every class.
+    expect([...itemPrimaryStats(["STR_AGI_INT"])].sort()).toEqual(["agility", "intellect", "strength"]);
+  });
+
+  it("matches a secondary stat by its code regardless of the exact spelling", () => {
+    expect(itemHasSecondary(["INTELLECT", "HASTE_RATING"], "haste")).toBe(true);
+    expect(itemHasSecondary(["INTELLECT", "HASTE_RATING"], "crit")).toBe(false);
+    expect(itemHasSecondary([], "haste")).toBe(false);
+  });
+
+  it("every retail spec has a primary stat and its secondary stats are known", () => {
+    const retail = resolveProfile("retail");
+    expect(retail.classes.flatMap((c) => c.specs).every((s) => s.primaryStat)).toBe(true);
+    const keys = new Set(SECONDARY_STATS.map((s) => s.key));
+    expect(retail.secondaryStats.every((k) => keys.has(k))).toBe(true);
   });
 });

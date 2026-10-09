@@ -638,7 +638,9 @@
     "truncated": "More results matched; narrow the search (name, slot or level range).",
     "typeFilter": "Item type",
     "typeAll": "Any",
-    "onlyMyClass": "Only what my class can wear"
+    "secondaryFilter": "Secondary stat",
+    "secondaryAll": "Any",
+    "onlyMyClass": "Only what my class can use"
   },
   "logs": {
     "title": "Logs",

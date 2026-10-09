@@ -30,6 +30,12 @@ export function specName(profile: Profile, classId: number | null | undefined, s
   return spec ? localize(spec.name, locale) : specKey;
 }
 
+/** The spec key for a Blizzard specialization id, so the BiS picker can pin a character's primary stat. */
+export function specKeyById(profile: Profile, classId: number | null | undefined, specId: number | null | undefined) {
+  if (specId == null) return null;
+  return classOf(profile, classId)?.specs.find((s) => s.blizzardIds.includes(specId))?.key ?? null;
+}
+
 export function roleOf(profile: Profile, key: string | null) {
   return profile.roles.find((r) => r.key === key);
 }
