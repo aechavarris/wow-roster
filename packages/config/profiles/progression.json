@@ -9,7 +9,8 @@
     "staticNamespace": "static-classic-{region}",
     "dynamicNamespace": "dynamic-classic-{region}",
     "hasRealms": true,
-    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations", "encounterStatistics"]
+    "characterEndpoints": ["equipment", "specializations", "media", "statistics", "reputations", "encounterStatistics"],
+    "warcraftLogs": { "host": "classic.warcraftlogs.com" }
   },
   "wowheadDomain": "mop-classic",
   "roles": [

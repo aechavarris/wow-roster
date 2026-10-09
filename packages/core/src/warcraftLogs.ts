@@ -80,6 +80,9 @@ export async function persistWarcraftLogsReports(
   const host = profile.api.warcraftLogs?.host;
   if (!host || !logs?.kills?.length) return;
   const raidByZone = new Map(profile.raids.filter((r) => r.warcraftLogsZone).map((r) => [r.warcraftLogsZone!, r]));
+  // Also match by the report's zone name, so a raid is recognised even without a mapped Warcraft Logs zone id (MoP).
+  const en = (name: Localized | undefined) => (name?.en ?? Object.values(name ?? {})[0] ?? "").trim().toLowerCase();
+  const raidByName = new Map(profile.raids.map((r) => [en(r.name), r] as const).filter(([name]) => name));
   const byReport = new Map<string, { zoneId?: number; zoneName: Localized; type: string; date: string }>();
   for (const kill of logs.kills) {
     if (!kill.report) continue;
@@ -88,7 +91,7 @@ export async function persistWarcraftLogsReports(
       if (kill.killedAt < existing.date) existing.date = kill.killedAt;
       continue;
     }
-    const raid = kill.zoneId !== undefined ? raidByZone.get(kill.zoneId) : undefined;
+    const raid = (kill.zoneId !== undefined ? raidByZone.get(kill.zoneId) : undefined) ?? (kill.zoneName ? raidByName.get(en(kill.zoneName)) : undefined);
     byReport.set(kill.report, {
       zoneId: kill.zoneId,
       zoneName: raid ? raid.name : (kill.zoneName ?? { en: kill.zoneId ? `Zone ${kill.zoneId}` : "—" }),
