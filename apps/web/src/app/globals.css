@@ -345,9 +345,17 @@ a {
 /*
  * Wowhead appends its tooltip to <body>, so it competes in the root stacking context with our modals (z-50) and
  * the activity bar (z-60). Lift it above everything, or the item tooltip renders behind the BiS picker modal.
+ * Give it an opaque dark box too: Wowhead's own background can be missing (blocked stylesheet), and without one
+ * the tooltip text sits straight on top of the modal and is unreadable.
  */
 .wowhead-tooltip {
   z-index: 2147483647 !important;
+  background: linear-gradient(180deg, rgba(14, 20, 38, 0.98), rgba(6, 10, 22, 0.98));
+  border: 1px solid #4a5a78;
+  border-radius: 4px;
+  padding: 8px 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  color: #ffffff;
 }
 
 /* Item quality borders on icons. */
