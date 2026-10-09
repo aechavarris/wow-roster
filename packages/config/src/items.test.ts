@@ -47,10 +47,16 @@ describe("item type filters", () => {
     expect(itemHasSecondary([], "haste")).toBe(false);
   });
 
-  it("every retail spec has a primary stat and its secondary stats are known", () => {
-    const retail = resolveProfile("retail");
-    expect(retail.classes.flatMap((c) => c.specs).every((s) => s.primaryStat)).toBe(true);
+  it("every spec of every modelled version has a primary stat and only known secondary-stat keys", () => {
     const keys = new Set(SECONDARY_STATS.map((s) => s.key));
-    expect(retail.secondaryStats.every((k) => keys.has(k))).toBe(true);
+    for (const id of ["retail", "progression", "anniversary", "classic-era"]) {
+      const profile = resolveProfile(id);
+      expect(profile.classes.flatMap((c) => c.specs).every((s) => s.primaryStat), `${id} specs`).toBe(true);
+      expect(profile.secondaryStats.every((k) => keys.has(k)), `${id} secondaryStats`).toBe(true);
+    }
+    // Retail and MoP model secondary stats; TBC a smaller set; Vanilla has no rating-based secondaries.
+    expect(resolveProfile("retail").secondaryStats).toContain("versatility");
+    expect(resolveProfile("progression").secondaryStats).toContain("mastery");
+    expect(resolveProfile("classic-era").secondaryStats).toEqual([]);
   });
 });

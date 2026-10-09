@@ -99,12 +99,19 @@ export interface SecondaryStat {
   name: Localized;
 }
 
-/** Secondary stats the picker can filter by; a profile's `secondaryStats` lists which keys apply to that version. */
+/**
+ * Secondary stats the picker can filter by; a profile's `secondaryStats` lists which keys apply to that version
+ * (modern four for retail, the Cata/MoP set plus hit/expertise/spirit for MoP Classic, hit/crit/haste for TBC).
+ * `token` is matched as a substring against the item's stat codes, so split codes (CRIT_MELEE_RATING…) still hit.
+ */
 export const SECONDARY_STATS: SecondaryStat[] = [
   { key: "crit", token: "CRIT", name: { en: "Critical Strike", es: "Golpe crítico" } },
   { key: "haste", token: "HASTE", name: { en: "Haste", es: "Celeridad" } },
   { key: "mastery", token: "MASTERY", name: { en: "Mastery", es: "Maestría" } },
   { key: "versatility", token: "VERSATILITY", name: { en: "Versatility", es: "Versatilidad" } },
+  { key: "hit", token: "HIT", name: { en: "Hit", es: "Acierto" } },
+  { key: "expertise", token: "EXPERTISE", name: { en: "Expertise", es: "Pericia" } },
+  { key: "spirit", token: "SPIRIT", name: { en: "Spirit", es: "Espíritu" } },
 ];
 const SECONDARY_BY_KEY = new Map(SECONDARY_STATS.map((s) => [s.key, s]));
 
