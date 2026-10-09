@@ -25,6 +25,7 @@
     {
       "id": 1,
       "key": "warrior",
+      "armorType": "plate",
       "color": "#C69B6D",
       "name": {"en": "Warrior", "es": "Guerrero"},
       "specs": [
@@ -36,6 +37,7 @@
     {
       "id": 2,
       "key": "paladin",
+      "armorType": "plate",
       "color": "#F48CBA",
       "name": {"en": "Paladin", "es": "Paladín"},
       "specs": [
@@ -47,6 +49,7 @@
     {
       "id": 3,
       "key": "hunter",
+      "armorType": "mail",
       "color": "#AAD372",
       "name": {"en": "Hunter", "es": "Cazador"},
       "specs": [
@@ -70,6 +73,7 @@
     {
       "id": 4,
       "key": "rogue",
+      "armorType": "leather",
       "color": "#FFF468",
       "name": {"en": "Rogue", "es": "Pícaro"},
       "specs": [
@@ -87,6 +91,7 @@
     {
       "id": 5,
       "key": "priest",
+      "armorType": "cloth",
       "color": "#FFFFFF",
       "name": {"en": "Priest", "es": "Sacerdote"},
       "specs": [
@@ -98,6 +103,7 @@
     {
       "id": 6,
       "key": "death-knight",
+      "armorType": "plate",
       "color": "#C41E3A",
       "name": {"en": "Death Knight", "es": "Caballero de la Muerte"},
       "specs": [
@@ -109,6 +115,7 @@
     {
       "id": 7,
       "key": "shaman",
+      "armorType": "mail",
       "color": "#0070DD",
       "name": {"en": "Shaman", "es": "Chamán"},
       "specs": [
@@ -126,6 +133,7 @@
     {
       "id": 8,
       "key": "mage",
+      "armorType": "cloth",
       "color": "#3FC7EB",
       "name": {"en": "Mage", "es": "Mago"},
       "specs": [
@@ -137,6 +145,7 @@
     {
       "id": 9,
       "key": "warlock",
+      "armorType": "cloth",
       "color": "#8788EE",
       "name": {"en": "Warlock", "es": "Brujo"},
       "specs": [
@@ -154,6 +163,7 @@
     {
       "id": 10,
       "key": "monk",
+      "armorType": "leather",
       "color": "#00FF98",
       "name": {"en": "Monk", "es": "Monje"},
       "specs": [
@@ -183,6 +193,7 @@
     {
       "id": 11,
       "key": "druid",
+      "armorType": "leather",
       "color": "#FF7C0A",
       "name": {"en": "Druid", "es": "Druida"},
       "specs": [
@@ -201,6 +212,7 @@
     {
       "id": 12,
       "key": "demon-hunter",
+      "armorType": "leather",
       "color": "#A330C9",
       "name": {"en": "Demon Hunter", "es": "Cazador de demonios"},
       "specs": [
@@ -212,6 +224,7 @@
     {
       "id": 13,
       "key": "evoker",
+      "armorType": "mail",
       "color": "#33937F",
       "name": {"en": "Evoker", "es": "Evocador"},
       "specs": [

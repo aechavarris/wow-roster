@@ -28,11 +28,12 @@ const nextConfig: NextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Wowhead's tooltip widget (power.js on zamimg, tooltip data from *.wowhead.com) powers the BiS item tooltips.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wow.zamimg.com https://*.wowhead.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' https://render.worldofwarcraft.com data:",
+      "img-src 'self' https://render.worldofwarcraft.com https://wow.zamimg.com https://*.wowhead.com data:",
       "font-src 'self'",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.wowhead.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "object-src 'none'",

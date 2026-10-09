@@ -269,6 +269,10 @@ export class BlizzardClient {
     query?: string;
     minLevel?: number;
     maxLevel?: number;
+    /** Restrict to a Blizzard item class (2 = weapon, 4 = armor). */
+    itemClassId?: number;
+    /** Restrict to an item subclass within the class (armour type or weapon type). */
+    itemSubclassId?: number;
     page?: number;
     pageSize?: number;
   }): Promise<{ items: ItemResult[]; page: number; pageCount: number }> {
@@ -280,6 +284,8 @@ export class BlizzardClient {
       const blizzardLocale = BLIZZARD_LOCALES[this.options.locale ?? "en"] ?? "en_US";
       params.set(`name.${blizzardLocale}`, opts.query);
     }
+    if (opts.itemClassId !== undefined) params.set("item_class.id", String(opts.itemClassId));
+    if (opts.itemSubclassId !== undefined) params.set("item_subclass.id", String(opts.itemSubclassId));
     if (opts.minLevel !== undefined || opts.maxLevel !== undefined) {
       params.set("required_level", `[${opts.minLevel ?? 0},${opts.maxLevel ?? 999}]`);
     }

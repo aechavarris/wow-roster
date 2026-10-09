@@ -119,8 +119,10 @@ const blizzardRoutes: Record<string, unknown> = {
     page: 1,
     pageCount: 1,
     results: [
-      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, item_subclass: { name: { en_US: "Two-Handed Maces" } }, media: { id: 600 } } },
-      { data: { id: 601, name: { en_US: "Band of Fire" }, quality: { type: "EPIC" }, level: 78, required_level: 60, inventory_type: { type: "FINGER" }, item_subclass: { name: { en_US: "Miscellaneous" } }, media: { id: 601 } } },
+      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, item_class: { id: 2 }, item_subclass: { id: 5, name: { en_US: "Two-Handed Maces" } }, media: { id: 600 } } },
+      { data: { id: 601, name: { en_US: "Band of Fire" }, quality: { type: "EPIC" }, level: 78, required_level: 60, inventory_type: { type: "FINGER" }, item_class: { id: 4 }, item_subclass: { id: 0, name: { en_US: "Miscellaneous" } }, media: { id: 601 } } },
+      { data: { id: 700, name: { en_US: "Plate Chest" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "CHEST" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } }, media: { id: 700 } } },
+      { data: { id: 701, name: { en_US: "Cloth Chest" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "CHEST" }, item_class: { id: 4 }, item_subclass: { id: 1, name: { en_US: "Cloth" } }, media: { id: 701 } } },
     ],
   },
 };
@@ -140,6 +142,16 @@ const fakeFetch = (async (input: string | URL, init?: RequestInit) => {
   if (url.pathname === "/token") return Response.json({ access_token: "app", expires_in: 3600 });
   blizzardCalls.push(url.pathname);
   // The account characters belong to Battle.net user 1001; every other user has none.
+  // The item search honours the item_class.id / item_subclass.id filters so class/type filtering can be tested.
+  if (url.pathname === "/data/wow/search/item") {
+    const body = blizzardRoutes["/data/wow/search/item"] as { page: number; pageCount: number; results: { data: { item_class?: { id: number }; item_subclass?: { id: number } } }[] };
+    const classId = url.searchParams.get("item_class.id");
+    const subclassId = url.searchParams.get("item_subclass.id");
+    const results = body.results.filter(
+      (r) => (!classId || r.data.item_class?.id === Number(classId)) && (!subclassId || r.data.item_subclass?.id === Number(subclassId)),
+    );
+    return Response.json({ ...body, results });
+  }
   const userToken = new Headers(init?.headers).get("authorization")?.replace("Bearer ", "");
   // Some tests make every namespace list the retail account, as Blizzard may do across game versions.
   if (url.pathname === "/profile/user/wow" && accountInEveryVersion && userToken === "user-token-1001") {
@@ -532,6 +544,18 @@ describe("BiS wishlists", () => {
     // Filtering by slot narrows to the matching items only.
     const rings = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&minLevel=60&maxLevel=69&slot=finger", cookies: { wr_session: session } });
     expect(rings.json().items.map((i: { id: number }) => i.id)).toEqual([601]);
+
+    // A warrior (plate) sees only plate chest items; the cloth chest is hidden.
+    const warriorChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1", cookies: { wr_session: session } });
+    expect(warriorChest.json().items.map((i: { id: number }) => i.id)).toEqual([700]);
+
+    // Turning off the class restriction shows both chest items.
+    const allChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1&restrictClass=false", cookies: { wr_session: session } });
+    expect(allChest.json().items.map((i: { id: number }) => i.id).sort()).toEqual([700, 701]);
+
+    // The explicit type filter wins over the class default (cloth chest only).
+    const clothChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1&type=cloth", cookies: { wr_session: session } });
+    expect(clothChest.json().items.map((i: { id: number }) => i.id)).toEqual([701]);
 
     // Versions without an API cannot search items.
     expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);

@@ -108,6 +108,7 @@ export default async function CharacterPage({ params }: Props) {
         canEdit={me.characters?.some((own) => own.id === c.id) ?? false}
         endpoint={`/characters/${c.id}/bis`}
         level={c.level}
+        classId={c.classId}
       />
     </div>
   );
