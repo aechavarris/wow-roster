@@ -342,6 +342,8 @@ export interface ItemResult {
   subclass?: LocalizedText;
   /** Media id for the icon lookup (equals the item id for items). */
   mediaId?: number;
+  /** Stat type codes from the item's preview (INTELLECT, CRIT_RATING…), for the BiS picker's stat filters. */
+  stats?: string[];
 }
 
 /** A dungeon or raid in the Blizzard journal (the in-game Adventure Guide), the source index for BiS zones. */

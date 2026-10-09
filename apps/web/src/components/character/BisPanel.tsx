@@ -1,6 +1,6 @@
 "use client";
 
-import { BIS_SLOTS, bisSlot, localize, slotTypeFilter } from "@wow/config";
+import { BIS_SLOTS, SECONDARY_STATS, bisSlot, localize, slotTypeFilter } from "@wow/config";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/routing";
@@ -21,6 +21,8 @@ interface Props {
   level?: number | null;
   /** Character class, so the item search can hide armour of other types (retail). */
   classId?: number | null;
+  /** Character spec key, so the item search pins the right primary stat for hybrid classes. */
+  spec?: string | null;
 }
 
 /**
@@ -36,7 +38,7 @@ function brackets(maxLevel: number): { min: number; max: number; open?: boolean 
 }
 
 /** Best-in-slot list with two groupings (slot, zone), a Wowhead link per item and a Raidbots-style item search. */
-export function BisPanel({ version, region, bis, canEdit, endpoint, level, classId }: Props) {
+export function BisPanel({ version, region, bis, canEdit, endpoint, level, classId, spec }: Props) {
   const t = useTranslations("bis");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -179,6 +181,7 @@ export function BisPanel({ version, region, bis, canEdit, endpoint, level, class
           version={version}
           region={region}
           classId={classId ?? null}
+          spec={spec ?? null}
           defaultLevel={level ?? version.maxLevel}
           onClose={() => setPicking(false)}
           onAdd={(item) => add(item)}
@@ -235,6 +238,7 @@ function ItemSearch({
   version,
   region,
   classId,
+  spec,
   defaultLevel,
   onClose,
   onAdd,
@@ -242,6 +246,7 @@ function ItemSearch({
   version: GameVersion;
   region: string;
   classId: number | null;
+  spec: string | null;
   defaultLevel: number;
   onClose: () => void;
   onAdd: (item: BisItem) => void;
@@ -255,7 +260,10 @@ function ItemSearch({
   const [query, setQuery] = useState("");
   const [slot, setSlot] = useState("");
   const [type, setType] = useState("");
+  const [secondary, setSecondary] = useState("");
   const [onlyMyClass, setOnlyMyClass] = useState(true);
+  // Secondary-stat options the version models (crit, haste…); empty where it has none (filter not shown).
+  const secondaryOptions = SECONDARY_STATS.filter((s) => version.secondaryStats.includes(s.key));
   const [sort, setSort] = useState<"level" | "rarity" | "type">("level");
   const [results, setResults] = useState<ItemSearchResult[] | null>(null);
   const [truncated, setTruncated] = useState(false);
@@ -279,7 +287,9 @@ function ItemSearch({
       if (query.trim()) params.set("q", query.trim());
       if (slot) params.set("slot", slot);
       if (type) params.set("type", type);
+      if (secondary) params.set("secondary", secondary);
       if (classId != null) params.set("classId", String(classId));
+      if (spec) params.set("spec", spec);
       if (!onlyMyClass) params.set("restrictClass", "false");
       const res = await fetch(`/api/items/search?${params}`, { credentials: "same-origin" });
       const data = (await res.json().catch(() => ({}))) as { items?: ItemSearchResult[]; truncated?: boolean; error?: string };
@@ -373,6 +383,21 @@ function ItemSearch({
                 {typeOptions.map((o) => (
                   <option key={o.key} value={o.key}>
                     {localize(o.name, locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {secondaryOptions.length > 0 && (
+            <div>
+              <label className="label" htmlFor="bis-secondary">
+                {t("secondaryFilter")}
+              </label>
+              <select id="bis-secondary" className="input !w-auto" value={secondary} onChange={(e) => setSecondary(e.target.value)}>
+                <option value="">{t("secondaryAll")}</option>
+                {secondaryOptions.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {localize(s.name, locale)}
                   </option>
                 ))}
               </select>

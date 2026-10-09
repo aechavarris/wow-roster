@@ -41,6 +41,8 @@ export interface GameVersion {
   statPanel: StatSection[];
   buffs: Buff[];
   professions: GameProfession[];
+  /** Secondary stats the BiS picker can filter by (crit, haste…); empty where the version has none. */
+  secondaryStats: string[];
   maxPrimaryProfessions: number;
   /** False where the version's API has no professions and owners enter them by hand (Classic). */
   apiProfessions: boolean;

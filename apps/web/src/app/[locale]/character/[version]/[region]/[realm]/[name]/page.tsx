@@ -10,7 +10,7 @@ import { TalentsPanel } from "@/components/character/TalentsPanel";
 import { VersionBadge } from "@/components/VersionSelect";
 import { Link } from "@/i18n/routing";
 import { apiGet, getConfig, getMe } from "@/lib/api";
-import { classColor, className, classText, specName, versionOf } from "@/lib/game";
+import { classColor, className, classText, specKeyById, specName, versionOf } from "@/lib/game";
 import type { CharacterDetail } from "@/lib/types";
 
 type Props = PageProps<"/[locale]/character/[version]/[region]/[realm]/[name]">;
@@ -109,6 +109,7 @@ export default async function CharacterPage({ params }: Props) {
         endpoint={`/characters/${c.id}/bis`}
         level={c.level}
         classId={c.classId}
+        spec={specKeyById(game, c.classId, c.specId)}
       />
     </div>
   );

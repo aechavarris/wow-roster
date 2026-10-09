@@ -70,3 +70,46 @@ export function itemTypeIds(slot: string, typeKey: string | undefined | null): {
   const match = filter?.options.find((o) => o.key === typeKey);
   return filter && match ? { itemClassId: filter.itemClassId, itemSubclassId: match.id } : null;
 }
+
+/**
+ * Item stats, used to filter the BiS picker by what a class/spec actually wants. The Blizzard item document's
+ * `preview_item.stats[].type.type` is an upper-case enum (e.g. INTELLECT, CRIT_RATING, STR_AGI_INT for the
+ * flexible primary). We match by substring so the exact spelling of combined codes does not matter.
+ */
+
+export type PrimaryStat = "strength" | "agility" | "intellect";
+
+/** Substring found in the stat code for each primary. A flexible "STR_AGI_INT" code matches several. */
+const PRIMARY_TOKENS: Record<PrimaryStat, string> = { strength: "STR", agility: "AGI", intellect: "INT" };
+
+/** The primary stats an item grants, read from its stat type codes (empty for rings, necks and most trinkets). */
+export function itemPrimaryStats(statCodes: readonly string[]): Set<PrimaryStat> {
+  const out = new Set<PrimaryStat>();
+  for (const code of statCodes) {
+    const upper = code.toUpperCase();
+    for (const [stat, token] of Object.entries(PRIMARY_TOKENS)) if (upper.includes(token)) out.add(stat as PrimaryStat);
+  }
+  return out;
+}
+
+/** A secondary stat offered as an item-search filter; `token` is matched against the item's stat codes. */
+export interface SecondaryStat {
+  key: string;
+  token: string;
+  name: Localized;
+}
+
+/** Secondary stats the picker can filter by; a profile's `secondaryStats` lists which keys apply to that version. */
+export const SECONDARY_STATS: SecondaryStat[] = [
+  { key: "crit", token: "CRIT", name: { en: "Critical Strike", es: "Golpe crítico" } },
+  { key: "haste", token: "HASTE", name: { en: "Haste", es: "Celeridad" } },
+  { key: "mastery", token: "MASTERY", name: { en: "Mastery", es: "Maestría" } },
+  { key: "versatility", token: "VERSATILITY", name: { en: "Versatility", es: "Versatilidad" } },
+];
+const SECONDARY_BY_KEY = new Map(SECONDARY_STATS.map((s) => [s.key, s]));
+
+/** Whether an item's stat codes include the given secondary stat. Unknown or statless items read as false. */
+export function itemHasSecondary(statCodes: readonly string[], secondaryKey: string): boolean {
+  const token = SECONDARY_BY_KEY.get(secondaryKey)?.token;
+  return token ? statCodes.some((c) => c.toUpperCase().includes(token)) : false;
+}

@@ -1,4 +1,5 @@
-import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemTypeIds, slotForInventoryType, slotTypeFilter } from "@wow/config";
+import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotForInventoryType, slotTypeFilter } from "@wow/config";
+import type { PrimaryStat } from "@wow/config";
 import type { ItemResult } from "@wow/blizzard";
 import { gameVersion, getBisSourceIndex, getIcons, getTalentTree, lookupBisSource, nameKey, syncCharacter, warmBisSourceIndex } from "@wow/core";
 import { Prisma } from "@wow/db";
@@ -91,14 +92,19 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
         sort: z.enum(["level", "rarity", "type"]).default("level"),
         /** Armour/weapon type key (plate, dagger…) to filter by, scoped to the slot. */
         type: z.string().max(20).optional(),
-        /** The character's class; with restrictClass, hides armour of other types the class cannot wear. */
+        /** The character's class; with restrictClass, hides armour of other types and off-stat items. */
         classId: z.coerce.number().int().optional(),
+        /** The character's spec key, to pin the primary stat for hybrid classes (feral agility vs balance intellect). */
+        spec: z.string().max(40).optional(),
+        /** A secondary stat key (crit, haste…) to require; must be one the version models. */
+        secondary: z.string().max(20).optional(),
         // A query string "false" must read as false (z.coerce.boolean turns any non-empty string into true).
         restrictClass: z.string().optional().transform((v) => v !== "false"),
       })
       .parse(request.query);
     // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
     const client = core.blizzard(q.version, q.region);
+    const game = gameVersion(core, q.version);
 
     // Resolve the Blizzard item_class/item_subclass filter: an explicit type wins; otherwise, for an armour slot,
     // restrict to the class's armour type (retail) so items the class cannot wear are hidden.
@@ -109,7 +115,7 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
       itemClassId = explicitType.itemClassId;
       itemSubclassId = explicitType.itemSubclassId;
     } else if (q.restrictClass && q.slot && isArmorTypeSlot(q.slot) && q.classId !== undefined) {
-      const armorType = gameVersion(core, q.version).classes.find((c) => c.id === q.classId)?.armorType;
+      const armorType = game.classes.find((c) => c.id === q.classId)?.armorType;
       if (armorType) {
         itemClassId = ITEM_CLASS.armor;
         itemSubclassId = armorTypeId(armorType);
@@ -118,6 +124,17 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     // Still unrestricted but a slot is chosen: narrow to that slot's item class (weapon/armour) so the candidate
     // window is not dominated by higher-item-level gear of other classes, which would hide e.g. the best dagger.
     if (itemClassId === undefined && q.slot) itemClassId = slotTypeFilter(q.slot)?.itemClassId;
+
+    // The class's primary stat(s): one for a known spec, else the union of the class's specs (feral + balance druid).
+    // Items carrying a different class's primary stat are hidden; statless items (rings, necks) are always kept.
+    let allowedPrimaries: Set<PrimaryStat> | null = null;
+    if (q.restrictClass && q.classId !== undefined) {
+      const specs = game.classes.find((c) => c.id === q.classId)?.specs ?? [];
+      const chosen = q.spec ? specs.find((s) => s.key === q.spec) : undefined;
+      const primaries = (chosen ? [chosen] : specs).map((s) => s.primaryStat).filter((s): s is PrimaryStat => Boolean(s));
+      if (primaries.length > 0) allowedPrimaries = new Set(primaries);
+    }
+    const secondary = q.secondary && game.secondaryStats.includes(q.secondary) ? q.secondary : undefined;
 
     // Gather a window of candidates (more pages when a slot filter will thin them out), then filter and sort here:
     // the Blizzard item search cannot filter by our grouped slots nor sort by rarity/subclass.
@@ -131,6 +148,14 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
 
     let rows = [...candidates.values()].map((i) => ({ item: i, slot: slotForInventoryType(i.inventoryType) }));
     if (q.slot) rows = rows.filter((r) => r.slot === q.slot);
+    if (allowedPrimaries) {
+      rows = rows.filter((r) => {
+        const have = itemPrimaryStats(r.item.stats ?? []);
+        return have.size === 0 || [...have].some((p) => allowedPrimaries!.has(p));
+      });
+    }
+    // Keep items whose stats are unknown (not reported by the API) so the filter never hides more than it should.
+    if (secondary) rows = rows.filter((r) => !r.item.stats || itemHasSecondary(r.item.stats, secondary));
     rows.sort((a, b) => {
       if (q.sort === "rarity") return (RARITY_ORDER[b.item.quality ?? ""] ?? -1) - (RARITY_ORDER[a.item.quality ?? ""] ?? -1) || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
       if (q.sort === "type") return (a.item.subclass?.en ?? "").localeCompare(b.item.subclass?.en ?? "") || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);

@@ -300,6 +300,8 @@ export function normalizeItem(raw: Raw): ItemResult | undefined {
   const id = num(raw?.id);
   const name = localized(raw?.name);
   if (id === undefined || !name) return undefined;
+  // preview_item.stats carries the item's attributes; legacy entries (e.g. all-resistance) lack a type, so skip those.
+  const stats = compact(list(raw?.preview_item?.stats).map((s) => str(s?.type?.type)));
   return {
     id,
     name,
@@ -309,6 +311,7 @@ export function normalizeItem(raw: Raw): ItemResult | undefined {
     inventoryType: str(raw?.inventory_type?.type),
     subclass: localized(raw?.item_subclass?.name),
     mediaId: num(raw?.media?.id) ?? idFromHref(raw?.media?.key?.href) ?? id,
+    stats: stats.length > 0 ? stats : undefined,
   };
 }
 

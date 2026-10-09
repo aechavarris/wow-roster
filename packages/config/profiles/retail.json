@@ -3,6 +3,7 @@
   "label": "World of Warcraft (retail)",
   "name": {"en": "Retail", "es": "Retail"},
   "maxLevel": 90,
+  "secondaryStats": ["crit", "haste", "mastery", "versatility"],
   "api": {
     "available": true,
     "profileNamespace": "profile-{region}",
@@ -29,9 +30,9 @@
       "color": "#C69B6D",
       "name": {"en": "Warrior", "es": "Guerrero"},
       "specs": [
-        {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [71], "apiNames": ["Arms"]},
-        {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [72], "apiNames": ["Fury"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [73], "apiNames": ["Protection"]}
+        {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [71], "apiNames": ["Arms"], "primaryStat": "strength"},
+        {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [72], "apiNames": ["Fury"], "primaryStat": "strength"},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [73], "apiNames": ["Protection"], "primaryStat": "strength"}
       ]
     },
     {
@@ -41,9 +42,9 @@
       "color": "#F48CBA",
       "name": {"en": "Paladin", "es": "Paladín"},
       "specs": [
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [65], "apiNames": ["Holy"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [66], "apiNames": ["Protection"]},
-        {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [70], "apiNames": ["Retribution"]}
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [65], "apiNames": ["Holy"], "primaryStat": "intellect"},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [66], "apiNames": ["Protection"], "primaryStat": "strength"},
+        {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [70], "apiNames": ["Retribution"], "primaryStat": "strength"}
       ]
     },
     {
@@ -58,16 +59,18 @@
           "name": {"en": "Beast Mastery", "es": "Dominio de bestias"},
           "roles": ["rdps"],
           "blizzardIds": [253],
-          "apiNames": ["Beast Mastery"]
+          "apiNames": ["Beast Mastery"],
+          "primaryStat": "agility"
         },
         {
           "key": "marksmanship",
           "name": {"en": "Marksmanship", "es": "Puntería"},
           "roles": ["rdps"],
           "blizzardIds": [254],
-          "apiNames": ["Marksmanship"]
+          "apiNames": ["Marksmanship"],
+          "primaryStat": "agility"
         },
-        {"key": "survival", "name": {"en": "Survival", "es": "Supervivencia"}, "roles": ["mdps"], "blizzardIds": [255], "apiNames": ["Survival"]}
+        {"key": "survival", "name": {"en": "Survival", "es": "Supervivencia"}, "roles": ["mdps"], "blizzardIds": [255], "apiNames": ["Survival"], "primaryStat": "agility"}
       ]
     },
     {
@@ -82,10 +85,11 @@
           "name": {"en": "Assassination", "es": "Asesinato"},
           "roles": ["mdps"],
           "blizzardIds": [259],
-          "apiNames": ["Assassination"]
+          "apiNames": ["Assassination"],
+          "primaryStat": "agility"
         },
-        {"key": "outlaw", "name": {"en": "Outlaw", "es": "Forajido"}, "roles": ["mdps"], "blizzardIds": [260], "apiNames": ["Outlaw"]},
-        {"key": "subtlety", "name": {"en": "Subtlety", "es": "Sutileza"}, "roles": ["mdps"], "blizzardIds": [261], "apiNames": ["Subtlety"]}
+        {"key": "outlaw", "name": {"en": "Outlaw", "es": "Forajido"}, "roles": ["mdps"], "blizzardIds": [260], "apiNames": ["Outlaw"], "primaryStat": "agility"},
+        {"key": "subtlety", "name": {"en": "Subtlety", "es": "Sutileza"}, "roles": ["mdps"], "blizzardIds": [261], "apiNames": ["Subtlety"], "primaryStat": "agility"}
       ]
     },
     {
@@ -95,9 +99,9 @@
       "color": "#FFFFFF",
       "name": {"en": "Priest", "es": "Sacerdote"},
       "specs": [
-        {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [256], "apiNames": ["Discipline"]},
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [257], "apiNames": ["Holy"]},
-        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [258], "apiNames": ["Shadow"]}
+        {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [256], "apiNames": ["Discipline"], "primaryStat": "intellect"},
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [257], "apiNames": ["Holy"], "primaryStat": "intellect"},
+        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [258], "apiNames": ["Shadow"], "primaryStat": "intellect"}
       ]
     },
     {
@@ -107,9 +111,9 @@
       "color": "#C41E3A",
       "name": {"en": "Death Knight", "es": "Caballero de la Muerte"},
       "specs": [
-        {"key": "blood", "name": {"en": "Blood", "es": "Sangre"}, "roles": ["tank"], "blizzardIds": [250], "apiNames": ["Blood"]},
-        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["mdps"], "blizzardIds": [251], "apiNames": ["Frost"]},
-        {"key": "unholy", "name": {"en": "Unholy", "es": "Profano"}, "roles": ["mdps"], "blizzardIds": [252], "apiNames": ["Unholy"]}
+        {"key": "blood", "name": {"en": "Blood", "es": "Sangre"}, "roles": ["tank"], "blizzardIds": [250], "apiNames": ["Blood"], "primaryStat": "strength"},
+        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["mdps"], "blizzardIds": [251], "apiNames": ["Frost"], "primaryStat": "strength"},
+        {"key": "unholy", "name": {"en": "Unholy", "es": "Profano"}, "roles": ["mdps"], "blizzardIds": [252], "apiNames": ["Unholy"], "primaryStat": "strength"}
       ]
     },
     {
@@ -119,14 +123,15 @@
       "color": "#0070DD",
       "name": {"en": "Shaman", "es": "Chamán"},
       "specs": [
-        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [262], "apiNames": ["Elemental"]},
-        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [263], "apiNames": ["Enhancement"]},
+        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [262], "apiNames": ["Elemental"], "primaryStat": "intellect"},
+        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [263], "apiNames": ["Enhancement"], "primaryStat": "agility"},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
           "roles": ["healer"],
           "blizzardIds": [264],
-          "apiNames": ["Restoration"]
+          "apiNames": ["Restoration"],
+          "primaryStat": "intellect"
         }
       ]
     },
@@ -137,9 +142,9 @@
       "color": "#3FC7EB",
       "name": {"en": "Mage", "es": "Mago"},
       "specs": [
-        {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [62], "apiNames": ["Arcane"]},
-        {"key": "fire", "name": {"en": "Fire", "es": "Fuego"}, "roles": ["rdps"], "blizzardIds": [63], "apiNames": ["Fire"]},
-        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["rdps"], "blizzardIds": [64], "apiNames": ["Frost"]}
+        {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [62], "apiNames": ["Arcane"], "primaryStat": "intellect"},
+        {"key": "fire", "name": {"en": "Fire", "es": "Fuego"}, "roles": ["rdps"], "blizzardIds": [63], "apiNames": ["Fire"], "primaryStat": "intellect"},
+        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["rdps"], "blizzardIds": [64], "apiNames": ["Frost"], "primaryStat": "intellect"}
       ]
     },
     {
@@ -149,14 +154,15 @@
       "color": "#8788EE",
       "name": {"en": "Warlock", "es": "Brujo"},
       "specs": [
-        {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [265], "apiNames": ["Affliction"]},
-        {"key": "demonology", "name": {"en": "Demonology", "es": "Demonología"}, "roles": ["rdps"], "blizzardIds": [266], "apiNames": ["Demonology"]},
+        {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [265], "apiNames": ["Affliction"], "primaryStat": "intellect"},
+        {"key": "demonology", "name": {"en": "Demonology", "es": "Demonología"}, "roles": ["rdps"], "blizzardIds": [266], "apiNames": ["Demonology"], "primaryStat": "intellect"},
         {
           "key": "destruction",
           "name": {"en": "Destruction", "es": "Destrucción"},
           "roles": ["rdps"],
           "blizzardIds": [267],
-          "apiNames": ["Destruction"]
+          "apiNames": ["Destruction"],
+          "primaryStat": "intellect"
         }
       ]
     },
@@ -172,21 +178,24 @@
           "name": {"en": "Brewmaster", "es": "Maestro cervecero"},
           "roles": ["tank"],
           "blizzardIds": [268],
-          "apiNames": ["Brewmaster"]
+          "apiNames": ["Brewmaster"],
+          "primaryStat": "agility"
         },
         {
           "key": "mistweaver",
           "name": {"en": "Mistweaver", "es": "Tejedor de niebla"},
           "roles": ["healer"],
           "blizzardIds": [270],
-          "apiNames": ["Mistweaver"]
+          "apiNames": ["Mistweaver"],
+          "primaryStat": "intellect"
         },
         {
           "key": "windwalker",
           "name": {"en": "Windwalker", "es": "Viajero del viento"},
           "roles": ["mdps"],
           "blizzardIds": [269],
-          "apiNames": ["Windwalker"]
+          "apiNames": ["Windwalker"],
+          "primaryStat": "agility"
         }
       ]
     },
@@ -197,15 +206,16 @@
       "color": "#FF7C0A",
       "name": {"en": "Druid", "es": "Druida"},
       "specs": [
-        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [102], "apiNames": ["Balance"]},
-        {"key": "feral", "name": {"en": "Feral", "es": "Feral"}, "roles": ["mdps"], "blizzardIds": [103], "apiNames": ["Feral"]},
-        {"key": "guardian", "name": {"en": "Guardian", "es": "Guardián"}, "roles": ["tank"], "blizzardIds": [104], "apiNames": ["Guardian"]},
+        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [102], "apiNames": ["Balance"], "primaryStat": "intellect"},
+        {"key": "feral", "name": {"en": "Feral", "es": "Feral"}, "roles": ["mdps"], "blizzardIds": [103], "apiNames": ["Feral"], "primaryStat": "agility"},
+        {"key": "guardian", "name": {"en": "Guardian", "es": "Guardián"}, "roles": ["tank"], "blizzardIds": [104], "apiNames": ["Guardian"], "primaryStat": "agility"},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
           "roles": ["healer"],
           "blizzardIds": [105],
-          "apiNames": ["Restoration"]
+          "apiNames": ["Restoration"],
+          "primaryStat": "intellect"
         }
       ]
     },
@@ -216,9 +226,9 @@
       "color": "#A330C9",
       "name": {"en": "Demon Hunter", "es": "Cazador de demonios"},
       "specs": [
-        {"key": "havoc", "name": {"en": "Havoc", "es": "Devastación"}, "roles": ["mdps"], "blizzardIds": [577], "apiNames": ["Havoc"]},
-        {"key": "vengeance", "name": {"en": "Vengeance", "es": "Venganza"}, "roles": ["tank"], "blizzardIds": [581], "apiNames": ["Vengeance"]},
-        {"key": "devourer", "name": {"en": "Devourer", "es": "Devorador"}, "roles": ["rdps"], "blizzardIds": [1480], "apiNames": ["Devourer"]}
+        {"key": "havoc", "name": {"en": "Havoc", "es": "Devastación"}, "roles": ["mdps"], "blizzardIds": [577], "apiNames": ["Havoc"], "primaryStat": "agility"},
+        {"key": "vengeance", "name": {"en": "Vengeance", "es": "Venganza"}, "roles": ["tank"], "blizzardIds": [581], "apiNames": ["Vengeance"], "primaryStat": "agility"},
+        {"key": "devourer", "name": {"en": "Devourer", "es": "Devorador"}, "roles": ["rdps"], "blizzardIds": [1480], "apiNames": ["Devourer"], "primaryStat": "agility"}
       ]
     },
     {
@@ -233,21 +243,24 @@
           "name": {"en": "Devastation", "es": "Devastación"},
           "roles": ["rdps"],
           "blizzardIds": [1467],
-          "apiNames": ["Devastation"]
+          "apiNames": ["Devastation"],
+          "primaryStat": "intellect"
         },
         {
           "key": "preservation",
           "name": {"en": "Preservation", "es": "Preservación"},
           "roles": ["healer"],
           "blizzardIds": [1468],
-          "apiNames": ["Preservation"]
+          "apiNames": ["Preservation"],
+          "primaryStat": "intellect"
         },
         {
           "key": "augmentation",
           "name": {"en": "Augmentation", "es": "Aumento"},
           "roles": ["rdps"],
           "blizzardIds": [1473],
-          "apiNames": ["Augmentation"]
+          "apiNames": ["Augmentation"],
+          "primaryStat": "intellect"
         }
       ]
     }

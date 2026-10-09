@@ -119,7 +119,8 @@ const blizzardRoutes: Record<string, unknown> = {
     page: 1,
     pageCount: 1,
     results: [
-      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, item_class: { id: 2 }, item_subclass: { id: 5, name: { en_US: "Two-Handed Maces" } }, media: { id: 600 } } },
+      { data: { id: 600, name: { en_US: "Sulfuras", es_ES: "Sulfuras" }, quality: { type: "LEGENDARY" }, level: 80, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, item_class: { id: 2 }, item_subclass: { id: 5, name: { en_US: "Two-Handed Maces" } }, media: { id: 600 }, preview_item: { stats: [{ type: { type: "STRENGTH" } }, { type: { type: "CRIT_RATING" } }] } } },
+      { data: { id: 602, name: { en_US: "Soul Dagger" }, quality: { type: "EPIC" }, level: 82, required_level: 60, inventory_type: { type: "WEAPONMAINHAND" }, item_class: { id: 2 }, item_subclass: { id: 15, name: { en_US: "Daggers" } }, media: { id: 602 }, preview_item: { stats: [{ type: { type: "INTELLECT" } }, { type: { type: "HASTE_RATING" } }] } } },
       { data: { id: 601, name: { en_US: "Band of Fire" }, quality: { type: "EPIC" }, level: 78, required_level: 60, inventory_type: { type: "FINGER" }, item_class: { id: 4 }, item_subclass: { id: 0, name: { en_US: "Miscellaneous" } }, media: { id: 601 } } },
       { data: { id: 700, name: { en_US: "Plate Chest" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "CHEST" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } }, media: { id: 700 } } },
       { data: { id: 701, name: { en_US: "Cloth Chest" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "CHEST" }, item_class: { id: 4 }, item_subclass: { id: 1, name: { en_US: "Cloth" } }, media: { id: 701 } } },
@@ -147,8 +148,12 @@ const fakeFetch = (async (input: string | URL, init?: RequestInit) => {
     const body = blizzardRoutes["/data/wow/search/item"] as { page: number; pageCount: number; results: { data: { item_class?: { id: number }; item_subclass?: { id: number } } }[] };
     const classId = url.searchParams.get("item_class.id");
     const subclassId = url.searchParams.get("item_subclass.id");
+    const nameParam = [...url.searchParams].find(([k]) => k.startsWith("name."))?.[1]?.toLowerCase();
     const results = body.results.filter(
-      (r) => (!classId || r.data.item_class?.id === Number(classId)) && (!subclassId || r.data.item_subclass?.id === Number(subclassId)),
+      (r) =>
+        (!classId || r.data.item_class?.id === Number(classId)) &&
+        (!subclassId || r.data.item_subclass?.id === Number(subclassId)) &&
+        (!nameParam || JSON.stringify((r.data as { name?: Record<string, string> }).name ?? {}).toLowerCase().includes(nameParam)),
     );
     return Response.json({ ...body, results });
   }
@@ -559,7 +564,19 @@ describe("BiS wishlists", () => {
 
     // A weapon slot with no type still narrows to weapons, so weapons are not crowded out by higher-ilvl armour.
     const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand", cookies: { wr_session: session } });
-    expect(mainHand.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
+    expect(mainHand.json().items.map((i: { id: number }) => i.id)).toEqual([602, 600]); // ilvl desc: dagger 82, mace 80
+
+    // A strength class (warrior) hides the intellect dagger but keeps the strength mace.
+    const warriorWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&classId=1&spec=arms", cookies: { wr_session: session } });
+    expect(warriorWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
+
+    // An intellect class (mage) keeps the dagger and hides the strength mace.
+    const mageWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&classId=8&spec=frost", cookies: { wr_session: session } });
+    expect(mageWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([602]);
+
+    // The secondary-stat filter keeps only items carrying it (the dagger has haste, the mace has crit).
+    const hasteWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&secondary=haste&restrictClass=false", cookies: { wr_session: session } });
+    expect(hasteWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([602]);
 
     // Versions without an API cannot search items.
     expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);

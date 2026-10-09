@@ -320,6 +320,20 @@ describe("BiS item search and journal", () => {
     expect(query.has("locale")).toBe(false);
   });
 
+  it("reads the item's stat type codes from its preview, skipping legacy entries without a type", async () => {
+    const { impl } = fakeFetch({
+      "/data/wow/search/item": {
+        body: {
+          page: 1,
+          pageCount: 1,
+          results: [{ data: itemData({ preview_item: { stats: [{ type: { type: "INTELLECT" } }, { type: { type: "CRIT_RATING" } }, { value: 10 }] } }) }],
+        },
+      },
+    });
+    const result = await clientFor(impl).searchItems({ query: "thunder", page: 1 });
+    expect(result.items[0]!.stats).toEqual(["INTELLECT", "CRIT_RATING"]);
+  });
+
   it("reads one item's details and treats a missing item as undefined", async () => {
     const { impl } = fakeFetch({ "/data/wow/item/19019": { body: itemData() } });
     expect(await clientFor(impl).getItem(19019)).toMatchObject({ id: 19019, inventoryType: "WEAPONMAINHAND", requiredLevel: 60 });
