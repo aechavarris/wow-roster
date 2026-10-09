@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Composition } from "@/components/Composition";
+import { GargulExport } from "@/components/GargulExport";
 import { PendingPanel } from "@/components/PendingPanel";
 import { RosterTable } from "@/components/RosterTable";
 import { RosterTools } from "@/components/RosterTools";
@@ -86,6 +87,7 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
               {t("logs")}
             </Link>
           )}
+          <GargulExport guildId={guild.id} />
           {isOfficer && version.apiAvailable && <SyncGuildButton guildId={guild.id} />}
           {isOfficer && (
             <Link href={`/guild/${guild.id}/settings`} className="btn">
