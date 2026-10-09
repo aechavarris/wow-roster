@@ -125,3 +125,27 @@ export type BisItem = z.infer<typeof bisItemSchema>;
 /** A full BiS list. Capped so a wishlist cannot grow without bound. */
 export const bisListSchema = z.array(bisItemSchema).max(100);
 export type BisList = z.infer<typeof bisListSchema>;
+
+/**
+ * Serializes a roster's BiS wishlists to the Gargul addon's CSV format, so officers can paste it into Gargul
+ * (`/gl tmb`) and see everyone's wishes on item tooltips in game. One line per item — `itemId,player1,player2,…` —
+ * where a player's position is their priority; Gargul detects the format because the first line starts with digits
+ * and a comma. Players are listed per item in the order given, deduplicated, and items are sorted by id.
+ */
+export function bisToGargulCsv(players: { name: string; items: { itemId: number }[] }[]): string {
+  const byItem = new Map<number, string[]>();
+  for (const player of players) {
+    const name = player.name.trim();
+    if (!name) continue;
+    for (const item of player.items) {
+      if (!Number.isInteger(item.itemId) || item.itemId <= 0) continue;
+      const names = byItem.get(item.itemId) ?? [];
+      if (!names.includes(name)) names.push(name);
+      byItem.set(item.itemId, names);
+    }
+  }
+  return [...byItem.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([itemId, names]) => [itemId, ...names].join(","))
+    .join("\n");
+}

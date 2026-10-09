@@ -1,5 +1,5 @@
 import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
-import { REGIONS, blizzardSlug, progressEventsSchema, type Localized } from "@wow/config";
+import { REGIONS, bisListSchema, bisToGargulCsv, blizzardSlug, progressEventsSchema, type Localized } from "@wow/config";
 import {
   averageEquippedItemLevel,
   buildRoster,
@@ -428,6 +428,28 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       })),
     );
     return { available: true, logs };
+  });
+
+  /**
+   * The roster's BiS wishlists exported for the Gargul addon (CSV: one line per item, `itemId,player1,…`), so an
+   * officer can paste it into Gargul (`/gl tmb`) and see everyone's wishes on item tooltips in game. Real characters
+   * carry their list on the Character, planned entries on the entry. Visible to anyone who can see the roster.
+   */
+  app.get("/guilds/:id/bis-export", async (request) => {
+    const { id } = idParams.parse(request.params);
+    await loadVisibleGuild(prisma, id, request.user);
+    const entries = await prisma.rosterEntry.findMany({
+      where: { guildId: id, pending: false },
+      select: { plannedName: true, playerName: true, bis: true, character: { select: { name: true, bis: true } } },
+    });
+    const players = entries.flatMap((e) => {
+      const name = e.character?.name ?? e.plannedName ?? e.playerName ?? "";
+      const parsed = bisListSchema.safeParse(e.character ? e.character.bis : e.bis);
+      if (!name || !parsed.success || parsed.data.length === 0) return [];
+      return [{ name, items: parsed.data.map((i) => ({ itemId: i.itemId })) }];
+    });
+    const content = bisToGargulCsv(players);
+    return { format: "gargul", content, players: players.length };
   });
 
   // Discord webhooks that announce character progress. Officers manage them; the URL (a secret) is never read back.

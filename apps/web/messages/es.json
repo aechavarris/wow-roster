@@ -671,5 +671,16 @@
     "saving": "Guardando…",
     "save": "Guardar",
     "cancel": "Cancelar"
+  },
+  "gargul": {
+    "button": "Exportar BiS (Gargul)",
+    "title": "Exportar BiS a Gargul",
+    "help": "Copia este texto y pégalo en Gargul dentro del juego con /gl tmb (botón Importar). Mostrará las BiS del roster en los tooltips al repartir botín.",
+    "loading": "Generando…",
+    "empty": "Nadie del roster tiene objetos en su lista BiS todavía.",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "count": "{count, plural, one {# personaje} other {# personajes}} con BiS",
+    "close": "Cerrar"
   }
 }

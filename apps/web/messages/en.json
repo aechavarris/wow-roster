@@ -671,5 +671,16 @@
     "saving": "Saving…",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "gargul": {
+    "button": "Export BiS (Gargul)",
+    "title": "Export BiS to Gargul",
+    "help": "Copy this text and paste it into Gargul in game with /gl tmb (Import button). It shows the roster’s BiS on item tooltips when loot drops.",
+    "loading": "Generating…",
+    "empty": "No one in the roster has any BiS items yet.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "count": "{count, plural, one {# character} other {# characters}} with BiS",
+    "close": "Close"
   }
 }

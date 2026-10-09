@@ -641,6 +641,30 @@ describe("roster webhooks (progress announcements)", () => {
   });
 });
 
+describe("BiS Gargul export", () => {
+  it("exports the roster's BiS wishlists as Gargul CSV (real and planned entries)", async () => {
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Gargul", gameVersion: "classic-era", region: "eu" } })).json().guild;
+    const real = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "living-flame", name: "Biser", nameKey: "biser", classId: 1, bis: [{ slot: "mainHand", itemId: 19019, name: "Thunderfury" }] },
+    });
+    await prisma.rosterEntry.create({ data: { guildId: roster.id, characterId: real.id, source: "manual" } });
+    // A planned entry with its own list and a placeholder name.
+    await prisma.rosterEntry.create({
+      data: { guildId: roster.id, source: "planned", plannedClassId: 1, plannedName: "Futuro", bis: [{ slot: "finger", itemId: 19019, name: "Thunderfury" }] },
+    });
+
+    const res = await app.inject({ method: "GET", url: `/api/guilds/${roster.id}/bis-export` });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.format).toBe("gargul");
+    expect(body.players).toBe(2);
+    // One line for item 19019 with both players; Gargul detects the format from the leading "id,".
+    expect(body.content).toBe("19019,Biser,Futuro");
+    expect(body.content.split("\n")[0]).toMatch(/^[0-9]+,/);
+  });
+});
+
 describe("roster logs", () => {
   const mkChar = (name: string, classId: number) =>
     prisma.character.create({ data: { gameVersion: "classic-era", region: "eu", realm: "living-flame", name, nameKey: name.toLowerCase(), classId } });
