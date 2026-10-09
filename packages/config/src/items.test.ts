@@ -49,7 +49,7 @@ describe("item type filters", () => {
 
   it("every spec of every modelled version has a primary stat and only known secondary-stat keys", () => {
     const keys = new Set(SECONDARY_STATS.map((s) => s.key));
-    for (const id of ["retail", "progression", "anniversary", "classic-era"]) {
+    for (const id of ["retail", "progression", "anniversary", "classic-era", "forever"]) {
       const profile = resolveProfile(id);
       expect(profile.classes.flatMap((c) => c.specs).every((s) => s.primaryStat), `${id} specs`).toBe(true);
       expect(profile.secondaryStats.every((k) => keys.has(k)), `${id} secondaryStats`).toBe(true);

@@ -1,5 +1,5 @@
 import { BlizzardClient, WarcraftLogsClient } from "@wow/blizzard";
-import { loadGameVersions } from "@wow/config";
+import { loadGameVersions, withApiStandIns } from "@wow/config";
 import { ApiUnavailableError, syncCharacter, syncGuild, type CoreContext } from "@wow/core";
 import { createPrismaClient } from "@wow/db";
 import type { FastifyInstance } from "fastify";
@@ -1648,5 +1648,78 @@ describe("Warcraft Logs", () => {
     expect(wclRequests).toHaveLength(2);
     const refreshed = (await prisma.character.findUniqueOrThrow({ where: { id: character.id } })).profile as { warcraftLogs: { kills: unknown[] } };
     expect(refreshed.warcraftLogs.kills).toHaveLength(1);
+  });
+});
+
+describe("BiS item search with an API stand-in (Forever tested with Classic Era data)", () => {
+  // Forever has no API of its own; the stand-in lets it read a real version's item API (see withApiStandIns).
+  const standInVersions = withApiStandIns(loadGameVersions("retail"), "forever=classic-era");
+  let standInApp: FastifyInstance;
+
+  beforeAll(async () => {
+    const standInCore: CoreContext = {
+      prisma,
+      versions: standInVersions,
+      blizzard: (version, region) => {
+        const api = standInVersions.byId.get(version)?.api;
+        if (!api?.available) throw new ApiUnavailableError(version);
+        return new BlizzardClient({ clientId: "id", clientSecret: "secret", region, api, fetch: fakeFetch, retryDelayMs: 0 });
+      },
+    };
+    standInApp = await buildApp(
+      {
+        env: {
+          DATABASE_URL,
+          REDIS_URL: "redis://unused",
+          BLIZZARD_CLIENT_ID: "id",
+          BLIZZARD_CLIENT_SECRET: "secret",
+          BLIZZARD_REGION: "eu",
+          WARCRAFTLOGS_CLIENT_ID: "",
+          WARCRAFTLOGS_CLIENT_SECRET: "",
+          PUBLIC_URL: "http://localhost:3000",
+          API_PORT: 0,
+        },
+        prisma,
+        versions: standInVersions,
+        core: standInCore,
+        queue,
+        oauth: {
+          authorizeUrl: (state) => `https://oauth.example/authorize?state=${state}`,
+          login: async (code) => ({ user: { id: Number(code), battletag: `Player#${code}` }, accessToken: `user-token-${code}` }),
+        },
+      },
+      { rateLimit: 10_000 },
+    );
+  });
+
+  afterAll(async () => {
+    await standInApp.close();
+  });
+
+  it("makes Forever searchable through the stand-in API and filters by Forever's own classes' primary stat", async () => {
+    const session = await login();
+
+    // With the stand-in, Forever reports an API and its config points back at the source version.
+    const config = (await standInApp.inject({ method: "GET", url: "/api/config" })).json();
+    const forever = (config.versions as { id: string; apiAvailable: boolean; apiStandIn: { id: string } | null }[]).find((v) => v.id === "forever")!;
+    expect(forever.apiAvailable).toBe(true);
+    expect(forever.apiStandIn?.id).toBe("classic-era");
+
+    // The picker no longer 409s for Forever; it returns the stand-in API's items.
+    const all = await standInApp.inject({
+      method: "GET",
+      url: "/api/items/search?version=forever&region=eu&slot=mainHand&restrictClass=false",
+      cookies: { wr_session: session },
+    });
+    expect(all.statusCode).toBe(200);
+    expect(all.json().items.map((i: { id: number }) => i.id).sort()).toEqual([600, 602]);
+
+    // A Forever warrior (strength) hides the intellect dagger and keeps the strength mace, using Forever's classes.
+    const warrior = await standInApp.inject({
+      method: "GET",
+      url: "/api/items/search?version=forever&region=eu&slot=mainHand&classId=1&spec=arms",
+      cookies: { wr_session: session },
+    });
+    expect(warrior.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
   });
 });

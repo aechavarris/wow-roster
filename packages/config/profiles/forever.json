@@ -26,9 +26,9 @@
       "name": {"en": "Warrior", "es": "Guerrero"},
       "summaryStats": ["hit", "crit", "attack-power"],
       "specs": [
-        {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Arms"]},
-        {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Fury"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"]}
+        {"key": "arms", "name": {"en": "Arms", "es": "Armas"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Arms"], "primaryStat": "strength"},
+        {"key": "fury", "name": {"en": "Fury", "es": "Furia"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Fury"], "primaryStat": "strength"},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"], "primaryStat": "strength"}
       ]
     },
     {
@@ -38,9 +38,9 @@
       "name": {"en": "Paladin", "es": "Paladín"},
       "summaryStats": ["hit", "crit", "attack-power"],
       "specs": [
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"], "summaryStats": ["bonus-healing", "crit", "mana-regen"]},
-        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"]},
-        {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Retribution"]}
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"], "summaryStats": ["bonus-healing", "crit", "mana-regen"], "primaryStat": "intellect"},
+        {"key": "protection", "name": {"en": "Protection", "es": "Protección"}, "roles": ["tank"], "blizzardIds": [], "apiNames": ["Protection"], "summaryStats": ["defense", "dodge", "parry", "block"], "primaryStat": "strength"},
+        {"key": "retribution", "name": {"en": "Retribution", "es": "Reprensión"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Retribution"], "primaryStat": "strength"}
       ]
     },
     {
@@ -55,10 +55,11 @@
           "name": {"en": "Beast Mastery", "es": "Dominio de bestias"},
           "roles": ["rdps"],
           "blizzardIds": [],
-          "apiNames": ["Beast Mastery"]
+          "apiNames": ["Beast Mastery"],
+          "primaryStat": "agility"
         },
-        {"key": "marksmanship", "name": {"en": "Marksmanship", "es": "Puntería"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Marksmanship"]},
-        {"key": "survival", "name": {"en": "Survival", "es": "Supervivencia"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Survival"]}
+        {"key": "marksmanship", "name": {"en": "Marksmanship", "es": "Puntería"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Marksmanship"], "primaryStat": "agility"},
+        {"key": "survival", "name": {"en": "Survival", "es": "Supervivencia"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Survival"], "primaryStat": "agility"}
       ]
     },
     {
@@ -73,10 +74,11 @@
           "name": {"en": "Assassination", "es": "Asesinato"},
           "roles": ["mdps"],
           "blizzardIds": [],
-          "apiNames": ["Assassination"]
+          "apiNames": ["Assassination"],
+          "primaryStat": "agility"
         },
-        {"key": "combat", "name": {"en": "Combat", "es": "Combate"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Combat"]},
-        {"key": "subtlety", "name": {"en": "Subtlety", "es": "Sutileza"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Subtlety"]}
+        {"key": "combat", "name": {"en": "Combat", "es": "Combate"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Combat"], "primaryStat": "agility"},
+        {"key": "subtlety", "name": {"en": "Subtlety", "es": "Sutileza"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Subtlety"], "primaryStat": "agility"}
       ]
     },
     {
@@ -86,9 +88,9 @@
       "name": {"en": "Priest", "es": "Sacerdote"},
       "summaryStats": ["bonus-healing", "crit", "mana-regen"],
       "specs": [
-        {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Discipline"]},
-        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"]},
-        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Shadow"], "summaryStats": ["hit", "crit", "spell-power"]}
+        {"key": "discipline", "name": {"en": "Discipline", "es": "Disciplina"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Discipline"], "primaryStat": "intellect"},
+        {"key": "holy", "name": {"en": "Holy", "es": "Sagrado"}, "roles": ["healer"], "blizzardIds": [], "apiNames": ["Holy"], "primaryStat": "intellect"},
+        {"key": "shadow", "name": {"en": "Shadow", "es": "Sombra"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Shadow"], "summaryStats": ["hit", "crit", "spell-power"], "primaryStat": "intellect"}
       ]
     },
     {
@@ -98,14 +100,15 @@
       "name": {"en": "Shaman", "es": "Chamán"},
       "summaryStats": ["bonus-healing", "crit", "mana-regen"],
       "specs": [
-        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Elemental"], "summaryStats": ["hit", "crit", "spell-power"]},
-        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Enhancement"], "summaryStats": ["hit", "crit", "attack-power"]},
+        {"key": "elemental", "name": {"en": "Elemental", "es": "Elemental"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Elemental"], "summaryStats": ["hit", "crit", "spell-power"], "primaryStat": "intellect"},
+        {"key": "enhancement", "name": {"en": "Enhancement", "es": "Mejora"}, "roles": ["mdps"], "blizzardIds": [], "apiNames": ["Enhancement"], "summaryStats": ["hit", "crit", "attack-power"], "primaryStat": "agility"},
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
           "roles": ["healer"],
           "blizzardIds": [],
-          "apiNames": ["Restoration"]
+          "apiNames": ["Restoration"],
+          "primaryStat": "intellect"
         }
       ]
     },
@@ -116,9 +119,9 @@
       "name": {"en": "Mage", "es": "Mago"},
       "summaryStats": ["hit", "crit", "spell-power"],
       "specs": [
-        {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Arcane"]},
-        {"key": "fire", "name": {"en": "Fire", "es": "Fuego"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Fire"]},
-        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Frost"]}
+        {"key": "arcane", "name": {"en": "Arcane", "es": "Arcano"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Arcane"], "primaryStat": "intellect"},
+        {"key": "fire", "name": {"en": "Fire", "es": "Fuego"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Fire"], "primaryStat": "intellect"},
+        {"key": "frost", "name": {"en": "Frost", "es": "Escarcha"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Frost"], "primaryStat": "intellect"}
       ]
     },
     {
@@ -128,9 +131,9 @@
       "name": {"en": "Warlock", "es": "Brujo"},
       "summaryStats": ["hit", "crit", "spell-power"],
       "specs": [
-        {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Affliction"]},
-        {"key": "demonology", "name": {"en": "Demonology", "es": "Demonología"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Demonology"]},
-        {"key": "destruction", "name": {"en": "Destruction", "es": "Destrucción"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Destruction"]}
+        {"key": "affliction", "name": {"en": "Affliction", "es": "Aflicción"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Affliction"], "primaryStat": "intellect"},
+        {"key": "demonology", "name": {"en": "Demonology", "es": "Demonología"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Demonology"], "primaryStat": "intellect"},
+        {"key": "destruction", "name": {"en": "Destruction", "es": "Destrucción"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Destruction"], "primaryStat": "intellect"}
       ]
     },
     {
@@ -140,21 +143,23 @@
       "name": {"en": "Druid", "es": "Druida"},
       "summaryStats": ["bonus-healing", "crit", "mana-regen"],
       "specs": [
-        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Balance"], "summaryStats": ["hit", "crit", "spell-power"]},
+        {"key": "balance", "name": {"en": "Balance", "es": "Equilibrio"}, "roles": ["rdps"], "blizzardIds": [], "apiNames": ["Balance"], "summaryStats": ["hit", "crit", "spell-power"], "primaryStat": "intellect"},
         {
           "key": "feral",
           "name": {"en": "Feral Combat", "es": "Combate feral"},
           "roles": ["mdps", "tank"],
           "blizzardIds": [],
           "apiNames": ["Feral Combat", "Feral"],
-          "summaryStats": ["hit", "crit", "attack-power", "dodge"]
+          "summaryStats": ["hit", "crit", "attack-power", "dodge"],
+          "primaryStat": "agility"
         },
         {
           "key": "restoration",
           "name": {"en": "Restoration", "es": "Restauración"},
           "roles": ["healer"],
           "blizzardIds": [],
-          "apiNames": ["Restoration"]
+          "apiNames": ["Restoration"],
+          "primaryStat": "intellect"
         }
       ]
     }
