@@ -26,6 +26,37 @@ interface Props {
 }
 
 /**
+ * The readable zone an item comes from: a profile raid/dungeon name when its key matches, otherwise the source's
+ * own zone name (e.g. "Scarlet Monastery: Armory"). Null when the source is generic (quest/vendor…) or unknown.
+ */
+function sourceZoneName(version: GameVersion, source: BisSource | null | undefined, locale: string): string | null {
+  if (!source) return null;
+  const raid = version.raids.find((r) => r.key === source.zoneKey);
+  if (raid) return localize(raid.name, locale);
+  const dungeon = version.dungeons.find((d) => d.key === source.zoneKey);
+  if (dungeon) return localize(dungeon.name, locale);
+  return source.zoneName ? tr(source.zoneName, locale) : null;
+}
+
+/**
+ * One line describing where an item drops, as shown in the saved list and the picker: the zone (instance, quest
+ * zone…) and, after a dot, the detail — the boss for a raid/dungeon drop, or the quest name for a quest reward.
+ * Falls back to the generic source type. Detail beyond the boss (quest name, "trash drop") needs the Wowhead data.
+ */
+function sourceSummary(
+  version: GameVersion,
+  source: BisSource | null | undefined,
+  locale: string,
+  t: (key: string) => string,
+): string | null {
+  if (!source) return null;
+  const zone = sourceZoneName(version, source, locale);
+  const detail = source.bossName ? tr(source.bossName, locale) : null;
+  const where = zone ?? t(`sourceType.${source.type}`);
+  return detail ? `${where} · ${detail}` : where;
+}
+
+/**
  * 10-level brackets up to the version cap, e.g. [1,10],[11,20]… The last one is marked `open`: at max level a
  * character can equip anything requiring at most the cap, and endgame gear often requires a level below the cap
  * (a level-80 raid weapon on a level-90 character), so a closed [81,90] window would hide the best items.
@@ -156,10 +187,13 @@ export function BisPanel({ version, region, bis, canEdit, endpoint, level, class
                     >
                       {item.name}
                     </a>
-                    {mode === "slot" && <span className="text-xs text-muted">{t(`sourceType.${item.source?.type ?? "other"}`)}</span>}
+                    {/* By slot: the obtained-from zone (+ boss). By zone: the slot, since the zone is the group header. */}
+                    {mode === "slot" && (
+                      <span className="text-xs text-muted">{sourceSummary(version, item.source, locale, t) ?? t("sourceType.other")}</span>
+                    )}
                     {mode === "zone" && <span className="text-xs text-muted">{localize(bisSlot(item.slot)?.name ?? {}, locale)}</span>}
+                    {mode === "zone" && item.source?.bossName && <span className="text-xs text-muted">· {tr(item.source.bossName, locale)}</span>}
                     {item.itemLevel ? <span className="text-xs text-muted">{t("ilvl", { level: item.itemLevel })}</span> : null}
-                    {item.source?.bossName && <span className="text-xs text-muted">· {tr(item.source.bossName, locale)}</span>}
                     {canEdit && (
                       <span className="ml-auto flex items-center gap-2">
                         <ZoneSelect version={version} value={item.source} onChange={(s) => setSource(index, s)} />
@@ -455,10 +489,12 @@ function ItemSearch({
                     >
                       {tr(r.name, locale)}
                     </a>
-                    <span className="text-xs text-muted">{localize(bisSlot(r.slot)?.name ?? {}, locale)}</span>
+                    {/* Item level, required level and slot are already in the hover tooltip and the filters, so the
+                        row keeps just the type and where it drops. */}
                     {r.subclass ? <span className="text-xs text-muted">{tr(r.subclass, locale)}</span> : null}
-                    {r.itemLevel ? <span className="text-xs text-muted">{t("ilvl", { level: r.itemLevel })}</span> : null}
-                    {r.requiredLevel ? <span className="text-xs text-muted">{t("reqLevel", { level: r.requiredLevel })}</span> : null}
+                    {sourceSummary(version, r.source, locale, t) && (
+                      <span className="text-xs text-muted">{sourceSummary(version, r.source, locale, t)}</span>
+                    )}
                     <button type="button" className="btn ml-auto" disabled={added.has(r.id)} onClick={() => addResult(r)}>
                       {added.has(r.id) ? t("addedLabel") : t("addLabel")}
                     </button>
