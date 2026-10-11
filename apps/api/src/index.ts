@@ -1,4 +1,4 @@
-import { RaiderIoClient, WarcraftLogsClient, authorizeUrl, exchangeCode, getUserInfo } from "@wow/blizzard";
+import { RaiderIoClient, WarcraftLogsClient, WowheadClient, authorizeUrl, exchangeCode, getUserInfo } from "@wow/blizzard";
 import { loadServerGameVersions } from "@wow/config/node";
 import {
   QUEUES,
@@ -63,6 +63,7 @@ const app = await buildApp(
       warcraftLogs: env.WARCRAFTLOGS_CLIENT_ID && env.WARCRAFTLOGS_CLIENT_SECRET
         ? new WarcraftLogsClient({ clientId: env.WARCRAFTLOGS_CLIENT_ID, clientSecret: env.WARCRAFTLOGS_CLIENT_SECRET })
         : undefined,
+      wowhead: new WowheadClient(),
     },
     queue,
     oauth: {
