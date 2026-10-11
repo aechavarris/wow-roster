@@ -26,8 +26,7 @@ export async function wowheadRoutes(app: FastifyInstance, { core, versions }: Ap
       })
       .parse(request.query);
     try {
-      const results = await wowhead.search(q.q, domainOf(q.version));
-      return { results: q.type ? results.filter((r) => r.type === q.type) : results };
+      return { results: await wowhead.search(q.q, domainOf(q.version), { type: q.type }) };
     } catch {
       throw new HttpError(502, "wowhead_unavailable");
     }

@@ -186,9 +186,9 @@ const core: CoreContext = {
     fetch: (async (input: string | URL) => {
       const url = input.toString();
       if (url === "https://www.wowhead.com/classic/item=19019&xml")
-        return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>60</level><quality id="5">Legendary</quality><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
-      if (url.startsWith("https://www.wowhead.com/classic/search?q="))
-        return new Response(`<script>new Listview({template:'item',data:[{"id":19019,"name":"Thunderfury","quality":5,"level":60}]});</script>`);
+        return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
+      if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
+        return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
       return new Response("", { status: 404 });
     }) as typeof fetch,
   }),
@@ -1743,11 +1743,11 @@ describe("Wowhead proxy (prototype)", () => {
     const session = await login();
     const byId = await app.inject({ method: "GET", url: "/api/wowhead/item/19019?version=classic-era", cookies: { wr_session: session } });
     expect(byId.statusCode).toBe(200);
-    expect(byId.json().entity).toMatchObject({ type: "item", id: 19019, name: "Thunderfury", quality: 5, level: 60 });
+    expect(byId.json().entity).toMatchObject({ type: "item", id: 19019, name: "Thunderfury", quality: 5, itemLevel: 80, reqLevel: 60, sourceCodes: [4] });
 
     const search = await app.inject({ method: "GET", url: "/api/wowhead/search?version=classic-era&q=thunder", cookies: { wr_session: session } });
     expect(search.statusCode).toBe(200);
-    expect(search.json().results).toEqual([{ type: "item", id: 19019, name: "Thunderfury", quality: 5, level: 60 }]);
+    expect(search.json().results).toEqual([{ type: "item", id: 19019, name: "Thunderfury", quality: 5, itemLevel: 80, reqLevel: 60, sourceCodes: [4] }]);
 
     // An entity Wowhead does not know is a 404 through the proxy.
     const missing = await app.inject({ method: "GET", url: "/api/wowhead/item/999?version=classic-era", cookies: { wr_session: session } });
