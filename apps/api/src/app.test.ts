@@ -1,4 +1,4 @@
-import { BlizzardClient, WarcraftLogsClient } from "@wow/blizzard";
+import { BlizzardClient, WarcraftLogsClient, WowheadClient } from "@wow/blizzard";
 import { loadGameVersions, withApiStandIns } from "@wow/config";
 import { ApiUnavailableError, syncCharacter, syncGuild, type CoreContext } from "@wow/core";
 import { createPrismaClient } from "@wow/db";
@@ -181,6 +181,17 @@ const core: CoreContext = {
     if (!api?.available) throw new ApiUnavailableError(version);
     return new BlizzardClient({ clientId: "id", clientSecret: "secret", region, api, fetch: fakeFetch, retryDelayMs: 0 });
   },
+  // Wowhead prototype: a fake that serves one item's &xml and one search page, so the proxy routes can be tested.
+  wowhead: new WowheadClient({
+    fetch: (async (input: string | URL) => {
+      const url = input.toString();
+      if (url === "https://www.wowhead.com/classic/item=19019&xml")
+        return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
+      if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
+        return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
+      return new Response("", { status: 404 });
+    }) as typeof fetch,
+  }),
 };
 
 const calls: string[] = [];
@@ -1721,5 +1732,25 @@ describe("BiS item search with an API stand-in (Forever tested with Classic Era 
       cookies: { wr_session: session },
     });
     expect(warrior.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
+  });
+});
+
+describe("Wowhead proxy (prototype)", () => {
+  it("requires a session, then looks up by id and searches by name on the version's domain", async () => {
+    // Unauthenticated calls are refused: this is not an open proxy.
+    expect((await app.inject({ method: "GET", url: "/api/wowhead/item/19019?version=classic-era" })).statusCode).toBe(401);
+
+    const session = await login();
+    const byId = await app.inject({ method: "GET", url: "/api/wowhead/item/19019?version=classic-era", cookies: { wr_session: session } });
+    expect(byId.statusCode).toBe(200);
+    expect(byId.json().entity).toMatchObject({ type: "item", id: 19019, name: "Thunderfury", quality: 5, itemLevel: 80, reqLevel: 60, sourceCodes: [4] });
+
+    const search = await app.inject({ method: "GET", url: "/api/wowhead/search?version=classic-era&q=thunder", cookies: { wr_session: session } });
+    expect(search.statusCode).toBe(200);
+    expect(search.json().results).toEqual([{ type: "item", id: 19019, name: "Thunderfury", quality: 5, itemLevel: 80, reqLevel: 60, sourceCodes: [4] }]);
+
+    // An entity Wowhead does not know is a 404 through the proxy.
+    const missing = await app.inject({ method: "GET", url: "/api/wowhead/item/999?version=classic-era", cookies: { wr_session: session } });
+    expect(missing.statusCode).toBe(404);
   });
 });

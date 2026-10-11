@@ -12,6 +12,7 @@ import { guildRoutes } from "./routes/guilds";
 import { memberRoutes } from "./routes/members";
 import { meRoutes } from "./routes/me";
 import { metaRoutes } from "./routes/meta";
+import { wowheadRoutes } from "./routes/wowhead";
 import { SESSION_COOKIE, findSessionUser } from "./session";
 
 declare module "fastify" {
@@ -66,6 +67,7 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean; rateL
       await guildRoutes(api, deps);
       await memberRoutes(api, deps);
       await characterRoutes(api, deps);
+      await wowheadRoutes(api, deps);
     },
     { prefix: "/api" },
   );

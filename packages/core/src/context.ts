@@ -1,6 +1,6 @@
-import { BlizzardClient, RaiderIoClient, WarcraftLogsClient } from "@wow/blizzard";
+import { BlizzardClient, RaiderIoClient, WarcraftLogsClient, WowheadClient } from "@wow/blizzard";
 
-export { RaiderIoClient, WarcraftLogsClient };
+export { RaiderIoClient, WarcraftLogsClient, WowheadClient };
 import { versionOf, type GameProfile, type GameVersions } from "@wow/config";
 import type { PrismaClient } from "@wow/db";
 
@@ -14,6 +14,8 @@ export interface CoreContext {
   raiderIo?: RaiderIoClient;
   /** Warcraft Logs, when its API credentials are configured; versions that enable it read raid kills from there. */
   warcraftLogs?: WarcraftLogsClient;
+  /** Wowhead (unofficial), for game data Blizzard's API lacks on Classic (item source, by-id lookup, search). */
+  wowhead?: WowheadClient;
 }
 
 /** The game version has no public Blizzard API yet (Forever): only planned characters are possible. */
