@@ -145,6 +145,9 @@ const fakeFetch = (async (input: string | URL, init?: RequestInit) => {
   // The account characters belong to Battle.net user 1001; every other user has none.
   // The item search honours the item_class.id / item_subclass.id filters so class/type filtering can be tested.
   if (url.pathname === "/data/wow/search/item") {
+    // Let a test simulate the search endpoint being down/absent on a namespace (some Classic namespaces).
+    const searchFailure = failingRoutes.get(url.pathname);
+    if (searchFailure) return new Response(null, { status: searchFailure });
     const body = blizzardRoutes["/data/wow/search/item"] as { page: number; pageCount: number; results: { data: { item_class?: { id: number }; item_subclass?: { id: number } } }[] };
     const classId = url.searchParams.get("item_class.id");
     const subclassId = url.searchParams.get("item_subclass.id");
@@ -588,6 +591,13 @@ describe("BiS wishlists", () => {
     // The secondary-stat filter keeps only items carrying it (the dagger has haste, the mace has crit).
     const hasteWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&secondary=haste&restrictClass=false", cookies: { wr_session: session } });
     expect(hasteWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([602]);
+
+    // A Blizzard search failure (e.g. the endpoint missing on a Classic namespace) is a clean 502, not a 500.
+    failingRoutes.set("/data/wow/search/item", 404);
+    const down = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&q=sulf", cookies: { wr_session: session } });
+    expect(down.statusCode).toBe(502);
+    expect(down.json().error).toBe("item_search_unavailable");
+    failingRoutes.delete("/data/wow/search/item");
 
     // Versions without an API cannot search items.
     expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);

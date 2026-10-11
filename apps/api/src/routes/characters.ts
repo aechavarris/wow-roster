@@ -140,10 +140,17 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     // the Blizzard item search cannot filter by our grouped slots nor sort by rarity/subclass.
     const pages = q.slot ? 3 : 1;
     const candidates = new Map<number, ItemResult>();
-    for (let page = 1; page <= pages; page++) {
-      const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, itemClassId, itemSubclassId, page, pageSize: 100 });
-      for (const item of result.items) candidates.set(item.id, item);
-      if (page >= result.pageCount) break;
+    try {
+      for (let page = 1; page <= pages; page++) {
+        const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, itemClassId, itemSubclassId, page, pageSize: 100 });
+        for (const item of result.items) candidates.set(item.id, item);
+        if (page >= result.pageCount) break;
+      }
+    } catch (error) {
+      // The Blizzard item search can be missing or reject a filter on some Classic namespaces; surface a clean
+      // error the picker can show (errors.item_search_unavailable) instead of a generic 500.
+      request.log.warn({ err: error, version: q.version }, "item search failed");
+      throw new HttpError(502, "item_search_unavailable");
     }
 
     let rows = [...candidates.values()].map((i) => ({ item: i, slot: slotForInventoryType(i.inventoryType) }));

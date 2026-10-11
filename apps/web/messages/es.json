@@ -311,6 +311,7 @@
     "cannot_change_owner": "No se puede cambiar el rol del propietario.",
     "cannot_remove_owner": "El propietario no puede salir ni ser quitado.",
     "game_version_without_api": "Esta versión del juego aún no tiene API de Blizzard: solo admite personajes planificados.",
+    "item_search_unavailable": "La búsqueda de objetos no está disponible ahora mismo para esta versión. Inténtalo más tarde.",
     "bis_on_character": "Esta entrada es un personaje real: su lista BiS se edita en la ficha del personaje.",
     "game_version_from_guild": "Un roster vinculado usa la versión de su hermandad y no se puede cambiar.",
     "game_version_has_characters": "El roster tiene personajes reales: quítalos antes de cambiar la versión.",
