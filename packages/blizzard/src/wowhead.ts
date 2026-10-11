@@ -77,6 +77,10 @@ export interface WowheadSearchResult {
   itemLevel?: number;
   reqLevel?: number;
   sourceCodes: number[];
+  /** Numeric ids from an item row (Blizzard enums), for filtering: inventory slot, item class and subclass. */
+  slotId?: number;
+  classId?: number;
+  subclassId?: number;
 }
 
 /** Wowhead answered with an error status, or (404) does not know the entity. */
@@ -197,6 +201,9 @@ export function parseWowheadListview(html: string, type: WowheadType, limit = 20
       itemLevel: toInt(obj.match(/"level":(\d+)/)?.[1]),
       reqLevel: toInt(obj.match(/"reqlevel":(\d+)/)?.[1]),
       sourceCodes: codes(obj.match(/"source":\[([0-9,]*)\]/)?.[1]),
+      slotId: toInt(obj.match(/"slot":(\d+)/)?.[1]),
+      classId: toInt(obj.match(/"classs":(\d+)/)?.[1]),
+      subclassId: toInt(obj.match(/"subclass":(\d+)/)?.[1]),
     });
     if (results.length >= limit) break;
   }

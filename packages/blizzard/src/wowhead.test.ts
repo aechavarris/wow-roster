@@ -47,8 +47,8 @@ describe("Wowhead listview parsing", () => {
   it("reads rows field by field, tolerating unquoted keys and skipping rows without an id", () => {
     const rows = parseWowheadListview(LISTVIEW_HTML, "item");
     expect(rows).toEqual([
-      { type: "item", id: 720, name: "Brawler Gloves", quality: 3, itemLevel: 28, reqLevel: 23, sourceCodes: [2] },
-      { type: "item", id: 728, name: "Recipe: Westfall Stew", quality: 1, itemLevel: 15, reqLevel: undefined, sourceCodes: [4, 5] },
+      { type: "item", id: 720, name: "Brawler Gloves", quality: 3, itemLevel: 28, reqLevel: 23, sourceCodes: [2], slotId: 10, classId: 4, subclassId: 2 },
+      { type: "item", id: 728, name: "Recipe: Westfall Stew", quality: 1, itemLevel: 15, reqLevel: undefined, sourceCodes: [4, 5], slotId: undefined, classId: undefined, subclassId: undefined },
     ]);
   });
 
