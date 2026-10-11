@@ -6,6 +6,7 @@ import { Prisma } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { resolveBisList } from "../bis";
+import { wowheadBisSearch } from "../wowheadSearch";
 import type { AppDeps } from "../deps";
 import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from "../errors";
 
@@ -102,9 +103,22 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
         restrictClass: z.string().optional().transform((v) => v !== "false"),
       })
       .parse(request.query);
+    const game = gameVersion(core, q.version);
+
+    // Classic (and Forever via its Classic stand-in): Blizzard's item API is thin there, so search Wowhead's item
+    // finder instead, which carries level, slot and source. api.available keeps Forever on its stand-in domain
+    // (Classic) rather than its own, and still 409s when no API/stand-in is set. Retail keeps Blizzard's search.
+    if (q.version !== "retail" && game.api.available && core.wowhead) {
+      try {
+        return await wowheadBisSearch(core, game, q);
+      } catch (error) {
+        request.log.warn({ err: error, version: q.version }, "wowhead item search failed");
+        throw new HttpError(502, "item_search_unavailable");
+      }
+    }
+
     // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
     const client = core.blizzard(q.version, q.region);
-    const game = gameVersion(core, q.version);
 
     // Resolve the Blizzard item_class/item_subclass filter: an explicit type wins; otherwise, for an armour slot,
     // restrict to the class's armour type (retail) so items the class cannot wear are hidden.

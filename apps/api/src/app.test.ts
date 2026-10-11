@@ -192,6 +192,15 @@ const core: CoreContext = {
         return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
       if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
         return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
+      // The item finder for any domain: a quest sword (mainHand) and a cloth chest, for the Wowhead BiS path.
+      if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\?filter=/.test(url))
+        return new Response(
+          `<script>var listviewitems = [` +
+            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"source":[4],popularity:9},` +
+            `{"id":5022,"name":"Test Robe","quality":2,"level":18,"reqlevel":15,"slot":5,"classs":4,"subclass":1,"source":[2],popularity:3},` +
+            `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
+            `];</script>`,
+        );
       return new Response("", { status: 404 });
     }) as typeof fetch,
   }),
@@ -1762,5 +1771,25 @@ describe("Wowhead proxy (prototype)", () => {
     // An entity Wowhead does not know is a 404 through the proxy.
     const missing = await app.inject({ method: "GET", url: "/api/wowhead/item/999?version=classic-era", cookies: { wr_session: session } });
     expect(missing.statusCode).toBe(404);
+  });
+});
+
+describe("BiS item search via Wowhead (Classic versions)", () => {
+  it("searches the Wowhead item finder, maps rows and filters by slot, dropping non-gear", async () => {
+    const session = await login();
+
+    // No slot: the two gear rows come back (the consumable, slot 0 -> "other", is dropped), newest item level first.
+    const all = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu", cookies: { wr_session: session } });
+    expect(all.statusCode).toBe(200);
+    expect(all.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5022]);
+
+    // A main-hand search keeps only the weapon, with its slot, quality and source type mapped.
+    const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&slot=mainHand", cookies: { wr_session: session } });
+    expect(mainHand.json().items).toHaveLength(1);
+    expect(mainHand.json().items[0]).toMatchObject({ id: 5011, slot: "mainHand", quality: "RARE", requiredLevel: 20, source: { type: "quest" } });
+
+    // MoP also goes through Wowhead (its domain).
+    const mop = await app.inject({ method: "GET", url: "/api/items/search?version=progression&region=eu&slot=chest", cookies: { wr_session: session } });
+    expect(mop.json().items.map((i: { id: number }) => i.id)).toEqual([5022]);
   });
 });

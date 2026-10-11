@@ -120,3 +120,70 @@ export function itemHasSecondary(statCodes: readonly string[], secondaryKey: str
   const token = SECONDARY_BY_KEY.get(secondaryKey)?.token;
   return token ? statCodes.some((c) => c.toUpperCase().includes(token)) : false;
 }
+
+/**
+ * Blizzard inventory-type ids to our BiS slot keys. These ids are the stable game enum (shared by Blizzard and
+ * Wowhead), so they map the numeric `slot` on a Wowhead item row the same way slotForInventoryType maps the string
+ * enum. Shirt, tabard and bags fall through to "other".
+ */
+const SLOT_BY_ID: Record<number, string> = {
+  1: "head",
+  2: "neck",
+  3: "shoulder",
+  5: "chest",
+  20: "chest", // robe
+  6: "waist",
+  7: "legs",
+  8: "feet",
+  9: "wrist",
+  10: "hands",
+  11: "finger",
+  12: "trinket",
+  16: "back",
+  13: "mainHand", // one-hand
+  17: "mainHand", // two-hand
+  21: "mainHand",
+  14: "offHand", // shield
+  22: "offHand",
+  23: "offHand", // held in off-hand
+  15: "ranged",
+  25: "ranged", // thrown
+  26: "ranged", // ranged right (gun/wand)
+  28: "ranged", // relic
+};
+export const slotForInventoryTypeId = (id: number | undefined | null): string => (id != null ? SLOT_BY_ID[id] : undefined) ?? "other";
+
+/** Item quality id (0 poor … 5 legendary, 6 artifact, 7 heirloom) to our quality name, as the Blizzard API gives. */
+const QUALITY_BY_ID: Record<number, string> = {
+  0: "POOR",
+  1: "COMMON",
+  2: "UNCOMMON",
+  3: "RARE",
+  4: "EPIC",
+  5: "LEGENDARY",
+  6: "ARTIFACT",
+  7: "HEIRLOOM",
+};
+export const wowheadQualityName = (id: number | undefined | null): string | undefined => (id != null ? QUALITY_BY_ID[id] : undefined);
+
+/**
+ * Our BiS source type for a Wowhead `source` code list (1 crafted, 2 drop, 3 pvp, 4/6 quest, 5/16 vendor…); the
+ * first code that maps wins. A bare "drop" (2) has no named boss/zone in the list, so it reads as "world" until the
+ * item page refines it.
+ */
+const SOURCE_TYPE_BY_CODE: Record<number, "quest" | "vendor" | "crafted" | "pvp" | "world"> = {
+  1: "crafted",
+  2: "world",
+  3: "pvp",
+  4: "quest",
+  5: "vendor",
+  6: "quest",
+  16: "vendor",
+};
+export function wowheadSourceType(codes: readonly number[]): "quest" | "vendor" | "crafted" | "pvp" | "world" | "other" {
+  for (const code of codes) {
+    const type = SOURCE_TYPE_BY_CODE[code];
+    if (type) return type;
+  }
+  return "other";
+}
