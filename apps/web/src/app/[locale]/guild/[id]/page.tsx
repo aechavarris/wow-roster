@@ -60,7 +60,11 @@ export default async function RosterPage({ params }: PageProps<"/[locale]/guild/
           <h1 className="heading flex flex-wrap items-center gap-3 text-3xl">
             {guild.name}
             <VersionBadge version={version} />
-            {guild.published && <span className="badge border border-success/60 text-success">{t("published")}</span>}
+            {guild.public ? (
+              <span className="badge border border-success/60 text-success">{t("public")}</span>
+            ) : (
+              guild.published && <span className="badge border border-success/60 text-success">{t("published")}</span>
+            )}
           </h1>
           <p className="text-sm text-muted">
             {guild.kind === "custom" ? t("customRoster") : `${guild.realm} · ${t("linkedRoster")}`} · {guild.region.toUpperCase()}

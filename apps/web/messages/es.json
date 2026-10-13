@@ -105,6 +105,7 @@
     "customRoster": "Roster libre",
     "linkedRoster": "vinculado a la hermandad",
     "published": "Publicado",
+    "public": "Público",
     "details": "Detalles",
     "weekly": "Semana",
     "logs": "Logs"
@@ -188,7 +189,6 @@
   "settings": {
     "title": "Ajustes de la hermandad",
     "general": "General",
-    "public": "Roster público (visible sin iniciar sesión)",
     "syncInterval": "Intervalo de sincronización (minutos)",
     "syncIntervalHelp": "Mínimo {min} minutos. Intervalos más cortos consumen más cuota de la API.",
     "minLevel": "Nivel mínimo",
@@ -443,10 +443,23 @@
     "confirmReject": "¿Rechazar la propuesta de {name}?",
     "confirmWithdraw": "¿Retirar tu propuesta de {name}?"
   },
-  "publish": {
-    "title": "Publicación",
-    "help": "Un roster publicado aparece en la lista de rosters publicados: cualquier usuario con sesión de Battle.net puede verlo y proponer personajes, que quedan pendientes hasta que los aceptes.",
-    "label": "Publicar este roster"
+  "visibility": {
+    "title": "Visibilidad",
+    "help": "Decide quién ve este roster y quién puede proponer personajes. Solo el propietario puede cambiarlo.",
+    "options": {
+      "draft": {
+        "label": "Borrador (oculto)",
+        "help": "Solo tú y los miembros lo veis. No aparece en ninguna lista; se entra por invitación."
+      },
+      "published": {
+        "label": "Publicado",
+        "help": "Aparece en la lista para usuarios con sesión de Battle.net, que pueden proponer sus personajes (pendientes de tu aprobación)."
+      },
+      "public": {
+        "label": "Público",
+        "help": "Visible para todo el mundo sin iniciar sesión; cualquiera puede proponer personajes planificados, incluso sin cuenta."
+      }
+    }
   },
   "published": {
     "title": "Rosters publicados",

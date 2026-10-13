@@ -105,6 +105,7 @@
     "customRoster": "Custom roster",
     "linkedRoster": "linked to the guild",
     "published": "Published",
+    "public": "Public",
     "details": "Details",
     "weekly": "Weekly",
     "logs": "Logs"
@@ -188,7 +189,6 @@
   "settings": {
     "title": "Guild settings",
     "general": "General",
-    "public": "Public roster (visible without signing in)",
     "syncInterval": "Sync interval (minutes)",
     "syncIntervalHelp": "At least {min} minutes. Shorter intervals use more API quota.",
     "minLevel": "Minimum level",
@@ -443,10 +443,23 @@
     "confirmReject": "Reject the proposal for {name}?",
     "confirmWithdraw": "Withdraw your proposal for {name}?"
   },
-  "publish": {
-    "title": "Publishing",
-    "help": "A published roster appears in the published rosters list: any user signed in with Battle.net can see it and propose characters, which stay pending until you accept them.",
-    "label": "Publish this roster"
+  "visibility": {
+    "title": "Visibility",
+    "help": "Choose who can see this roster and who can propose characters. Only the owner can change it.",
+    "options": {
+      "draft": {
+        "label": "Draft (hidden)",
+        "help": "Only you and the members see it. It appears in no list; people join by invite."
+      },
+      "published": {
+        "label": "Published",
+        "help": "Listed for users signed in with Battle.net, who can propose their characters (pending your approval)."
+      },
+      "public": {
+        "label": "Public",
+        "help": "Visible to everyone without signing in; anyone can propose planned characters, even without an account."
+      }
+    }
   },
   "published": {
     "title": "Published rosters",

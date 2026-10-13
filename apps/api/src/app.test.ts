@@ -874,6 +874,8 @@ describe("published rosters", () => {
     const officer = await login(2002);
     await send("POST", `/api/invites/${invite.token}/accept`, officer);
     expect((await send("PATCH", `/api/guilds/${roster.id}`, officer, { published: true })).statusCode).toBe(403);
+    // Visibility is an owner-only decision: an officer cannot make it public either.
+    expect((await send("PATCH", `/api/guilds/${roster.id}`, officer, { public: true })).statusCode).toBe(403);
     expect((await send("PATCH", `/api/guilds/${roster.id}`, owner, { published: true })).json().guild.published).toBe(true);
 
     // A signed-in user sees published rosters.
