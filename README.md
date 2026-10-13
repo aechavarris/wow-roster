@@ -101,3 +101,15 @@ One-time setup (Windows with Docker Desktop):
 7. **First deploy**: run the *Deploy* workflow by hand (*Actions → Deploy → Run workflow*).
 
 Keep Docker Desktop set to start on sign-in and the PC from sleeping. Only CI runs triggered by pushes to this repository reach the runner; pull requests from forks never deploy.
+
+## Server administration
+
+Some maintenance is intentionally not in the app, where only a roster's own owner can act. Deleting **any** roster (regardless of owner) is done from the server with a small CLI baked into the worker image, which reaches the database directly. In the production Docker stack:
+
+```powershell
+$compose = "-f docker-compose.prod.yml -f docker-compose.home.yml"
+docker compose $compose exec worker node dist/admin.js list
+docker compose $compose exec worker node dist/admin.js delete <id> "Exact roster name"
+```
+
+`list` prints every roster with its id, kind, version, visibility, entry count and owner. `delete` removes the roster and its entries, ranks, memberships, invites and webhooks; the characters stay (their guild link is cleared). Passing the exact name as a second argument is an optional typo guard: the delete refuses unless it matches. Run it from the repo instead with `pnpm --filter @wow/worker admin list` / `... admin delete <id> "Name"`.

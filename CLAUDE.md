@@ -97,6 +97,7 @@ pnpm typecheck; pnpm test; pnpm build
 
 - `prisma migrate dev` is interactive. In non-interactive shells write the migration SQL by hand under `packages/db/prisma/migrations/<timestamp>_<name>/`, apply it with `prisma migrate deploy`, and check `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` prints an empty migration. Run `pnpm db:generate` after schema changes (Prisma 7 does not regenerate on migrate).
 - Full stack in containers: `docker compose --profile app up --build`.
+- Server admin that the app deliberately does not expose (deleting **any** roster, not just one's own) lives in the worker CLI `apps/worker/src/admin.ts` (`pnpm --filter @wow/worker admin list|delete <id> "Name"`; in prod `docker compose … exec worker node dist/admin.js …`). It hits the DB directly; `delete` cascades entries/ranks/memberships/invites/webhooks, keeps characters, and drops the sync schedule. See README "Server administration".
 - To check UI changes, run the dev servers and drive pages with Playwright (headless Chromium): create throwaway users with a session row in the DB (cookie `wr_session` holds the raw token; the DB stores its SHA-256), screenshot light/dark/mobile, then delete the users.
 
 ## Conventions
