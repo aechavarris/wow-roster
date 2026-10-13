@@ -13,19 +13,45 @@
     "heroTitle": "Tu roster, siempre al día",
     "heroText": "Sincroniza tu hermandad con la armería de Blizzard, agrupa mains y alters por jugador y ten equipo, talentos y profesiones de todo el roster en un solo sitio.",
     "loginDisabled": "El inicio de sesión no está configurado: faltan las credenciales de la API de Blizzard.",
-    "features": {
-      "roster": {
-        "title": "Roster",
-        "text": "Estados por rango, roles por especialización y ajustes manuales de los oficiales."
+    "featuresTitle": "Qué puedes hacer",
+    "sections": {
+      "rosters": {
+        "title": "Rosters multi-versión",
+        "text": "Crea rosters libres o vincula tu hermandad del juego. Son públicos o privados por invitación, y cualquiera puede proponer personajes planificados en los públicos, incluso sin cuenta."
       },
-      "armory": {
-        "title": "Armería",
-        "text": "Equipo, encantamientos, talentos de ambas especializaciones, estadísticas, profesiones y reputaciones."
+      "characters": {
+        "title": "Fichas de personaje",
+        "text": "Equipo, encantamientos, talentos de ambas especializaciones, estadísticas, profesiones y reputaciones, sincronizados desde la armería de Blizzard y agrupados por jugador."
       },
-      "sheet": {
-        "title": "Hoja de auditoría",
-        "text": "Próximamente: reglas configurables, historial semanal y Google Sheet opcional."
+      "progress": {
+        "title": "Progreso y auditoría semanal",
+        "text": "Jefes muertos por raid, Mazmorras Míticas+ e historial semanal para ver de un vistazo quién está al día cada reinicio."
+      },
+      "composition": {
+        "title": "Composición de raid",
+        "text": "Cuenta roles, especializaciones y dobles especializaciones, detecta buffs y debuffs que faltan y exporta la raid como texto plano para Discord o notas del juego."
+      },
+      "bis": {
+        "title": "Listas BiS",
+        "text": "Marca el mejor objeto para cada slot con un buscador integrado contra la base de datos de Wowhead que muestra de dónde cae cada objeto."
+      },
+      "integrations": {
+        "title": "Integraciones",
+        "text": "Inicio de sesión con Battle.net, Warcraft Logs donde la API no llega, Raider.IO para Míticas+ y profesiones automáticas o a mano según la versión."
       }
+    },
+    "versionsTitle": "Qué incluye cada versión del juego",
+    "versionsIntro": "Cada roster elige su versión al crearse; estas son las funciones disponibles en cada una.",
+    "caps": {
+      "real": "Personajes reales sincronizados con la armería",
+      "standin": "En pruebas con datos de {source} hasta que llegue la API",
+      "planned": "Solo personajes planificados (todavía sin API)",
+      "raids": "Raids de {sizes} jugadores",
+      "logs": "Progreso e historial desde Warcraft Logs",
+      "mythic": "Mazmorras Míticas+ (Raider.IO)",
+      "autoProfessions": "Profesiones desde la API",
+      "manualProfessions": "Profesiones introducidas a mano",
+      "bis": "Listas BiS con buscador de objetos"
     },
     "myGuilds": "Mis rosters",
     "noGuilds": "Todavía no estás en ningún roster. Crea uno libre, vincula tu hermandad o pide una invitación.",
@@ -79,6 +105,7 @@
     "customRoster": "Roster libre",
     "linkedRoster": "vinculado a la hermandad",
     "published": "Publicado",
+    "public": "Público",
     "details": "Detalles",
     "weekly": "Semana",
     "logs": "Logs"
@@ -162,7 +189,6 @@
   "settings": {
     "title": "Ajustes de la hermandad",
     "general": "General",
-    "public": "Roster público (visible sin iniciar sesión)",
     "syncInterval": "Intervalo de sincronización (minutos)",
     "syncIntervalHelp": "Mínimo {min} minutos. Intervalos más cortos consumen más cuota de la API.",
     "minLevel": "Nivel mínimo",
@@ -417,10 +443,23 @@
     "confirmReject": "¿Rechazar la propuesta de {name}?",
     "confirmWithdraw": "¿Retirar tu propuesta de {name}?"
   },
-  "publish": {
-    "title": "Publicación",
-    "help": "Un roster publicado aparece en la lista de rosters publicados: cualquier usuario con sesión de Battle.net puede verlo y proponer personajes, que quedan pendientes hasta que los aceptes.",
-    "label": "Publicar este roster"
+  "visibility": {
+    "title": "Visibilidad",
+    "help": "Decide quién ve este roster y quién puede proponer personajes. Solo el propietario puede cambiarlo.",
+    "options": {
+      "draft": {
+        "label": "Borrador (oculto)",
+        "help": "Solo tú y los miembros lo veis. No aparece en ninguna lista; se entra por invitación."
+      },
+      "published": {
+        "label": "Publicado",
+        "help": "Aparece en la lista para usuarios con sesión de Battle.net, que pueden proponer sus personajes (pendientes de tu aprobación)."
+      },
+      "public": {
+        "label": "Público",
+        "help": "Visible para todo el mundo sin iniciar sesión; cualquiera puede proponer personajes planificados, incluso sin cuenta."
+      }
+    }
   },
   "published": {
     "title": "Rosters publicados",

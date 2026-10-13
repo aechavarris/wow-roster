@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DeleteRosterForm } from "@/components/DeleteRosterForm";
 import { GameVersionForm } from "@/components/GameVersionForm";
 import { GuildSettingsForm } from "@/components/GuildSettingsForm";
-import { PublishForm } from "@/components/PublishForm";
+import { VisibilityForm } from "@/components/VisibilityForm";
 import { MembersPanel } from "@/components/MembersPanel";
 import { WebhooksPanel } from "@/components/WebhooksPanel";
 import { Link } from "@/i18n/routing";
@@ -39,7 +39,7 @@ export default async function GuildSettingsPage({ params }: PageProps<"/[locale]
       {data.viewerRole === "OWNER" && (
         <>
           <GameVersionForm guild={data.guild} versions={config.versions} hasRealCharacters={hasRealCharacters} />
-          <PublishForm guild={data.guild} />
+          <VisibilityForm guild={data.guild} />
         </>
       )}
       <GuildSettingsForm guild={data.guild} ranks={data.ranks} profile={versionOf(config, data.guild.gameVersion)} />

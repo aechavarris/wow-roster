@@ -171,7 +171,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
         name: z.string().trim().min(1).max(60).optional(),
         /** Only the owner changes it, and only on custom rosters without real characters. */
         gameVersion: versionField.optional(),
-        /** Only the owner publishes: signed-in users can then see the roster and propose characters. */
+        /** Visibility is an owner-only decision: published lists the roster to signed-in users, public to everyone. */
         published: z.boolean().optional(),
         public: z.boolean().optional(),
         syncIntervalMinutes: z.number().int().min(profile.sync.minIntervalMinutes).max(24 * 60).optional(),
@@ -181,6 +181,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
       .parse(request.body);
     if (body.name !== undefined && guild.kind === "guild") throw new HttpError(400, "name_from_game");
     if (body.published !== undefined && body.published !== guild.published && role !== "OWNER") throw forbidden();
+    if (body.public !== undefined && body.public !== guild.public && role !== "OWNER") throw forbidden();
     if (body.gameVersion !== undefined && body.gameVersion !== guild.gameVersion) {
       if (role !== "OWNER") throw forbidden();
       // A linked roster mirrors a guild that exists in one game version.

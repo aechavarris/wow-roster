@@ -51,14 +51,12 @@ export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props
               `/guilds/${guild.id}`,
               linked
                 ? {
-                    public: data.get("public") === "on",
                     syncIntervalMinutes: Number(data.get("syncIntervalMinutes")),
                     minLevel: Number(data.get("minLevel")),
                     officerMaxRank: Number(data.get("officerMaxRank")),
                   }
                 : {
                     name: String(data.get("name")),
-                    public: data.get("public") === "on",
                     syncIntervalMinutes: Number(data.get("syncIntervalMinutes")),
                   },
             ),
@@ -72,10 +70,6 @@ export function GuildSettingsForm({ guild, ranks: initialRanks, profile }: Props
             <input id="roster-name" name="name" required maxLength={60} defaultValue={guild.name} className="input" />
           </div>
         )}
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input type="checkbox" name="public" defaultChecked={guild.public} />
-          {t("public")}
-        </label>
         <div>
           <label className="label" htmlFor="syncIntervalMinutes">{t("syncInterval")}</label>
           <input
