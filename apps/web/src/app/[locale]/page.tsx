@@ -65,6 +65,10 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           </div>
         </section>
 
+        {/* Public rosters are open to anyone: list them first so a visitor can browse and propose a planned
+            character without signing in (accepting an invite to a private roster still needs a login). */}
+        {published.length > 0 && <PublishedRosters rosters={published} config={config} />}
+
         <section>
           <h2 className="heading mb-4 text-2xl">{t("featuresTitle")}</h2>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -106,10 +110,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             ))}
           </ul>
         </section>
-
-        {/* Public rosters are open to anyone: list them so a visitor can browse and propose a planned character
-            without signing in (accepting an invite to a private roster still needs a login). */}
-        {published.length > 0 && <PublishedRosters rosters={published} config={config} />}
       </div>
     );
   }
