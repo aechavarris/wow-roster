@@ -13,19 +13,45 @@
     "heroTitle": "Your roster, always up to date",
     "heroText": "Sync your guild with Blizzard's armory, group mains and alts per player, and see the gear, talents and professions of your whole roster in one place.",
     "loginDisabled": "Sign-in is not configured: the Blizzard API credentials are missing.",
-    "features": {
-      "roster": {
-        "title": "Roster",
-        "text": "Statuses from guild ranks, roles from specs, and officer overrides."
+    "featuresTitle": "What you can do",
+    "sections": {
+      "rosters": {
+        "title": "Multi-version rosters",
+        "text": "Create custom rosters or link your in-game guild. They are public or invite-only, and anyone can propose planned characters on public ones, even without an account."
       },
-      "armory": {
-        "title": "Armory",
-        "text": "Gear, enchants, talents for both specs, stats, professions and reputations."
+      "characters": {
+        "title": "Character sheets",
+        "text": "Gear, enchants, talents for both specs, stats, professions and reputations, synced from Blizzard's armory and grouped per player."
       },
-      "sheet": {
-        "title": "Audit sheet",
-        "text": "Coming soon: configurable rules, weekly history and an optional Google Sheet."
+      "progress": {
+        "title": "Progress and weekly audit",
+        "text": "Boss kills per raid, Mythic+ dungeons and a weekly history so you can see at a glance who is up to date each reset."
+      },
+      "composition": {
+        "title": "Raid composition",
+        "text": "Counts roles, specs and off-specs, flags missing buffs and debuffs, and exports the raid as plain text for Discord or in-game notes."
+      },
+      "bis": {
+        "title": "BiS lists",
+        "text": "Mark the best item for each slot with a built-in search against Wowhead's database that shows where each item comes from."
+      },
+      "integrations": {
+        "title": "Integrations",
+        "text": "Battle.net login, Warcraft Logs where the API falls short, Raider.IO for Mythic+, and automatic or manual professions depending on the version."
       }
+    },
+    "versionsTitle": "What each game version includes",
+    "versionsIntro": "Each roster picks its version when it is created; these are the features available in each one.",
+    "caps": {
+      "real": "Real characters synced from the armory",
+      "standin": "Testing with {source} data until the API arrives",
+      "planned": "Planned characters only (no API yet)",
+      "raids": "{sizes}-player raids",
+      "logs": "Progress and history from Warcraft Logs",
+      "mythic": "Mythic+ dungeons (Raider.IO)",
+      "autoProfessions": "Professions from the API",
+      "manualProfessions": "Professions entered by hand",
+      "bis": "BiS lists with an item search"
     },
     "myGuilds": "My rosters",
     "noGuilds": "You are not in any roster yet. Create a custom one, link your guild or ask for an invite.",

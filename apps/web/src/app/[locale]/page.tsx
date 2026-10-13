@@ -38,30 +38,79 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   );
 
   if (!me.user) {
+    // The feature cards describing what the app does, in a fixed order.
+    const sections = ["rosters", "characters", "progress", "composition", "bis", "integrations"] as const;
+    // What each game version supports, built from its config so the list stays accurate as versions change.
+    const versionCaps = (v: (typeof config.versions)[number]): string[] => {
+      const out: string[] = [];
+      if (v.apiAvailable && v.apiStandIn) out.push(t("caps.standin", { source: localize(v.apiStandIn.name, locale) }));
+      else if (v.apiAvailable) out.push(t("caps.real"));
+      else out.push(t("caps.planned"));
+      const sizes = [...new Set(v.raids.filter((r) => r.enabled).map((r) => r.size))].sort((a, b) => a - b);
+      if (sizes.length > 0) out.push(t("caps.raids", { sizes: sizes.join(" / ") }));
+      if (v.warcraftLogsHost) out.push(t("caps.logs"));
+      if (v.characterEndpoints.includes("mythicPlus")) out.push(t("caps.mythic"));
+      if (v.apiAvailable) out.push(v.apiProfessions ? t("caps.autoProfessions") : t("caps.manualProfessions"));
+      if (v.apiAvailable) out.push(t("caps.bis"));
+      return out;
+    };
+
     return (
-      <section className="mx-auto max-w-3xl py-12 text-center">
-        <h1 className="heading text-4xl text-accent">{t("heroTitle")}</h1>
-        <p className="mt-4 text-lg text-muted">{t("heroText")}</p>
-        <div className="mt-8">
-          {config.loginEnabled ? <LoginButton className="btn btn-primary px-6 py-2 text-base" /> : <p className="text-warning">{t("loginDisabled")}</p>}
-        </div>
-        <div className="mt-8 text-left">{overviews}</div>
+      <div className="mx-auto max-w-5xl space-y-12 py-10">
+        <section className="text-center">
+          <h1 className="heading text-4xl text-accent">{t("heroTitle")}</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">{t("heroText")}</p>
+          <div className="mt-6">
+            {config.loginEnabled ? <LoginButton className="btn btn-primary px-6 py-2 text-base" /> : <p className="text-warning">{t("loginDisabled")}</p>}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="heading mb-4 text-2xl">{t("featuresTitle")}</h2>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sections.map((key) => (
+              <li key={key} className="card">
+                <h3 className="heading text-accent">{t(`sections.${key}.title`)}</h3>
+                <p className="mt-2 text-sm text-muted">{t(`sections.${key}.text`)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="heading text-2xl">{t("versionsTitle")}</h2>
+          <p className="mt-1 mb-4 text-sm text-muted">{t("versionsIntro")}</p>
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {config.versions.map((v) => (
+              <li key={v.id} className="card space-y-2">
+                <div className="flex items-center gap-2">
+                  <VersionBadge version={v} />
+                  <h3 className="heading">{localize(v.name, locale)}</h3>
+                </div>
+                <ul className="space-y-1 text-sm text-muted">
+                  {versionCaps(v).map((cap, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span aria-hidden className="text-accent">
+                        •
+                      </span>
+                      <span>{cap}</span>
+                    </li>
+                  ))}
+                </ul>
+                {v.timeline.length > 0 && (
+                  <Link href={`/versions/${v.id}`} className="inline-block text-sm text-accent hover:underline">
+                    {tInfo("homeLink", { name: localize(v.name, locale) })} →
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* Public rosters are open to anyone: list them so a visitor can browse and propose a planned character
             without signing in (accepting an invite to a private roster still needs a login). */}
-        {published.length > 0 && (
-          <div className="mt-8 text-left">
-            <PublishedRosters rosters={published} config={config} />
-          </div>
-        )}
-        <ul className="mt-12 grid gap-4 text-left sm:grid-cols-3">
-          {(["roster", "armory", "sheet"] as const).map((key) => (
-            <li key={key} className="card">
-              <h2 className="heading text-accent">{t(`features.${key}.title`)}</h2>
-              <p className="mt-2 text-sm text-muted">{t(`features.${key}.text`)}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+        {published.length > 0 && <PublishedRosters rosters={published} config={config} />}
+      </div>
     );
   }
 
