@@ -18,8 +18,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const t = await getTranslations("home");
   const tInfo = await getTranslations("versionInfo");
   const [config, me] = await Promise.all([getConfig(), getMe()]);
-  // Published rosters are only listed for signed-in users.
-  const published = me.user ? ((await apiGet<{ rosters: PublishedRoster[] }>("/rosters/published"))?.rosters ?? []) : [];
+  // Public rosters are listed for everyone; a signed-in user also gets the ones merely published to members.
+  const published = (await apiGet<{ rosters: PublishedRoster[] }>("/rosters/published"))?.rosters ?? [];
   // Linking a guild or searching needs the version's API; the default version goes first.
   const withApi = config.versions
     .filter((v) => v.apiAvailable)
@@ -46,6 +46,13 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           {config.loginEnabled ? <LoginButton className="btn btn-primary px-6 py-2 text-base" /> : <p className="text-warning">{t("loginDisabled")}</p>}
         </div>
         <div className="mt-8 text-left">{overviews}</div>
+        {/* Public rosters are open to anyone: list them so a visitor can browse and propose a planned character
+            without signing in (accepting an invite to a private roster still needs a login). */}
+        {published.length > 0 && (
+          <div className="mt-8 text-left">
+            <PublishedRosters rosters={published} config={config} />
+          </div>
+        )}
         <ul className="mt-12 grid gap-4 text-left sm:grid-cols-3">
           {(["roster", "armory", "sheet"] as const).map((key) => (
             <li key={key} className="card">

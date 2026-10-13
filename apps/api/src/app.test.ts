@@ -876,11 +876,19 @@ describe("published rosters", () => {
     expect((await send("PATCH", `/api/guilds/${roster.id}`, officer, { published: true })).statusCode).toBe(403);
     expect((await send("PATCH", `/api/guilds/${roster.id}`, owner, { published: true })).json().guild.published).toBe(true);
 
-    // Listed for signed-in users only.
-    expect((await send("GET", "/api/rosters/published", null)).statusCode).toBe(401);
+    // A signed-in user sees published rosters.
     const listed = (await send("GET", "/api/rosters/published?gameVersion=retail", stranger)).json().rosters;
     expect(listed).toEqual([expect.objectContaining({ id: roster.id, name: "Abierto", owner: "Player", entries: 0 })]);
     expect((await send("GET", "/api/rosters/published?gameVersion=classic-era", stranger)).json().rosters).toEqual([]);
+    // Anonymous visitors see only PUBLIC rosters: this one is published but not public, so it is hidden from them.
+    const anon = await send("GET", "/api/rosters/published?gameVersion=retail", null);
+    expect(anon.statusCode).toBe(200);
+    expect(anon.json().rosters).toEqual([]);
+    // Make it public: now it shows for everyone, signed in or not.
+    await send("PATCH", `/api/guilds/${roster.id}`, owner, { public: true });
+    expect((await send("GET", "/api/rosters/published?gameVersion=retail", null)).json().rosters).toEqual([
+      expect.objectContaining({ id: roster.id, name: "Abierto" }),
+    ]);
 
     // A stranger proposes: pending, not in the roster, and cannot edit it.
     const proposal = await send("POST", `/api/guilds/${roster.id}/roster/planned`, stranger, { classId: 2, specKey: "holy", status: "raider" });
