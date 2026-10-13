@@ -124,6 +124,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if (-not (Test-Path "$env:DEPLOY_PATH\.env")) { throw "Missing $env:DEPLOY_PATH\.env (see deploy/home.env.example)" }
           New-Item -ItemType Directory -Force "$env:DEPLOY_PATH\deploy" | Out-Null
+          # Pin the deployed image tag in .env so every later `docker compose up -d` resolves the same sha.
+          # Without this, a sleep/resume (or a manual up) falls back to IMAGE_TAG's default `latest`, which can
+          # be an older image cached on the PC, silently reverting the stack to a previous build.
+          $envFile = "$env:DEPLOY_PATH\.env"
+          $kept = @(Get-Content $envFile | Where-Object { $_ -notmatch '^\s*IMAGE_TAG\s*=' })
+          ($kept + "IMAGE_TAG=$env:IMAGE_TAG") | Set-Content -Encoding utf8 $envFile
           # Caddy and Tailscale only read their bind-mounted config at start, and compose does not
           # recreate a container when a mounted file changes: note which ones need recreating.
           $changed = @()
