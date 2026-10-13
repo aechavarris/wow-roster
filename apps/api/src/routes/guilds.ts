@@ -531,10 +531,12 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
 
   /** Published rosters for signed-in users, newest first; optionally of one game version. */
   app.get("/rosters/published", async (request) => {
-    if (!request.user) throw unauthorized();
     const query = z.object({ gameVersion: versionField.optional() }).parse(request.query);
+    // Public rosters are listed for everyone (signed in or not); a signed-in user also sees rosters that are only
+    // published (listed to members). Private rosters never appear here — they are reached by invite.
+    const visibility = request.user ? { OR: [{ public: true }, { published: true }] } : { public: true };
     const rosters = await prisma.guild.findMany({
-      where: { published: true, ...(query.gameVersion ? { gameVersion: query.gameVersion } : {}) },
+      where: { ...visibility, ...(query.gameVersion ? { gameVersion: query.gameVersion } : {}) },
       orderBy: { updatedAt: "desc" },
       take: 100,
       include: {
