@@ -1,0 +1,55 @@
+# The always-on "front door": run this on a device that never sleeps (a Raspberry Pi, a mini-PC,
+# or the router on OpenWrt) on the same LAN as the Steam Machine. It holds the public URL through
+# Tailscale Funnel and wakes the Steam Machine (Wake-on-LAN) when a visitor arrives.
+#
+#   docker compose up -d --build
+#
+# Host networking is used so the wake-proxy can broadcast the magic packet on the LAN and Tailscale
+# can reach it at 127.0.0.1:8080. See README.md for the full cutover (the Steam Machine must give up
+# the `wow-roster` tailnet name first, and keep serving Caddy on its LAN IP).
+name: wow-roster-frontdoor
+
+services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?set TS_AUTHKEY}
+      TS_HOSTNAME: ${TS_HOSTNAME:-wow-roster}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_ENABLE_HEALTH_CHECK: "true"
+      TS_LOCAL_ADDR_PORT: 127.0.0.1:9002
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+      - ./serve.json:/config/serve.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9002/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  wake-proxy:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      LISTEN_PORT: 8080
+      # LAN IP of the Steam Machine (give it a static DHCP lease so it never changes).
+      BACKEND_HOST: ${BACKEND_HOST:?set BACKEND_HOST (Steam Machine LAN IP)}
+      BACKEND_PORT: ${BACKEND_PORT:-80}
+      # Wired MAC of the Steam Machine (printed by deploy/wake/enable-wol.sh).
+      TARGET_MAC: ${TARGET_MAC:?set TARGET_MAC (Steam Machine wired MAC)}
+      WOL_BROADCAST: ${WOL_BROADCAST:-255.255.255.255}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  tailscale_state:
