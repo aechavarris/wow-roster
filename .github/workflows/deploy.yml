@@ -102,56 +102,55 @@ jobs:
   deploy-home:
     needs: images
     if: vars.DEPLOY_TARGET == 'home'
+    # Self-hosted Linux runner on the home box (SteamOS / any Linux), labelled wow-roster-home.
     runs-on: [self-hosted, wow-roster-home]
     environment: production
-    # The images are public (the repository is open source), so the PC pulls them without
-    # registry credentials; GHCR rejected the job's GITHUB_TOKEN from the Windows runner.
+    # The images are public (the repository is open source), so the box pulls them without
+    # registry credentials.
     permissions:
       contents: read
-    defaults:
-      run:
-        shell: powershell
     env:
-      DEPLOY_PATH: ${{ vars.HOME_DEPLOY_PATH || 'C:\wow-roster-prod' }}
       IMAGE_PREFIX: ghcr.io/${{ github.repository }}
       IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
+      # Empty unless overridden; the steps fall back to $HOME/wow-roster-prod.
+      HOME_DEPLOY_PATH: ${{ vars.HOME_DEPLOY_PATH }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Copy compose files
         run: |
-          $ErrorActionPreference = 'Stop'
-          if (-not (Test-Path "$env:DEPLOY_PATH\.env")) { throw "Missing $env:DEPLOY_PATH\.env (see deploy/home.env.example)" }
-          New-Item -ItemType Directory -Force "$env:DEPLOY_PATH\deploy" | Out-Null
-          # Pin the deployed image tag in .env so every later `docker compose up -d` resolves the same sha.
-          # Without this, a sleep/resume (or a manual up) falls back to IMAGE_TAG's default `latest`, which can
-          # be an older image cached on the PC, silently reverting the stack to a previous build.
-          $envFile = "$env:DEPLOY_PATH\.env"
-          $kept = @(Get-Content $envFile | Where-Object { $_ -notmatch '^\s*IMAGE_TAG\s*=' })
-          ($kept + "IMAGE_TAG=$env:IMAGE_TAG") | Set-Content -Encoding utf8 $envFile
+          set -euo pipefail
+          DEPLOY_PATH="${HOME_DEPLOY_PATH:-$HOME/wow-roster-prod}"
+          echo "DEPLOY_PATH=$DEPLOY_PATH" >> "$GITHUB_ENV"
+          [ -f "$DEPLOY_PATH/.env" ] || { echo "Missing $DEPLOY_PATH/.env (see deploy/home.env.example)" >&2; exit 1; }
+          mkdir -p "$DEPLOY_PATH/deploy"
+          # Pin the deployed image tag in .env so every later `docker compose up -d` (a reboot or a
+          # manual run) resolves the same sha instead of IMAGE_TAG's default `latest`, which could be
+          # an older image cached on the box and would silently revert the stack to a previous build.
+          { grep -v '^[[:space:]]*IMAGE_TAG[[:space:]]*=' "$DEPLOY_PATH/.env" || true; echo "IMAGE_TAG=$IMAGE_TAG"; } > "$DEPLOY_PATH/.env.tmp"
+          mv "$DEPLOY_PATH/.env.tmp" "$DEPLOY_PATH/.env"
           # Caddy and Tailscale only read their bind-mounted config at start, and compose does not
           # recreate a container when a mounted file changes: note which ones need recreating.
-          $changed = @()
-          foreach ($pair in @(@('Caddyfile', 'caddy'), @('tailscale-serve.json', 'tailscale'))) {
-            $target = "$env:DEPLOY_PATH\deploy\$($pair[0])"
-            if (-not (Test-Path $target) -or (Get-FileHash "deploy\$($pair[0])").Hash -ne (Get-FileHash $target).Hash) { $changed += $pair[1] }
-          }
-          "RECREATE_SERVICES=$($changed -join ' ')" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-          Copy-Item docker-compose.prod.yml, docker-compose.home.yml $env:DEPLOY_PATH -Force
-          Copy-Item deploy\Caddyfile, deploy\tailscale-serve.json, deploy\home-resume.ps1, deploy\register-resume-task.ps1 "$env:DEPLOY_PATH\deploy" -Force
+          changed=""
+          for pair in Caddyfile:caddy tailscale-serve.json:tailscale; do
+            file="${pair%%:*}"; svc="${pair##*:}"; target="$DEPLOY_PATH/deploy/$file"
+            if [ ! -f "$target" ] || [ "$(sha256sum < "deploy/$file")" != "$(sha256sum < "$target")" ]; then
+              changed="$changed $svc"
+            fi
+          done
+          echo "RECREATE_SERVICES=$(echo $changed | xargs)" >> "$GITHUB_ENV"
+          cp docker-compose.prod.yml docker-compose.home.yml "$DEPLOY_PATH/"
+          cp deploy/Caddyfile deploy/tailscale-serve.json "$DEPLOY_PATH/deploy/"
       - name: Roll out
         run: |
-          $ErrorActionPreference = 'Stop'
-          Set-Location $env:DEPLOY_PATH
-          docker compose -f docker-compose.prod.yml -f docker-compose.home.yml pull
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d --remove-orphans
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          if ($env:RECREATE_SERVICES) {
-            $services = $env:RECREATE_SERVICES -split ' '
-            Write-Output "Config changed, recreating: $services"
-            docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d --force-recreate @services
-            if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          }
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+          compose=(docker compose -f docker-compose.prod.yml -f docker-compose.home.yml)
+          "${compose[@]}" pull
+          "${compose[@]}" up -d --remove-orphans
+          if [ -n "${RECREATE_SERVICES:-}" ]; then
+            echo "Config changed, recreating:$RECREATE_SERVICES"
+            "${compose[@]}" up -d --force-recreate $RECREATE_SERVICES
+          fi
           docker image prune -f

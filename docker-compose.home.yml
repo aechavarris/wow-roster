@@ -1,4 +1,4 @@
-# Override for self-hosting on a home PC: use together with docker-compose.prod.yml.
+# Override for self-hosting on a home box (SteamOS or any Linux): use with docker-compose.prod.yml.
 #   docker compose -f docker-compose.prod.yml -f docker-compose.home.yml up -d
 # Tailscale Funnel publishes the site at https://<TS_HOSTNAME>.<tailnet>.ts.net with its own
 # HTTPS certificate, so no router ports are opened and no domain is needed. Caddy keeps the
@@ -50,9 +50,11 @@ services:
   web:
     labels: [autoheal=true]
 
-  # Docker only reports unhealthy containers, it never restarts them. After the PC wakes from
+  # Docker only reports unhealthy containers, it never restarts them. After the box wakes from
   # sleep the Tailscale connection or the app's sockets can be dead while the processes still
-  # run: this restarts any container labelled autoheal=true once its healthcheck fails.
+  # run: this restarts any container labelled autoheal=true once its healthcheck fails. Together
+  # with each service's `restart: unless-stopped`, this also covers reboots, so no OS-level
+  # resume hook is needed on Linux (unlike the old Windows scheduled task).
   autoheal:
     image: willfarrell/autoheal:latest
     restart: unless-stopped
