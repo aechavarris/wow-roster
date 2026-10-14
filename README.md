@@ -86,28 +86,30 @@ One-time server setup (any VPS with Docker):
 
 Caddy issues the HTTPS certificate automatically and routes `/api` to the API and everything else to the web app.
 
-### Self-hosting on a home PC
+### Self-hosting on a home box (SteamOS / Linux)
 
-For a low-traffic instance, a PC that stays on can be the server; deploys still come from GitHub. [Tailscale Funnel](https://tailscale.com/kb/1223/funnel) publishes the site at `https://<name>.<tailnet>.ts.net` with HTTPS. It needs no open router ports, no domain and no fixed IP. A self-hosted GitHub Actions runner on the PC pulls the new images after every green push to `main`. [docker-compose.home.yml](docker-compose.home.yml) layers this on top of the production stack under its own project name (`wow-roster-prod`), so it does not collide with the dev stack.
+For a low-traffic instance, any Linux box that stays on can be the server; deploys still come from GitHub. [Tailscale Funnel](https://tailscale.com/kb/1223/funnel) publishes the site at `https://<name>.<tailnet>.ts.net` with HTTPS. It needs no open router ports, no domain and no fixed IP (Tailscale runs as a container in the stack, so the host needs no Tailscale install). A self-hosted GitHub Actions runner on the box pulls the new images after every green push to `main`. [docker-compose.home.yml](docker-compose.home.yml) layers this on top of the production stack under its own project name (`wow-roster-prod`), so it does not collide with the dev stack. Containers use `restart: unless-stopped` and an `autoheal` sidecar, so reboots and resume-from-sleep recover on their own.
 
-One-time setup (Windows with Docker Desktop):
+One-time setup on the box:
 
-1. **Tailscale**: create a free account, enable *MagicDNS* and *HTTPS certificates* under DNS in the admin console, check that the access policy grants the `funnel` attribute (new tailnets do), and create a **reusable, non-ephemeral** auth key.
-2. **Production folder**: create `C:\wow-roster-prod\.env` from [deploy/home.env.example](deploy/home.env.example) with the auth key, a strong `POSTGRES_PASSWORD` and the Blizzard credentials. `PUBLIC_URL` is `https://<TS_HOSTNAME>.<tailnet>.ts.net`; the tailnet name is in the admin console.
-3. **Blizzard client**: add `<PUBLIC_URL>/api/auth/callback` as a redirect URL.
-4. **Runner**: in the repository, open *Settings → Actions → Runners → New self-hosted runner → Windows* and follow the steps, with two changes. Add the label `wow-roster-home`. Install it as a service that runs under your own Windows account (`config.cmd … --labels wow-roster-home --runasservice --windowslogonaccount <user>`), so it can reach Docker Desktop.
-5. **Repository variable**: under *Settings → Secrets and variables → Actions → Variables*, add `DEPLOY_TARGET=home`, plus `HOME_DEPLOY_PATH` if you chose another folder.
-6. **Public images**: the PC pulls the images without credentials. Make the four packages (`wow-roster/migrate`, `api`, `worker`, `web`) public under your GitHub profile's *Packages* tab: *Package settings → Change visibility*.
-7. **First deploy**: run the *Deploy* workflow by hand (*Actions → Deploy → Run workflow*).
+1. **Docker**. Install Docker Engine and the Compose plugin, enable the service and add your user to the `docker` group (`sudo usermod -aG docker "$USER"`, then re-log). On immutable **SteamOS** the root filesystem is read-only, so install into it with `sudo steamos-readonly disable`, initialise the keyring (`sudo pacman-key --init && sudo pacman-key --populate archlinux holo`), then `sudo pacman -S docker docker-compose` and `sudo systemctl enable --now docker`. Docker's data lives under `/var` and the service symlink under `/etc` (both persist); only the binaries under `/usr` are wiped by a SteamOS image update, so **re-run the `pacman -S docker` line after a major SteamOS update**.
+2. **Tailscale**: create a free account, enable *MagicDNS* and *HTTPS certificates* under DNS in the admin console, check that the access policy grants the `funnel` attribute (new tailnets do), and create a **reusable, non-ephemeral** auth key.
+3. **Production folder**: create `~/wow-roster-prod/.env` from [deploy/home.env.example](deploy/home.env.example) with the auth key, a strong `POSTGRES_PASSWORD` and the Blizzard credentials. `PUBLIC_URL` is `https://<TS_HOSTNAME>.<tailnet>.ts.net`; the tailnet name is in the admin console.
+4. **Blizzard client**: add `<PUBLIC_URL>/api/auth/callback` as a redirect URL.
+5. **Runner**: in the repository, open *Settings → Actions → Runners → New self-hosted runner → Linux* and follow the steps, adding the label `wow-roster-home`. Install it as a service so it starts on boot: `sudo ./svc.sh install && sudo ./svc.sh start`. Put the runner under `$HOME` so it survives SteamOS updates.
+6. **Repository variable**: under *Settings → Secrets and variables → Actions → Variables*, add `DEPLOY_TARGET=home`, plus `HOME_DEPLOY_PATH` if you chose another folder than `~/wow-roster-prod`.
+7. **Public images**: the box pulls the images without credentials. Make the four packages (`wow-roster/migrate`, `api`, `worker`, `web`) public under your GitHub profile's *Packages* tab: *Package settings → Change visibility*.
+8. **First deploy**: run the *Deploy* workflow by hand (*Actions → Deploy → Run workflow*).
 
-Keep Docker Desktop set to start on sign-in and the PC from sleeping. Only CI runs triggered by pushes to this repository reach the runner; pull requests from forks never deploy.
+Keep the box from suspending while it serves (or rely on `autoheal` to reconnect after a resume). Only CI runs triggered by pushes to this repository reach the runner; pull requests from forks never deploy.
 
 ## Server administration
 
 Some maintenance is intentionally not in the app, where only a roster's own owner can act. Deleting **any** roster (regardless of owner) is done from the server with a small CLI baked into the worker image, which reaches the database directly. In the production Docker stack:
 
-```powershell
-$compose = "-f docker-compose.prod.yml -f docker-compose.home.yml"
+```bash
+cd ~/wow-roster-prod
+compose="-f docker-compose.prod.yml -f docker-compose.home.yml"
 docker compose $compose exec worker node dist/admin.js list
 docker compose $compose exec worker node dist/admin.js delete <id> "Exact roster name"
 ```
