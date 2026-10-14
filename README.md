@@ -103,6 +103,8 @@ One-time setup on the box:
 
 Keep the box from suspending while it serves (or rely on `autoheal` to reconnect after a resume). Only CI runs triggered by pushes to this repository reach the runner; pull requests from forks never deploy.
 
+To let the box sleep at night and wake on demand (Wake-on-LAN once it is on wired Ethernet, or the Steam Controller), see [deploy/wake/README.md](deploy/wake/README.md); it also sketches the always-on front door needed to wake it automatically on web activity.
+
 ## Server administration
 
 Some maintenance is intentionally not in the app, where only a roster's own owner can act. Deleting **any** roster (regardless of owner) is done from the server with a small CLI baked into the worker image, which reaches the database directly. In the production Docker stack:

@@ -142,6 +142,8 @@ jobs:
           echo "RECREATE_SERVICES=$(echo $changed | xargs)" >> "$GITHUB_ENV"
           cp docker-compose.prod.yml docker-compose.home.yml "$DEPLOY_PATH/"
           cp deploy/Caddyfile deploy/tailscale-serve.json "$DEPLOY_PATH/deploy/"
+          # Host-side helper scripts (suspend / Wake-on-LAN / resume), run by hand on the box.
+          cp -r deploy/wake "$DEPLOY_PATH/deploy/"
       - name: Roll out
         run: |
           set -euo pipefail
