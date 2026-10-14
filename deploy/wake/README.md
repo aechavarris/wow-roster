@@ -54,33 +54,14 @@ From any device on the same LAN, to the MAC `enable-wol.sh` printed:
 - Router with a WoL page (OpenWrt, Asuswrt-Merlin…): add the machine and press *Wake*.
 - Through Tailscale, from another tailnet node **on the same LAN segment**: `tailscale wake <name>`.
 
-## 3. (Later) Automatic wake on web activity — front-door design
+## 3. Automatic wake on web activity — front door (built)
 
 When you have an always-on Linux host on the LAN (Raspberry Pi, mini-PC, or the router on OpenWrt),
-move the **front door** there so it can wake the machine on the first request:
+deploy the **wake-proxy** there: it takes over the `wow-roster` Tailscale Funnel, reverse-proxies to
+the Steam Machine, and sends a Wake-on-LAN magic packet (showing a small "Arrancando…" page) when the
+machine is asleep — so the first visitor wakes it.
 
-1. Run **Tailscale on the front door** and give *it* the `wow-roster` hostname + Funnel (move the
-   `tailscale` service there; the Steam Machine then runs the app **without** its own Funnel and just
-   serves Caddy on the LAN).
-2. The front door runs a tiny **wake-proxy**: on each request, if the machine's app is reachable
-   (`nc -z <machine-ip> 80`), reverse-proxy to it; if not, send `wakeonlan <machine-MAC>` and return a
-   small *"Waking the server, refresh in ~30 s"* page (HTTP 503 + `Retry-After: 30`). Idle the machine
-   back to sleep with a cron that suspends it after N minutes with no connections.
-
-Sketch (front door, Caddy + a shell handler is enough):
-
-```
-# pseudo-Caddyfile on the always-on front door
-wow-roster.tail3d07cb.ts.net {
-    @up  `nc -z <machine-ip> 80`        # reachable → serve
-    handle @up { reverse_proxy <machine-ip>:80 }
-    handle {                            # down → fire WoL and ask the visitor to retry
-        respond "Waking the server, refresh in ~30 seconds…" 503 { close }
-        exec wakeonlan <machine-MAC>    # via a small sidecar / hook
-    }
-}
-```
-
-This keeps the public URL unchanged, lets the machine sleep whenever idle, and wakes it the instant
-someone browses in. It is documented here rather than built, because it needs that always-on host —
-set it up when the hardware is in place and we can wire it then.
+It is implemented and ready in [`../wake-proxy/`](../wake-proxy/): a dependency-free Node service plus
+its `docker-compose.yml`, `serve.json` and `.env.example`. Follow `deploy/wake-proxy/README.md` for the
+one-time cutover (the Steam Machine gives up the `wow-roster` name and keeps serving Caddy on its LAN
+IP; the front door claims the name and wakes it on demand).
