@@ -19,6 +19,23 @@ Steam Machine can then sleep whenever you want and still come back on demand.
   and a **static DHCP lease** (so its LAN IP never changes).
 - A reusable Tailscale auth key.
 
+## Status (16 Oct 2026): not deployed yet
+
+What is ready and what is missing before the cutover:
+
+- **Done**: the Steam Machine is on wired Ethernet with Wake-on-LAN verified (a magic packet from the LAN
+  woke it in 1 s; see `deploy/wake/README.md`).
+- **Missing: the front-door device.** There is no always-on host on the LAN or tailnet. The router (Digi's
+  ZTE F6705) cannot be the front door: closed firmware, no Tailscale, no containers, no OpenWrt. A
+  **Raspberry Pi Zero 2 W** (~1 W; with a USB-Ethernet adapter if possible) is enough; a Pi 4/5 also works.
+  - Rejected router-only alternative: port-forward 80/443 to the box and wake on unicast (`wol u`) without
+    Funnel. Digi usually puts customers behind CG-NAT, it exposes the home IP, stray traffic would keep
+    waking the box, and the first request would hang while it wakes.
+- **Missing: the box is not reachable on the LAN.** `docker-compose.home.yml` gives Caddy no host ports
+  (`ports: !reset []`, traffic only arrives via Funnel), so `BACKEND_HOST:80` would not answer. The cutover
+  needs a deploy toggle that publishes Caddy on the LAN **and** keeps the box's `tailscale` service stopped
+  (the deploy job restarts it today, which would re-claim the `wow-roster` name).
+
 ## Cutover (do this once, in order)
 
 1. **On the Steam Machine**: enable WoL and note the wired MAC:
@@ -26,7 +43,7 @@ Steam Machine can then sleep whenever you want and still come back on demand.
    bash ~/wow-roster-prod/deploy/wake/enable-wol.sh
    ```
    Give up the `wow-roster` tailnet name so the front door can take it — stop its Tailscale and keep
-   it stopped (the app keeps serving Caddy on the LAN):
+   it stopped (Caddy must then be published on the LAN: see "Status" above, not wired yet):
    ```bash
    cd ~/wow-roster-prod
    docker compose -f docker-compose.prod.yml -f docker-compose.home.yml stop tailscale
