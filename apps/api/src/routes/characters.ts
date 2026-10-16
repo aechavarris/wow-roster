@@ -1,7 +1,19 @@
 import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotForInventoryType, slotTypeFilter } from "@wow/config";
 import type { PrimaryStat } from "@wow/config";
-import type { ItemResult } from "@wow/blizzard";
-import { gameVersion, getBisSourceIndex, getIcons, getTalentTree, lookupBisSource, nameKey, syncCharacter, warmBisSourceIndex } from "@wow/core";
+import type { CharacterProfile, ItemResult } from "@wow/blizzard";
+import {
+  announceProgress,
+  detectProgressEvents,
+  gameVersion,
+  getBisSourceIndex,
+  getIcons,
+  getTalentTree,
+  lookupBisSource,
+  manualProfessionsAsProfessions,
+  nameKey,
+  syncCharacter,
+  warmBisSourceIndex,
+} from "@wow/core";
 import { Prisma } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -256,10 +268,19 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     if (primaries > profile.maxPrimaryProfessions) throw new HttpError(400, "too_many_primary_professions");
 
     const manualProfessions = body.professions.map((p) => ({ id: p.id, skill: p.skill ?? null }));
-    await prisma.character.update({
+    const updated = await prisma.character.update({
       where: { id },
       data: { manualProfessions: manualProfessions.length > 0 ? manualProfessions : Prisma.DbNull },
     });
+    // Hand-entered professions never go through a sync, so their progress is announced here. Only the professions
+    // differ between the two snapshots, so nothing else can fire.
+    const snapshot = (manual: unknown) => ({
+      level: character.level,
+      equippedItemLevel: character.equippedItemLevel,
+      professions: manualProfessionsAsProfessions(profile, manual as { id: number; skill: number | null }[] | null),
+    });
+    const events = detectProgressEvents(profile, snapshot(character.manualProfessions), snapshot(manualProfessions));
+    await announceProgress(core, { ...updated, profile: updated.profile as Partial<CharacterProfile> | null }, events);
     return { character: serialize((await detail(id))!) };
   });
 

@@ -312,7 +312,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
     if (character.lastSyncedAt) {
       // Logs refreshed above can add raid kills even when the character did not log in.
       const events = detectProgressEvents(profile, progressSnapshot(character, character.profile as Partial<CharacterProfile> | null), progressSnapshot(updated, stored));
-      await announceProgress(ctx, updated, events);
+      await announceProgress(ctx, { ...updated, profile: stored }, events);
     }
     return "unchanged";
   }
@@ -357,7 +357,7 @@ export async function syncCharacter(ctx: CoreContext, characterId: string, force
   await persistWarcraftLogsReports(ctx, updated, stored.warcraftLogs, profile);
   if (character.lastSyncedAt) {
     const events = detectProgressEvents(profile, progressSnapshot(character, character.profile as Partial<CharacterProfile> | null), progressSnapshot(updated, stored));
-    await announceProgress(ctx, updated, events);
+    await announceProgress(ctx, { ...updated, profile: stored }, events);
   }
   return "updated";
 }

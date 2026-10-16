@@ -454,16 +454,31 @@
     {"id": 164, "key": "blacksmithing", "name": {"en": "Blacksmithing", "es": "Herrería"}, "kind": "primary", "maxSkill": 300},
     {"id": 333, "key": "enchanting", "name": {"en": "Enchanting", "es": "Encantamiento"}, "kind": "primary", "maxSkill": 300},
     {"id": 202, "key": "engineering", "name": {"en": "Engineering", "es": "Ingeniería"}, "kind": "primary", "maxSkill": 300},
-    {"id": 182, "key": "herbalism", "name": {"en": "Herbalism", "es": "Herboristería"}, "kind": "primary", "maxSkill": 300},
+    {"id": 182, "key": "herbalism", "name": {"en": "Herbalism", "es": "Herboristería"}, "kind": "primary", "gathering": true, "maxSkill": 300},
     {"id": 165, "key": "leatherworking", "name": {"en": "Leatherworking", "es": "Peletería"}, "kind": "primary", "maxSkill": 300},
-    {"id": 186, "key": "mining", "name": {"en": "Mining", "es": "Minería"}, "kind": "primary", "maxSkill": 300},
-    {"id": 393, "key": "skinning", "name": {"en": "Skinning", "es": "Desuello"}, "kind": "primary", "maxSkill": 300},
+    {"id": 186, "key": "mining", "name": {"en": "Mining", "es": "Minería"}, "kind": "primary", "gathering": true, "maxSkill": 300},
+    {"id": 393, "key": "skinning", "name": {"en": "Skinning", "es": "Desuello"}, "kind": "primary", "gathering": true, "maxSkill": 300},
     {"id": 197, "key": "tailoring", "name": {"en": "Tailoring", "es": "Sastrería"}, "kind": "primary", "maxSkill": 300},
     {"id": 185, "key": "cooking", "name": {"en": "Cooking", "es": "Cocina"}, "kind": "secondary", "maxSkill": 300},
     {"id": 129, "key": "first-aid", "name": {"en": "First Aid", "es": "Primeros auxilios"}, "kind": "secondary", "maxSkill": 300},
     {"id": 356, "key": "fishing", "name": {"en": "Fishing", "es": "Pesca"}, "kind": "secondary", "maxSkill": 300}
   ],
   "maxPrimaryProfessions": 2,
+  "reputation": {
+    "note": "Standard ladder matched by tier and English standing name; friendship and renown factions use other ladders.",
+    "standings": [
+      {"key": "hated", "tier": 0, "name": {"en": "Hated", "es": "Odiado"}},
+      {"key": "hostile", "tier": 1, "name": {"en": "Hostile", "es": "Hostil"}},
+      {"key": "unfriendly", "tier": 2, "name": {"en": "Unfriendly", "es": "Adverso"}},
+      {"key": "neutral", "tier": 3, "name": {"en": "Neutral", "es": "Neutral"}},
+      {"key": "friendly", "tier": 4, "name": {"en": "Friendly", "es": "Amistoso"}},
+      {"key": "honored", "tier": 5, "name": {"en": "Honored", "es": "Honorable"}},
+      {"key": "revered", "tier": 6, "name": {"en": "Revered", "es": "Venerado"}},
+      {"key": "exalted", "tier": 7, "name": {"en": "Exalted", "es": "Exaltado"}}
+    ],
+    "friendship": false,
+    "renown": false
+  },
   "details": {"resistances": ["fire", "nature", "frost", "shadow", "arcane"], "keyReputations": [749, 609, 910, 270, 529]},
   "requirements": [
     {"key": "onyxia", "name": {"en": "Onyxia's Lair attunement (Drakefire Amulet)", "es": "Acceso a la Guarida de Onyxia (amuleto)"}, "raid": "onyxias-lair"},

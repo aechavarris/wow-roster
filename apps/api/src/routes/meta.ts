@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, REGIONS, SUPPORTED_LOCALES, type GameProfile, type GameVersions } from "@wow/config";
+import { DEFAULT_LOCALE, REGIONS, SUPPORTED_LOCALES, availableProgressEvents, type GameProfile, type GameVersions } from "@wow/config";
 import type { FastifyInstance } from "fastify";
 import type { AppDeps } from "../deps";
 
@@ -45,6 +45,10 @@ const publicVersion = (v: GameProfile, all: GameVersions) => ({
   /** Secondary stats the BiS picker can filter by (crit, haste…); empty where the version has none. */
   secondaryStats: v.secondaryStats,
   maxPrimaryProfessions: v.maxPrimaryProfessions,
+  /** Reputation ladders (standard standings, friendship, renown) for the progress announcement settings. */
+  reputation: { standings: v.reputation.standings, friendship: v.reputation.friendship, renown: v.reputation.renown },
+  /** Progress announcements the version's data can produce. */
+  progressEvents: availableProgressEvents(v),
   /** False where professions are entered by hand (the version's API has none). */
   apiProfessions: v.api.available && v.api.characterEndpoints.includes("professions"),
   sync: v.sync,

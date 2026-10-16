@@ -212,7 +212,21 @@ export const professionSchema = z.object({
   key: z.string(),
   name: localizedSchema,
   kind: z.enum(["primary", "secondary"]),
+  /** Gathering professions (herbalism, mining, skinning): progress announcements leave them out by default. */
+  gathering: z.boolean().default(false),
   maxSkill: z.number().int().positive().optional(),
+});
+
+/**
+ * Reputation ladders of a version. `standings` is the standard ladder (Hated → Exalted); the API gives no type
+ * flag, so a faction is on it when its tier and English standing name both match an entry. Friendship factions
+ * (MoP and later) reuse the tier numbers with their own names, and renown factions (retail) carry a renown level.
+ */
+export const reputationSchema = z.object({
+  note: z.string().optional(),
+  standings: z.array(z.object({ key: z.string(), tier: z.number().int().nonnegative(), name: localizedSchema })),
+  friendship: z.boolean().default(false),
+  renown: z.boolean().default(false),
 });
 
 /**
@@ -261,6 +275,7 @@ export const gameProfileSchema = z.object({
   secondaryStats: z.array(z.string()).default([]),
   /** How many primary professions a character can learn. */
   maxPrimaryProfessions: z.number().int().positive().default(2),
+  reputation: reputationSchema.default({ standings: [], friendship: false, renown: false }),
   weekly: weeklySchema.optional(),
   /**
    * Character data the version's API provides but the roster pages should not show as a section, because it says

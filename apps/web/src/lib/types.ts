@@ -1,5 +1,5 @@
 import type { CharacterProfile, EquippedItem, InstanceProgress, MythicPlusProfile, Profession, RaiderIoProfile, Reputation, StatValue } from "@wow/blizzard";
-import type { Buff, DataSource, Dungeon, GameClass, GameRole, Localized, RaidSize, Requirement, RosterStatus, StatSection, TimelineEvent } from "@wow/config";
+import type { Buff, DataSource, Dungeon, GameClass, GameRole, Localized, ProgressSettings, RaidSize, Requirement, RosterStatus, StatSection, TimelineEvent } from "@wow/config";
 
 export type { DataSource };
 
@@ -44,6 +44,10 @@ export interface GameVersion {
   /** Secondary stats the BiS picker can filter by (crit, haste…); empty where the version has none. */
   secondaryStats: string[];
   maxPrimaryProfessions: number;
+  /** Reputation ladders: the standard standings plus whether friendship and renown factions exist. */
+  reputation: { standings: { key: string; tier: number; name: Localized }[]; friendship: boolean; renown: boolean };
+  /** Progress announcement types the version's data can produce. */
+  progressEvents: string[];
   /** False where the version's API has no professions and owners enter them by hand (Classic). */
   apiProfessions: boolean;
   sync: { defaultIntervalMinutes: number; minIntervalMinutes: number; defaultMinLevel: number };
@@ -54,6 +58,8 @@ export interface GameProfession {
   key: string;
   name: Localized;
   kind: "primary" | "secondary";
+  /** Herbalism, mining, skinning: left out of progress announcements by default. */
+  gathering?: boolean;
   maxSkill?: number;
 }
 
@@ -221,6 +227,8 @@ export interface RosterWebhook {
   label: string;
   urlMasked: string;
   events: string[];
+  /** Full settings with defaults filled in. */
+  settings: ProgressSettings;
   locale: string;
   allCharacters: boolean;
   characterIds: string[];
