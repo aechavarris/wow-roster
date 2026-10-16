@@ -54,6 +54,30 @@ suspending, confirm the magic packet actually wakes it. This machine only offers
 (`cat /sys/power/mem_sleep`), so `WOW_SLEEP` has nothing to switch to here; it is kept for other hosts,
 where USB-Ethernet adapters only wake from certain sleep states.
 
+### Wi-Fi and cable on the same network: turn Wi-Fi off
+
+SteamOS has no `ethtool`, so `enable-wol.sh` only stores `wake-on-lan=magic` in NetworkManager; it takes
+effect when the wired connection is (re)activated: `sudo nmcli connection up "Wired connection 1"`.
+
+Do not leave Wi-Fi connected to the same LAN as the cable. Linux answers ARP for any of its addresses on
+any interface (`arp_ignore=0`), so when the cable's DHCP address is checked for conflicts the machine's
+own Wi-Fi answers "that IP is mine": NetworkManager logs `conflict detected for IP address … with host
+<the Wi-Fi MAC>` and leaves the cable **without IPv4 routes** (IPv6 still works), so traffic keeps going
+over Wi-Fi. Seen on this machine on 16 Oct 2026. Fix used: stop Wi-Fi from autoconnecting and bring the
+cable up again. SSH over Wi-Fi drops halfway, so run it under `systemd-run`, which outlives the session:
+
+```bash
+sudo systemd-run --unit=wow-net-fix bash -c '
+  nmcli connection modify "<Wi-Fi connection name>" connection.autoconnect no
+  nmcli device disconnect wlan0
+  sleep 3
+  nmcli connection up "Wired connection 1"'
+```
+
+Then reconnect to the cable's address. (Keeping both up would need `net.ipv4.conf.all.arp_ignore=1` and
+`arp_announce=2`; Wi-Fi is useless for waking anyway.) Reserve the cable's address for its MAC in the
+router's DHCP so the magic packet and SSH always target the same host.
+
 ### Suspending over SSH
 
 `suspend.sh` uses `sudo`, which needs a password over SSH. To suspend from another machine without
@@ -89,6 +113,19 @@ From any device on the same LAN, to the MAC `enable-wol.sh` printed:
 - Another Linux box on the LAN: `wakeonlan <MAC>` or `etherwake <MAC>`.
 - Router with a WoL page (OpenWrt, Asuswrt-Merlin…): add the machine and press *Wake*.
 - Through Tailscale, from another tailnet node **on the same LAN segment**: `tailscale wake <name>`.
+- A Windows PC on the LAN (PowerShell, no extra tools):
+
+  ```powershell
+  $mac = '<MAC>'.Split(':') | ForEach-Object { [byte]('0x' + $_) }
+  $packet = [byte[]](,0xFF * 6) + ($mac * 16)
+  $udp = New-Object System.Net.Sockets.UdpClient; $udp.EnableBroadcast = $true
+  [void]$udp.Send($packet, $packet.Length, '255.255.255.255', 9); $udp.Close()
+  ```
+
+**Verified on 16 Oct 2026** (cable, `s2idle`): a magic packet broadcast from a Windows PC on the LAN woke
+the machine 1 s later (`PM: suspend exit`), it answered ping after 11 s, the wired route and every
+container came back untouched, and the public URL answered again ~2 min 40 s after the packet (the earlier test over Wi-Fi
+took ~6 min, see above).
 
 ## 3. Automatic wake on web activity — front door (built)
 
