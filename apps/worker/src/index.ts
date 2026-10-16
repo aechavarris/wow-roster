@@ -37,7 +37,8 @@ const ctx: CoreContext = {
   warcraftLogs:
     env.WARCRAFTLOGS_CLIENT_ID && env.WARCRAFTLOGS_CLIENT_SECRET
       ? new WarcraftLogsClient({ clientId: env.WARCRAFTLOGS_CLIENT_ID, clientSecret: env.WARCRAFTLOGS_CLIENT_SECRET })
-      : undefined,
+      : undefined,  // Links in Discord announcements point at the character pages.
+  publicUrl: env.PUBLIC_URL?.replace(/\/$/, ""),
 };
 
 const characterQueue = new Queue<CharacterSyncJob>(QUEUES.characterSync, { connection: createRedis(redisUrl) });
