@@ -136,5 +136,6 @@ machine is asleep — so the first visitor wakes it.
 
 It is implemented and ready in [`../wake-proxy/`](../wake-proxy/): a dependency-free Node service plus
 its `docker-compose.yml`, `serve.json` and `.env.example`. Follow `deploy/wake-proxy/README.md` for the
-one-time cutover (the Steam Machine gives up the `wow-roster` name and keeps serving Caddy on its LAN
-IP; the front door claims the name and wakes it on demand).
+one-time cutover (the Steam Machine gives up the `wow-roster` name and serves Caddy on its LAN
+IP — which needs a deploy toggle not built yet; the front door claims the name and wakes it on
+demand). Not deployed yet: there is no always-on host, see the wake-proxy README "Status".
