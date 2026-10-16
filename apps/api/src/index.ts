@@ -64,6 +64,7 @@ const app = await buildApp(
         ? new WarcraftLogsClient({ clientId: env.WARCRAFTLOGS_CLIENT_ID, clientSecret: env.WARCRAFTLOGS_CLIENT_SECRET })
         : undefined,
       wowhead: new WowheadClient(),
+      publicUrl: env.PUBLIC_URL,
     },
     queue,
     oauth: {

@@ -1,6 +1,6 @@
 import { BlizzardClient, WarcraftLogsClient, WowheadClient } from "@wow/blizzard";
 import { loadGameVersions, withApiStandIns } from "@wow/config";
-import { ApiUnavailableError, syncCharacter, syncGuild, type CoreContext } from "@wow/core";
+import { ApiUnavailableError, announceProgress, syncCharacter, syncGuild, type CoreContext } from "@wow/core";
 import { createPrismaClient } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -685,9 +685,20 @@ describe("roster webhooks (progress announcements)", () => {
     // Unknown event keys are refused.
     expect((await create(session, roster.id, { events: ["not_a_real_event"] })).statusCode).toBe(400);
 
+    // Settings come back complete, with the defaults filled in.
+    expect(webhook.settings).toMatchObject({ level: { every: 10, atMax: true }, mythicPlus: { minKey: 10 } });
+    // "max_level" is no longer an event (it is the level's "at the cap" option) and invalid thresholds are refused.
+    expect((await create(session, roster.id, { events: ["max_level"] })).statusCode).toBe(400);
+    expect((await create(session, roster.id, { settings: { level: { every: -1 } } })).statusCode).toBe(400);
+
     // Patch (keeping the stored URL by omitting it) and delete.
-    const patched = await app.inject({ method: "PATCH", url: `/api/guilds/${roster.id}/webhooks/${webhook.id}`, cookies: { wr_session: session }, payload: { enabled: false, events: ["max_level"] } });
-    expect(patched.json().webhook).toMatchObject({ enabled: false, events: ["max_level"] });
+    const patched = await app.inject({
+      method: "PATCH",
+      url: `/api/guilds/${roster.id}/webhooks/${webhook.id}`,
+      cookies: { wr_session: session },
+      payload: { enabled: false, events: ["level_up"], settings: { level: { every: 5, at: [58], atMax: false } } },
+    });
+    expect(patched.json().webhook).toMatchObject({ enabled: false, events: ["level_up"], settings: { level: { every: 5, at: [58], atMax: false } } });
     expect((await app.inject({ method: "DELETE", url: `/api/guilds/${roster.id}/webhooks/${webhook.id}`, cookies: { wr_session: session } })).statusCode).toBe(200);
 
     // A stranger cannot manage them.
@@ -713,6 +724,37 @@ describe("roster webhooks (progress announcements)", () => {
     } finally {
       globalThis.fetch = realFetch;
     }
+  });
+
+  it("announces only what crosses the webhook's thresholds, with the player, spec, class and a link", async () => {
+    const session = await login();
+    const roster = (await app.inject({ method: "POST", url: "/api/rosters", cookies: { wr_session: session }, payload: { name: "Horda", gameVersion: "classic-era", region: "eu" } })).json().guild;
+    await create(session, roster.id, { events: ["level_up"], settings: { level: { every: 10, atMax: true } } });
+    const character = await prisma.character.create({
+      data: { gameVersion: "classic-era", region: "eu", realm: "firemaw", name: "Thrall", nameKey: "thrall", level: 61, classId: 7, specName: "enhancement" },
+    });
+    await prisma.rosterEntry.create({ data: { guildId: roster.id, characterId: character.id, source: "manual", playerName: "Patxi" } });
+
+    const posts: { embeds: { title: string; url?: string; description: string; fields: { name: string; value: string }[] }[] }[] = [];
+    const capture = (async (_url: string | URL, init?: RequestInit) => {
+      posts.push(JSON.parse(String(init?.body)));
+      return new Response(null, { status: 204 });
+    }) as typeof fetch;
+    const announced = { ...character, profile: null };
+    const withUrl = { ...core, publicUrl: "https://roster.example" };
+
+    await announceProgress(withUrl, announced, [{ type: "level_up", from: 58, value: 61 }], capture);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.embeds[0]).toMatchObject({ title: "Thrall", url: "https://roster.example/es/character/classic-era/eu/firemaw/thrall" });
+    expect(posts[0]!.embeds[0]!.fields).toEqual([
+      { name: "Jugador", value: "Patxi", inline: true },
+      { name: "Clase", value: "Mejora · Chamán", inline: true },
+      { name: "Nivel", value: "61", inline: true },
+    ]);
+
+    // 61 → 62 crosses nothing: no message.
+    await announceProgress(withUrl, announced, [{ type: "level_up", from: 61, value: 62 }], capture);
+    expect(posts).toHaveLength(1);
   });
 });
 

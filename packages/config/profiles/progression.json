@@ -496,12 +496,12 @@
     {"id": 164, "key": "blacksmithing", "name": {"en": "Blacksmithing", "es": "Herrería"}, "kind": "primary", "maxSkill": 600},
     {"id": 333, "key": "enchanting", "name": {"en": "Enchanting", "es": "Encantamiento"}, "kind": "primary", "maxSkill": 600},
     {"id": 202, "key": "engineering", "name": {"en": "Engineering", "es": "Ingeniería"}, "kind": "primary", "maxSkill": 600},
-    {"id": 182, "key": "herbalism", "name": {"en": "Herbalism", "es": "Herboristería"}, "kind": "primary", "maxSkill": 600},
+    {"id": 182, "key": "herbalism", "name": {"en": "Herbalism", "es": "Herboristería"}, "kind": "primary", "gathering": true, "maxSkill": 600},
     {"id": 773, "key": "inscription", "name": {"en": "Inscription", "es": "Inscripción"}, "kind": "primary", "maxSkill": 600},
     {"id": 755, "key": "jewelcrafting", "name": {"en": "Jewelcrafting", "es": "Joyería"}, "kind": "primary", "maxSkill": 600},
     {"id": 165, "key": "leatherworking", "name": {"en": "Leatherworking", "es": "Peletería"}, "kind": "primary", "maxSkill": 600},
-    {"id": 186, "key": "mining", "name": {"en": "Mining", "es": "Minería"}, "kind": "primary", "maxSkill": 600},
-    {"id": 393, "key": "skinning", "name": {"en": "Skinning", "es": "Desuello"}, "kind": "primary", "maxSkill": 600},
+    {"id": 186, "key": "mining", "name": {"en": "Mining", "es": "Minería"}, "kind": "primary", "gathering": true, "maxSkill": 600},
+    {"id": 393, "key": "skinning", "name": {"en": "Skinning", "es": "Desuello"}, "kind": "primary", "gathering": true, "maxSkill": 600},
     {"id": 197, "key": "tailoring", "name": {"en": "Tailoring", "es": "Sastrería"}, "kind": "primary", "maxSkill": 600},
     {"id": 794, "key": "archaeology", "name": {"en": "Archaeology", "es": "Arqueología"}, "kind": "secondary", "maxSkill": 600},
     {"id": 185, "key": "cooking", "name": {"en": "Cooking", "es": "Cocina"}, "kind": "secondary", "maxSkill": 600},
@@ -509,6 +509,21 @@
     {"id": 356, "key": "fishing", "name": {"en": "Fishing", "es": "Pesca"}, "kind": "secondary", "maxSkill": 600}
   ],
   "maxPrimaryProfessions": 2,
+  "reputation": {
+    "note": "Standard ladder matched by tier and English standing name; friendship and renown factions use other ladders.",
+    "standings": [
+      {"key": "hated", "tier": 0, "name": {"en": "Hated", "es": "Odiado"}},
+      {"key": "hostile", "tier": 1, "name": {"en": "Hostile", "es": "Hostil"}},
+      {"key": "unfriendly", "tier": 2, "name": {"en": "Unfriendly", "es": "Adverso"}},
+      {"key": "neutral", "tier": 3, "name": {"en": "Neutral", "es": "Neutral"}},
+      {"key": "friendly", "tier": 4, "name": {"en": "Friendly", "es": "Amistoso"}},
+      {"key": "honored", "tier": 5, "name": {"en": "Honored", "es": "Honorable"}},
+      {"key": "revered", "tier": 6, "name": {"en": "Revered", "es": "Venerado"}},
+      {"key": "exalted", "tier": 7, "name": {"en": "Exalted", "es": "Exaltado"}}
+    ],
+    "friendship": true,
+    "renown": false
+  },
   "weekly": {
     "reset": {"eu": {"day": 3, "hourUtc": 4}, "us": {"day": 2, "hourUtc": 15}, "kr": {"day": 3, "hourUtc": 23}, "tw": {"day": 3, "hourUtc": 23}}
   },

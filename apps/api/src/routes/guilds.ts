@@ -1,11 +1,13 @@
 import { BlizzardApiError, type CharacterProfile } from "@wow/blizzard";
-import { REGIONS, bisListSchema, bisToGargulCsv, blizzardSlug, progressEventsSchema, type Localized } from "@wow/config";
+import { REGIONS, bisListSchema, bisToGargulCsv, blizzardSlug, progressEventsSchema, progressSettingsSchema, readProgressSettings, type Localized } from "@wow/config";
 import {
   averageEquippedItemLevel,
   buildRoster,
+  characterPageUrl,
   groupReportLinks,
   defaultStatusForRank,
   fitsGameVersion,
+  formatProgressMessage,
   gameVersion,
   nameKey,
   postDiscordWebhook,
@@ -454,11 +456,13 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
   });
 
   // Discord webhooks that announce character progress. Officers manage them; the URL (a secret) is never read back.
-  const serializeWebhook = (w: { id: string; label: string; url: string; events: string[]; locale: string; allCharacters: boolean; characterIds: string[]; enabled: boolean }) => ({
+  const serializeWebhook = (w: { id: string; label: string; url: string; events: string[]; settings: unknown; locale: string; allCharacters: boolean; characterIds: string[]; enabled: boolean }) => ({
     id: w.id,
     label: w.label,
     urlMasked: maskWebhookUrl(w.url),
     events: w.events,
+    // Always the full settings, with defaults filled in, so the form shows exactly what is applied.
+    settings: readProgressSettings(w.settings),
     locale: w.locale,
     allCharacters: w.allCharacters,
     characterIds: w.characterIds,
@@ -468,6 +472,7 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     label: z.string().trim().min(1).max(60),
     url: z.string().trim().max(300).refine(isDiscordWebhookUrl, "invalid_webhook_url"),
     events: progressEventsSchema,
+    settings: progressSettingsSchema.optional(),
     locale: z.enum(["es", "en"]).default("es"),
     allCharacters: z.boolean().default(true),
     characterIds: z.array(z.string()).max(200).default([]),
@@ -515,16 +520,31 @@ export async function guildRoutes(app: FastifyInstance, deps: AppDeps) {
     const { guild } = await requireGuildRole(prisma, id, request.user, "OFFICER");
     const webhook = await prisma.rosterWebhook.findFirst({ where: { id: webhookId, guildId: id } });
     if (!webhook) throw notFound("webhook_not_found");
-    const es = webhook.locale === "es";
+    // A sample announcement in the real format, about one of the roster's characters when it has any.
+    const profile = gameVersion(core, guild.gameVersion);
+    const entry = await prisma.rosterEntry.findFirst({
+      where: { guildId: id, pending: false, characterId: { not: null } },
+      orderBy: { character: { level: "desc" } },
+      include: { character: { include: { owner: { select: { battletag: true } } } } },
+    });
+    const sample = entry?.character;
+    const message = sample
+      ? formatProgressMessage(
+          profile,
+          { ...sample, profile: sample.profile as Partial<CharacterProfile> | null },
+          [{ type: "level_up", from: sample.level - 1, value: sample.level }],
+          webhook.locale,
+          {
+            playerName: entry.playerName || sample.owner?.battletag.split("#")[0] || null,
+            url: characterPageUrl(core.publicUrl, webhook.locale, sample),
+            rosterName: guild.name,
+          },
+        )
+      : { embeds: [{ title: guild.name, color: 0x5865f2, timestamp: new Date().toISOString() }] };
+    const note = webhook.locale === "es" ? "✅ Prueba de webhook de wow-roster. Así se verán los anuncios." : "✅ wow-roster webhook test. Announcements will look like this.";
+    const embed = message.embeds[0] as Record<string, unknown> & { description?: string };
     const ok = await postDiscordWebhook(webhook.url, {
-      embeds: [
-        {
-          title: guild.name,
-          color: 0x5865f2,
-          description: es ? "✅ Prueba de webhook de wow-roster. ¡Funciona!" : "✅ wow-roster webhook test. It works!",
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      embeds: [{ ...embed, description: [note, embed.description].filter(Boolean).join("\n\n") }],
     });
     if (!ok) throw new HttpError(502, "webhook_delivery_failed");
     return { ok: true };

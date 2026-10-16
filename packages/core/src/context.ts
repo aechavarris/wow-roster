@@ -16,6 +16,8 @@ export interface CoreContext {
   warcraftLogs?: WarcraftLogsClient;
   /** Wowhead (unofficial), for game data Blizzard's API lacks on Classic (item source, by-id lookup, search). */
   wowhead?: WowheadClient;
+  /** Public URL of the web app (no trailing slash), for links in Discord announcements. */
+  publicUrl?: string;
 }
 
 /** The game version has no public Blizzard API yet (Forever): only planned characters are possible. */
