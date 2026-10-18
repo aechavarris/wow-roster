@@ -128,8 +128,9 @@ export function withApiStandIns(versions: GameVersions, spec: string | undefined
     return {
       ...target,
       api: { ...source.api, standIn: source.id },
-      // Item ids come from the source's game data, so tooltips must too.
-      wowheadDomain: source.wowheadDomain,
+      // The target keeps its OWN Wowhead domain: Wowhead now has a Forever database (items, zones, bosses), so the
+      // BiS item search and tooltips use real Forever data even while the Blizzard profile API is stood in with the
+      // source's (for syncing the disposable test characters, whose gear ids are the source's).
       raids: [
         ...target.raids,
         ...source.raids.filter((r) => r.warcraftLogsZone).map((r) => ({ ...r, key: `standin-${r.key}`, enabled: false })),

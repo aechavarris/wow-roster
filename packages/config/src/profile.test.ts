@@ -174,7 +174,9 @@ describe("withApiStandIns", () => {
     const era = tested.byId.get("classic-era")!;
     expect(forever.api).toMatchObject({ available: true, profileNamespace: era.api.profileNamespace, standIn: "classic-era" });
     expect(forever.api.warcraftLogs).toEqual(era.api.warcraftLogs);
-    expect(forever.wowheadDomain).toBe(era.wowheadDomain);
+    // The Wowhead domain is NOT stood in: Forever keeps its own, so items/tooltips use the real Forever database.
+    expect(forever.wowheadDomain).toBe("forever");
+    expect(forever.wowheadDomain).not.toBe(era.wowheadDomain);
     // Forever's own raids stay; Era's log-mapped raids are only there to read kills.
     expect(forever.raids.filter((r) => r.enabled).map((r) => r.key)).toEqual(versions().byId.get("forever")!.raids.filter((r) => r.enabled).map((r) => r.key));
     expect(forever.raids.find((r) => r.key === "standin-naxxramas")).toMatchObject({ enabled: false, warcraftLogsZone: 2006 });

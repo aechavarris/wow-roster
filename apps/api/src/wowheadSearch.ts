@@ -4,7 +4,6 @@ import {
   isArmorTypeSlot,
   itemTypeIds,
   slotForInventoryTypeId,
-  slotTypeFilter,
   wowheadIconUrl,
   wowheadQualityName,
   wowheadSourceType,
@@ -38,15 +37,17 @@ export interface WowheadSearchQuery {
 export async function wowheadBisSearch(core: CoreContext, game: GameProfile, q: WowheadSearchQuery) {
   if (!core.wowhead) throw new Error("wowhead client unavailable");
 
-  // Only the finder's own filter keys go in the query string; everything else is matched on the rows below.
-  const filter: string[] = [];
-  if (q.q?.trim()) filter.push(`na=${encodeURIComponent(q.q.trim())}`);
-  if (q.minLevel !== undefined) filter.push(`minrl=${q.minLevel}`);
-  filter.push(`maxrl=${q.maxLevel ?? game.maxLevel}`);
+  // Required-level range goes to Wowhead as path facets (its current filter format); everything else — name, slot,
+  // item class/type — is matched on the returned rows, which the facet page embeds in full for that level range.
+  const facets: string[] = [];
+  if (q.minLevel !== undefined) facets.push(`min-req-level:${q.minLevel}`);
+  facets.push(`max-req-level:${q.maxLevel ?? game.maxLevel}`);
 
-  const rows = await core.wowhead.itemsByFilter(filter.join(";"), game.wowheadDomain, { limit: 1000 });
+  const rows = await core.wowhead.itemsByFacets(facets, game.wowheadDomain, { limit: 1000 });
 
-  // Resolve the same class/type restriction the Blizzard path uses, but as numeric ids to match on the rows.
+  // Resolve the class/type restriction as numeric ids to match on the rows. A user-picked type wins; otherwise, only
+  // restrict a real armour slot to the class's armour type. Mixed-class slots (off hand = weapon|shield|held, ranged
+  // = weapon|relic) are NOT class-narrowed, so the slot filter alone keeps shields and off-hand frills.
   const explicitType = q.slot ? itemTypeIds(q.slot, q.type) : null;
   let restrictClassId: number | undefined;
   let restrictSubclassId: number | undefined;
@@ -59,16 +60,15 @@ export async function wowheadBisSearch(core: CoreContext, game: GameProfile, q: 
       restrictClassId = ITEM_CLASS.armor;
       restrictSubclassId = armorTypeId(armorType);
     }
-  } else if (q.slot) {
-    // No explicit/armour restriction, but a slot is chosen: at least keep it to that slot's item class.
-    restrictClassId = slotTypeFilter(q.slot)?.itemClassId;
   }
 
+  const needle = q.q?.trim().toLowerCase();
   let items = rows
     .map((r) => ({ row: r, slot: slotForInventoryTypeId(r.slotId) }))
     // Drop non-gear rows (recipes, consumables, quest items map to "other").
     .filter((e) => e.slot !== "other")
     .filter((e) => (q.slot ? e.slot === q.slot : true))
+    .filter((e) => (needle ? e.row.name.toLowerCase().includes(needle) : true))
     .filter((e) => (restrictClassId === undefined ? true : e.row.classId === restrictClassId))
     .filter((e) => (restrictSubclassId === undefined ? true : e.row.subclassId === restrictSubclassId))
     // Required level within the bracket (the finder filter is a coarse pre-narrowing; this is authoritative).
