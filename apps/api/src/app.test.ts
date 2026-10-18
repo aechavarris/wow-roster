@@ -192,12 +192,14 @@ const core: CoreContext = {
         return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
       if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
         return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
-      // The item finder for any domain: a quest sword (mainHand) and a cloth chest, for the Wowhead BiS path.
-      if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\?filter=/.test(url))
+      // The item finder for any domain, now addressed by path facets (/items/min-req-level:…/max-req-level:…):
+      // a quest sword (mainHand), a cloth chest, an off-hand shield (armour) and a consumable (dropped).
+      if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\/[a-z-]+:/.test(url))
         return new Response(
           `<script>var listviewitems = [` +
             `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9},` +
             `{"id":5022,"name":"Test Robe","quality":2,"level":18,"reqlevel":15,"slot":5,"classs":4,"subclass":1,"source":[2],popularity:3},` +
+            `{"id":5044,"name":"Test Bulwark","quality":3,"level":24,"reqlevel":20,"slot":14,"classs":4,"subclass":6,"icon":"inv_shield_04","source":[2],popularity:7},` +
             `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
             `];</script>`,
         );
@@ -1830,10 +1832,10 @@ describe("BiS item search via Wowhead (Classic versions)", () => {
   it("searches the Wowhead item finder, maps rows and filters by slot, dropping non-gear", async () => {
     const session = await login();
 
-    // No slot: the two gear rows come back (the consumable, slot 0 -> "other", is dropped), newest item level first.
+    // No slot: the three gear rows come back (the consumable, slot 0 -> "other", is dropped), highest item level first.
     const all = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu", cookies: { wr_session: session } });
     expect(all.statusCode).toBe(200);
-    expect(all.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5022]);
+    expect(all.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5044, 5022]);
 
     // A main-hand search keeps only the weapon, with its slot, quality, source type, type label and icon mapped.
     const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&slot=mainHand", cookies: { wr_session: session } });
@@ -1847,6 +1849,15 @@ describe("BiS item search via Wowhead (Classic versions)", () => {
       subclass: { en: "One-Handed Sword" },
       icon: "https://wow.zamimg.com/images/wow/icons/large/inv_sword_04.jpg",
     });
+
+    // Off hand spans several item classes: even with "only my class" (the default), a shield (armour) is kept,
+    // not restricted to weapons — the bug that returned nothing for off-hand slots.
+    const offHand = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&slot=offHand&classId=1", cookies: { wr_session: session } });
+    expect(offHand.json().items.map((i: { id: number }) => i.id)).toEqual([5044]);
+
+    // The name filter is applied on our side over the level-bracketed rows.
+    const named = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&q=robe", cookies: { wr_session: session } });
+    expect(named.json().items.map((i: { id: number }) => i.id)).toEqual([5022]);
 
     // MoP also goes through Wowhead (its domain).
     const mop = await app.inject({ method: "GET", url: "/api/items/search?version=progression&region=eu&slot=chest", cookies: { wr_session: session } });

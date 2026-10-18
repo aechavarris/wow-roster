@@ -274,4 +274,17 @@ export class WowheadClient {
   async itemsByFilter(filter: string, domain = "", opts: { limit?: number } = {}): Promise<WowheadSearchResult[]> {
     return this.list("item", filter, domain, opts);
   }
+
+  /**
+   * Items from the database list narrowed by Wowhead's current **path-facet** URLs, e.g.
+   * `/<domain>/items/min-req-level:31/max-req-level:40`. Wowhead moved the finder filters from the old `?filter=`
+   * query string to path segments (`facet:value`); the query form is now ignored, which is why a level filter sent
+   * that way returned a popularity sample instead of the requested range. Each facet is a `name:value` string, URL
+   * safe. The matching rows are embedded in the page's listview, parsed as usual.
+   */
+  async itemsByFacets(facets: string[], domain = "", opts: { limit?: number } = {}): Promise<WowheadSearchResult[]> {
+    const path = facets.map((f) => `/${f}`).join("");
+    const html = await this.get(`${this.base(domain)}/${PLURAL.item}${path}`);
+    return parseWowheadListview(html, "item", opts.limit);
+  }
 }
