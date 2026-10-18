@@ -110,6 +110,7 @@ export default async function CharacterPage({ params }: Props) {
         level={c.level}
         classId={c.classId}
         spec={specKeyById(game, c.classId, c.specId)}
+        equippedItemIds={profile?.equipment?.map((e) => e.itemId)}
       />
     </div>
   );

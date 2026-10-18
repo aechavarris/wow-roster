@@ -23,6 +23,9 @@ interface Props {
   classId?: number | null;
   /** Character spec key, so the item search pins the right primary stat for hybrid classes. */
   spec?: string | null;
+  /** Item ids the character currently has equipped, to mark each BiS item obtained (✓) or missing (✗). Omit for
+   *  planned entries and unsynced characters, where there is no equipment to compare against. */
+  equippedItemIds?: number[];
 }
 
 /**
@@ -69,7 +72,7 @@ function brackets(maxLevel: number): { min: number; max: number; open?: boolean 
 }
 
 /** Best-in-slot list with two groupings (slot, zone), a Wowhead link per item and a Raidbots-style item search. */
-export function BisPanel({ version, region, bis, canEdit, endpoint, level, classId, spec }: Props) {
+export function BisPanel({ version, region, bis, canEdit, endpoint, level, classId, spec, equippedItemIds }: Props) {
   const t = useTranslations("bis");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -77,6 +80,10 @@ export function BisPanel({ version, region, bis, canEdit, endpoint, level, class
   // Wowhead tooltips power both the saved list and the picker; load the widget once and rescan when the list changes.
   useEffect(() => loadWowheadTooltips(), []);
   const [list, setList] = useState<BisItem[]>(bis);
+  // Which BiS items the character already has equipped. Only compared when the caller passes the equipped ids
+  // (a real, synced character); planned entries and unsynced characters show no obtained/missing marker.
+  const equipped = equippedItemIds ? new Set(equippedItemIds) : null;
+  const obtainedCount = equipped ? list.filter((i) => equipped.has(i.itemId)).length : 0;
   const [mode, setMode] = useState<"slot" | "zone">("slot");
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +144,9 @@ export function BisPanel({ version, region, bis, canEdit, endpoint, level, class
             {t("title")}
           </h2>
           <p className="text-xs text-muted">{t("help")}</p>
+          {equipped && list.length > 0 && (
+            <p className="mt-1 text-xs font-medium text-muted">{t("obtainedCount", { have: obtainedCount, total: list.length })}</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-md border border-border text-sm">
@@ -187,6 +197,17 @@ export function BisPanel({ version, region, bis, canEdit, endpoint, level, class
                     >
                       {item.name}
                     </a>
+                    {/* Obtained marker: a green ✓ when the character has this item equipped, else a muted ✗. */}
+                    {equipped &&
+                      (equipped.has(item.itemId) ? (
+                        <span className="badge border border-success/60 text-success" title={t("obtained")}>
+                          ✓ {t("obtained")}
+                        </span>
+                      ) : (
+                        <span className="badge bg-surface-2 text-muted" title={t("missing")}>
+                          {t("missing")}
+                        </span>
+                      ))}
                     {/* By slot: the obtained-from zone (+ boss). By zone: the slot, since the zone is the group header. */}
                     {mode === "slot" && (
                       <span className="text-xs text-muted">{sourceSummary(version, item.source, locale, t) ?? t("sourceType.other")}</span>
