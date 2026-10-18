@@ -296,8 +296,9 @@ function ItemSearch({
   const [type, setType] = useState("");
   const [secondary, setSecondary] = useState("");
   const [onlyMyClass, setOnlyMyClass] = useState(true);
-  // Secondary-stat options the version models (crit, haste…); empty where it has none (filter not shown).
-  const secondaryOptions = SECONDARY_STATS.filter((s) => version.secondaryStats.includes(s.key));
+  // Secondary-stat options the version models (crit, haste…). Only the Blizzard-backed search (retail) can filter by
+  // stat; the Wowhead item finder (Classic / Forever) cannot, so the control is hidden there instead of doing nothing.
+  const secondaryOptions = version.id === "retail" ? SECONDARY_STATS.filter((s) => version.secondaryStats.includes(s.key)) : [];
   const [sort, setSort] = useState<"level" | "rarity" | "type">("level");
   const [results, setResults] = useState<ItemSearchResult[] | null>(null);
   const [truncated, setTruncated] = useState(false);

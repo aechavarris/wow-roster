@@ -187,3 +187,18 @@ export function wowheadSourceType(codes: readonly number[]): "quest" | "vendor" 
   }
   return "other";
 }
+
+const ARMOR_BY_ID = new Map(ARMOR_TYPES.map((t) => [t.id, t.name]));
+const WEAPON_BY_ID = new Map(WEAPON_TYPES.map((t) => [t.id, t.name]));
+
+/** The localized armour/weapon type label for a Wowhead item row's class/subclass ids, or null for slots with none. */
+export function wowheadSubclassLabel(classId: number | undefined | null, subclassId: number | undefined | null): Localized | null {
+  if (subclassId == null) return null;
+  if (classId === ITEM_CLASS.armor) return ARMOR_BY_ID.get(subclassId) ?? null;
+  if (classId === ITEM_CLASS.weapon) return WEAPON_BY_ID.get(subclassId) ?? null;
+  return null;
+}
+
+/** The icon CDN URL (shared by Wowhead and Blizzard tooltips) for an icon name like "inv_sword_39". */
+export const wowheadIconUrl = (name: string | undefined | null): string | undefined =>
+  name ? `https://wow.zamimg.com/images/wow/icons/large/${name.toLowerCase()}.jpg` : undefined;

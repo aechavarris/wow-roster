@@ -12,7 +12,7 @@ const ITEM_XML = `<?xml version="1.0" encoding="UTF-8"?><wowhead><item id="19019
 
 // The item finder (and name search) embed rows as `var listviewitems = [ … ]`, with some unquoted keys.
 const LISTVIEW_HTML = `<script>var listviewitems = [` +
-  `{"armor":62,"classs":4,"id":720,"level":28,"name":"Brawler Gloves","quality":3,"reqlevel":23,"slot":10,"source":[2],"subclass":2,firstseenpatch: 0,popularity:88},` +
+  `{"armor":62,"classs":4,"icon":"inv_gauntlets_17","id":720,"level":28,"name":"Brawler Gloves","quality":3,"reqlevel":23,"slot":10,"source":[2],"subclass":2,firstseenpatch: 0,popularity:88},` +
   `{"id":728,"level":15,"name":"Recipe: Westfall Stew","quality":1,"source":[4,5],firstseenpatch: 0,popularity:5},` +
   `{"noidhere":true,"name":"skipped"}` +
   `];new Listview({template:'item',id:'items',data:listviewitems});</script>`;
@@ -47,7 +47,7 @@ describe("Wowhead listview parsing", () => {
   it("reads rows field by field, tolerating unquoted keys and skipping rows without an id", () => {
     const rows = parseWowheadListview(LISTVIEW_HTML, "item");
     expect(rows).toEqual([
-      { type: "item", id: 720, name: "Brawler Gloves", quality: 3, itemLevel: 28, reqLevel: 23, sourceCodes: [2], slotId: 10, classId: 4, subclassId: 2 },
+      { type: "item", id: 720, name: "Brawler Gloves", quality: 3, itemLevel: 28, reqLevel: 23, sourceCodes: [2], slotId: 10, classId: 4, subclassId: 2, icon: "inv_gauntlets_17" },
       { type: "item", id: 728, name: "Recipe: Westfall Stew", quality: 1, itemLevel: 15, reqLevel: undefined, sourceCodes: [4, 5], slotId: undefined, classId: undefined, subclassId: undefined },
     ]);
   });

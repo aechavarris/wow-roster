@@ -81,6 +81,8 @@ export interface WowheadSearchResult {
   slotId?: number;
   classId?: number;
   subclassId?: number;
+  /** Icon name (e.g. "inv_sword_39"), to build the icon URL; absent when the row has no icon field. */
+  icon?: string;
 }
 
 /** Wowhead answered with an error status, or (404) does not know the entity. */
@@ -204,6 +206,7 @@ export function parseWowheadListview(html: string, type: WowheadType, limit = 20
       slotId: toInt(obj.match(/"slot":(\d+)/)?.[1]),
       classId: toInt(obj.match(/"classs":(\d+)/)?.[1]),
       subclassId: toInt(obj.match(/"subclass":(\d+)/)?.[1]),
+      icon: obj.match(/"icon":"((?:[^"\\]|\\.)*)"/)?.[1]?.replace(/\\(.)/g, "$1").toLowerCase(),
     });
     if (results.length >= limit) break;
   }
