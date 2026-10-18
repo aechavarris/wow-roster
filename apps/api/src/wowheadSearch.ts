@@ -5,8 +5,10 @@ import {
   itemTypeIds,
   slotForInventoryTypeId,
   slotTypeFilter,
+  wowheadIconUrl,
   wowheadQualityName,
   wowheadSourceType,
+  wowheadSubclassLabel,
   type GameProfile,
 } from "@wow/config";
 import type { CoreContext } from "@wow/core";
@@ -93,11 +95,11 @@ export async function wowheadBisSearch(core: CoreContext, game: GameProfile, q: 
       id: row.id,
       name: { en: row.name },
       slot,
-      subclass: null,
+      subclass: wowheadSubclassLabel(row.classId, row.subclassId),
       quality: wowheadQualityName(row.quality) ?? null,
       itemLevel: row.itemLevel ?? null,
       requiredLevel: row.reqLevel ?? null,
-      icon: null,
+      icon: wowheadIconUrl(row.icon) ?? null,
       // Source type from the finder's codes; the zone/boss/quest detail is added later from the item page.
       source: row.sourceCodes.length > 0 ? { type: wowheadSourceType(row.sourceCodes) } : null,
     })),

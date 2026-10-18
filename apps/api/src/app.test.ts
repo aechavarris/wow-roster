@@ -196,7 +196,7 @@ const core: CoreContext = {
       if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\?filter=/.test(url))
         return new Response(
           `<script>var listviewitems = [` +
-            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"source":[4],popularity:9},` +
+            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9},` +
             `{"id":5022,"name":"Test Robe","quality":2,"level":18,"reqlevel":15,"slot":5,"classs":4,"subclass":1,"source":[2],popularity:3},` +
             `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
             `];</script>`,
@@ -1835,10 +1835,18 @@ describe("BiS item search via Wowhead (Classic versions)", () => {
     expect(all.statusCode).toBe(200);
     expect(all.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5022]);
 
-    // A main-hand search keeps only the weapon, with its slot, quality and source type mapped.
+    // A main-hand search keeps only the weapon, with its slot, quality, source type, type label and icon mapped.
     const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&slot=mainHand", cookies: { wr_session: session } });
     expect(mainHand.json().items).toHaveLength(1);
-    expect(mainHand.json().items[0]).toMatchObject({ id: 5011, slot: "mainHand", quality: "RARE", requiredLevel: 20, source: { type: "quest" } });
+    expect(mainHand.json().items[0]).toMatchObject({
+      id: 5011,
+      slot: "mainHand",
+      quality: "RARE",
+      requiredLevel: 20,
+      source: { type: "quest" },
+      subclass: { en: "One-Handed Sword" },
+      icon: "https://wow.zamimg.com/images/wow/icons/large/inv_sword_04.jpg",
+    });
 
     // MoP also goes through Wowhead (its domain).
     const mop = await app.inject({ method: "GET", url: "/api/items/search?version=progression&region=eu&slot=chest", cookies: { wr_session: session } });
