@@ -176,6 +176,10 @@ const fakeFetch = (async (input: string | URL, init?: RequestInit) => {
   return body ? Response.json(body) : new Response(null, { status: 404 });
 }) as typeof fetch;
 
+// Lets a test force Wowhead's item finder to a failing status (it 403s every server-side request in production,
+// behind a Cloudflare challenge) so the Blizzard fall-back can be exercised. 200 = serve the mock pages normally.
+let wowheadFinderStatus = 200;
+
 const core: CoreContext = {
   prisma,
   versions,
@@ -192,13 +196,16 @@ const core: CoreContext = {
         return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
       if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
         return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
-      // The item finder for any domain is addressed by path facets (/items/min-req-level:…/max-req-level:…). The
-      // search prefers the slot-grouped page (/group-by:slot) but falls back to the flat page when Wowhead rejects
-      // the grouped path for a non-browser client (a real 404 seen in production), which this mock reproduces.
-      if (url.includes("/group-by:slot")) return new Response("", { status: 404 });
-      // The flat finder page: a quest sword (mainHand), a cloth chest, an off-hand shield (armour) and a consumable
-      // (slot 0 -> dropped), as one listview array.
-      if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\/[a-z-]+:/.test(url))
+      // The item finder for any domain is addressed by path facets (/items/min-req-level:…/max-req-level:…).
+      if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\/[a-z-]+:/.test(url)) {
+        // A test can force the finder to fail (Cloudflare 403s every server-side finder request in production) to
+        // exercise the Blizzard fall-back.
+        if (wowheadFinderStatus !== 200) return new Response("", { status: wowheadFinderStatus });
+        // The search prefers the slot-grouped page but falls back to the flat page when Wowhead rejects the grouped
+        // path for a non-browser client (a real 404 seen in production), which this mock reproduces.
+        if (url.includes("/group-by:slot")) return new Response("", { status: 404 });
+        // The flat finder page: a quest sword (mainHand), a cloth chest, an off-hand shield (armour) and a
+        // consumable (slot 0 -> dropped), as one listview array.
         return new Response(
           `<script>var listviewitems = [` +
             `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9},` +
@@ -207,6 +214,7 @@ const core: CoreContext = {
             `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
             `];</script>`,
         );
+      }
       return new Response("", { status: 404 });
     }) as typeof fetch,
   }),
@@ -1870,5 +1878,23 @@ describe("BiS item search via Wowhead (Classic versions)", () => {
     // MoP also goes through Wowhead (its domain).
     const mop = await app.inject({ method: "GET", url: "/api/items/search?version=progression&region=eu&slot=chest", cookies: { wr_session: session } });
     expect(mop.json().items.map((i: { id: number }) => i.id)).toEqual([5022]);
+  });
+
+  it("falls back to the Blizzard item search when Wowhead's finder is blocked", async () => {
+    // In production Wowhead's finder sits behind a Cloudflare challenge that 403s every server-side request, so a
+    // failing finder must not fail the picker: the version's own API (Classic Era for Forever via its stand-in)
+    // lists the items instead. Here the finder is forced to 403 and the Blizzard mock serves the rows.
+    const session = await login();
+    wowheadFinderStatus = 403;
+    try {
+      const res = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu", cookies: { wr_session: session } });
+      expect(res.statusCode).toBe(200);
+      const ids = res.json().items.map((i: { id: number }) => i.id);
+      // The Blizzard mock ids (600, 602…), not the Wowhead finder ids (5011…): the fall-back served them.
+      expect(ids).toContain(600);
+      expect(ids).not.toContain(5011);
+    } finally {
+      wowheadFinderStatus = 200;
+    }
   });
 });

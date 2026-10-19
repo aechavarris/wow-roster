@@ -119,15 +119,17 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
       .parse(request.query);
     const game = gameVersion(core, q.version);
 
-    // Classic (and Forever via its Classic stand-in): Blizzard's item API is thin there, so search Wowhead's item
-    // finder instead, which carries level, slot and source. api.available keeps Forever on its stand-in domain
-    // (Classic) rather than its own, and still 409s when no API/stand-in is set. Retail keeps Blizzard's search.
+    // Classic (and Forever via its Classic stand-in): Blizzard's item API is thin there, so prefer Wowhead's item
+    // finder, which carries level, slot and source. api.available keeps Forever on its stand-in domain (Classic)
+    // rather than its own, and still 409s when no API/stand-in is set. Retail keeps Blizzard's search.
+    // Wowhead's finder now sits behind a Cloudflare challenge that 403s every server-side request (only the by-id
+    // &xml tooltip endpoint is reachable), so when it fails, fall through to the Blizzard item search below rather
+    // than failing the picker — thinner (no Wowhead source/level), but the version's own API still lists items.
     if (q.version !== "retail" && game.api.available && core.wowhead) {
       try {
         return await wowheadBisSearch(core, game, q);
       } catch (error) {
-        request.log.warn({ err: error, version: q.version }, "wowhead item search failed");
-        throw new HttpError(502, "item_search_unavailable");
+        request.log.warn({ err: error, version: q.version }, "wowhead item search failed; falling back to Blizzard");
       }
     }
 
