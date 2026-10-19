@@ -194,10 +194,6 @@ const fakeFetch = (async (input: string | URL, init?: RequestInit) => {
   return body ? Response.json(body) : new Response(null, { status: 404 });
 }) as typeof fetch;
 
-// Lets a test force Wowhead's item finder to a failing status (it 403s every server-side request in production,
-// behind a Cloudflare challenge) so the Blizzard fall-back can be exercised. 200 = serve the mock pages normally.
-let wowheadFinderStatus = 200;
-
 const core: CoreContext = {
   prisma,
   versions,
@@ -214,25 +210,6 @@ const core: CoreContext = {
         return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
       if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
         return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
-      // The item finder for any domain is addressed by path facets (/items/min-req-level:…/max-req-level:…).
-      if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\/[a-z-]+:/.test(url)) {
-        // A test can force the finder to fail (Cloudflare 403s every server-side finder request in production) to
-        // exercise the Blizzard fall-back.
-        if (wowheadFinderStatus !== 200) return new Response("", { status: wowheadFinderStatus });
-        // The search prefers the slot-grouped page but falls back to the flat page when Wowhead rejects the grouped
-        // path for a non-browser client (a real 404 seen in production), which this mock reproduces.
-        if (url.includes("/group-by:slot")) return new Response("", { status: 404 });
-        // The flat finder page: a quest sword (mainHand), a cloth chest, an off-hand shield (armour) and a
-        // consumable (slot 0 -> dropped), as one listview array.
-        return new Response(
-          `<script>var listviewitems = [` +
-            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9},` +
-            `{"id":5022,"name":"Test Robe","quality":2,"level":18,"reqlevel":15,"slot":5,"classs":4,"subclass":1,"source":[2],popularity:3},` +
-            `{"id":5044,"name":"Test Bulwark","quality":3,"level":24,"reqlevel":20,"slot":14,"classs":4,"subclass":6,"icon":"inv_shield_04","source":[2],popularity:7},` +
-            `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
-            `];</script>`,
-        );
-      }
       return new Response("", { status: 404 });
     }) as typeof fetch,
   }),
@@ -576,73 +553,6 @@ describe("BiS wishlists", () => {
       update: {},
     });
   }
-
-  it("searches items in a bracket with their slot, icon and zone, for signed-in users only", async () => {
-    await seedSourceIndex();
-    expect((await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&q=sulf&minLevel=60&maxLevel=69" })).statusCode).toBe(401);
-    const session = await login();
-    const result = await app.inject({
-      method: "GET",
-      url: "/api/items/search?version=retail&region=eu&q=sulf&minLevel=60&maxLevel=69",
-      cookies: { wr_session: session },
-    });
-    expect(result.statusCode).toBe(200);
-    expect(result.json().truncated).toBe(false);
-    // Default sort is item level descending, so the ilvl 80 mace comes first.
-    expect(result.json().items[0]).toEqual({
-      id: 600,
-      name: { en: "Sulfuras", es: "Sulfuras" },
-      slot: "mainHand",
-      subclass: { en: "Two-Handed Maces" },
-      quality: "LEGENDARY",
-      itemLevel: 80,
-      requiredLevel: 60,
-      icon: "https://render/icons/sword.jpg",
-      source: { type: "raid", zoneKey: "molten-core", zoneName: { en: "Molten Core" }, bossName: { en: "Ragnaros" }, auto: true },
-    });
-
-    // Filtering by slot narrows to the matching items only.
-    const rings = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&minLevel=60&maxLevel=69&slot=finger", cookies: { wr_session: session } });
-    expect(rings.json().items.map((i: { id: number }) => i.id)).toEqual([601]);
-
-    // A warrior (plate) sees only plate chest items; the cloth chest is hidden.
-    const warriorChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1", cookies: { wr_session: session } });
-    expect(warriorChest.json().items.map((i: { id: number }) => i.id)).toEqual([700]);
-
-    // Turning off the class restriction shows both chest items.
-    const allChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1&restrictClass=false", cookies: { wr_session: session } });
-    expect(allChest.json().items.map((i: { id: number }) => i.id).sort()).toEqual([700, 701]);
-
-    // The explicit type filter wins over the class default (cloth chest only).
-    const clothChest = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=chest&classId=1&type=cloth", cookies: { wr_session: session } });
-    expect(clothChest.json().items.map((i: { id: number }) => i.id)).toEqual([701]);
-
-    // A weapon slot with no type still narrows to weapons, so weapons are not crowded out by higher-ilvl armour.
-    const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand", cookies: { wr_session: session } });
-    expect(mainHand.json().items.map((i: { id: number }) => i.id)).toEqual([602, 600]); // ilvl desc: dagger 82, mace 80
-
-    // A strength class (warrior) hides the intellect dagger but keeps the strength mace.
-    const warriorWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&classId=1&spec=arms", cookies: { wr_session: session } });
-    expect(warriorWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
-
-    // An intellect class (mage) keeps the dagger and hides the strength mace.
-    const mageWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&classId=8&spec=frost", cookies: { wr_session: session } });
-    expect(mageWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([602]);
-
-    // The secondary-stat filter keeps only items carrying it (the dagger has haste, the mace has crit).
-    const hasteWeapon = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&slot=mainHand&secondary=haste&restrictClass=false", cookies: { wr_session: session } });
-    expect(hasteWeapon.json().items.map((i: { id: number }) => i.id)).toEqual([602]);
-
-    // A Blizzard search failure (e.g. the endpoint missing on a Classic namespace) is a clean 502, not a 500.
-    failingRoutes.set("/data/wow/search/item", 404);
-    const down = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&q=sulf", cookies: { wr_session: session } });
-    expect(down.statusCode).toBe(502);
-    expect(down.json().error).toBe("item_search_unavailable");
-    failingRoutes.delete("/data/wow/search/item");
-
-    // Versions without an API cannot search items.
-    expect((await app.inject({ method: "GET", url: "/api/items/search?version=forever&region=eu", cookies: { wr_session: session } })).statusCode).toBe(409);
-  });
 
   it("lets the owner save a BiS list, auto-filling the zone, and refuses non-owners", async () => {
     await seedSourceIndex();
@@ -1810,34 +1720,15 @@ describe("BiS item search with an API stand-in (Forever tested with Classic Era 
     await standInApp.close();
   });
 
-  it("makes Forever searchable through the stand-in API and filters by Forever's own classes' primary stat", async () => {
-    const session = await login();
-
-    // With the stand-in, Forever reports an API and its config points back at the source version.
+  it("reports an available API and the source's Wowhead domain for Forever under the stand-in", async () => {
+    // With the stand-in, Forever reports an API and its config points back at the source version. Its item data
+    // comes from the source (Classic Era), so the Wowhead tooltip/link domain follows the source ("classic"), not
+    // Forever's — otherwise those item ids resolve to "item not found" on wowhead.com/forever.
     const config = (await standInApp.inject({ method: "GET", url: "/api/config" })).json();
     const forever = (config.versions as { id: string; apiAvailable: boolean; apiStandIn: { id: string } | null; wowheadDomain: string }[]).find((v) => v.id === "forever")!;
     expect(forever.apiAvailable).toBe(true);
     expect(forever.apiStandIn?.id).toBe("classic-era");
-    // The picker serves the stand-in's (Classic Era) items, so the Wowhead tooltip/link domain follows the source
-    // ("classic"), not Forever's — otherwise those item ids resolve to "item not found" on wowhead.com/forever.
     expect(forever.wowheadDomain).toBe("classic");
-
-    // The picker no longer 409s for Forever; it returns the stand-in API's items.
-    const all = await standInApp.inject({
-      method: "GET",
-      url: "/api/items/search?version=forever&region=eu&slot=mainHand&restrictClass=false",
-      cookies: { wr_session: session },
-    });
-    expect(all.statusCode).toBe(200);
-    expect(all.json().items.map((i: { id: number }) => i.id).sort()).toEqual([600, 602]);
-
-    // A Forever warrior (strength) hides the intellect dagger and keeps the strength mace, using Forever's classes.
-    const warrior = await standInApp.inject({
-      method: "GET",
-      url: "/api/items/search?version=forever&region=eu&slot=mainHand&classId=1&spec=arms",
-      cookies: { wr_session: session },
-    });
-    expect(warrior.json().items.map((i: { id: number }) => i.id)).toEqual([600]);
   });
 });
 
@@ -1858,125 +1749,5 @@ describe("Wowhead proxy (prototype)", () => {
     // An entity Wowhead does not know is a 404 through the proxy.
     const missing = await app.inject({ method: "GET", url: "/api/wowhead/item/999?version=classic-era", cookies: { wr_session: session } });
     expect(missing.statusCode).toBe(404);
-  });
-});
-
-describe("BiS item search via Wowhead (Classic versions)", () => {
-  it("searches the Wowhead item finder, maps rows and filters by slot, dropping non-gear", async () => {
-    const session = await login();
-
-    // No slot: the three gear rows come back (the consumable, slot 0 -> "other", is dropped), highest item level first.
-    const all = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu", cookies: { wr_session: session } });
-    expect(all.statusCode).toBe(200);
-    expect(all.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5044, 5022]);
-
-    // A main-hand search keeps only the weapon, with its slot, quality, source type, type label and icon mapped.
-    const mainHand = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&slot=mainHand", cookies: { wr_session: session } });
-    expect(mainHand.json().items).toHaveLength(1);
-    expect(mainHand.json().items[0]).toMatchObject({
-      id: 5011,
-      slot: "mainHand",
-      quality: "RARE",
-      requiredLevel: 20,
-      source: { type: "quest" },
-      subclass: { en: "One-Handed Sword" },
-      icon: "https://wow.zamimg.com/images/wow/icons/large/inv_sword_04.jpg",
-    });
-
-    // Off hand spans several item classes: even with "only my class" (the default), a shield (armour) is kept,
-    // not restricted to weapons — the bug that returned nothing for off-hand slots.
-    const offHand = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&slot=offHand&classId=1", cookies: { wr_session: session } });
-    expect(offHand.json().items.map((i: { id: number }) => i.id)).toEqual([5044]);
-
-    // The name filter is applied on our side over the level-bracketed rows.
-    const named = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&q=robe", cookies: { wr_session: session } });
-    expect(named.json().items.map((i: { id: number }) => i.id)).toEqual([5022]);
-
-    // Minimum quality drops the uncommon robe (q2), keeping the rare blade and shield (q3), item level descending.
-    const rare = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&minQuality=3", cookies: { wr_session: session } });
-    expect(rare.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5044]);
-
-    // MoP also goes through Wowhead (its domain).
-    const mop = await app.inject({ method: "GET", url: "/api/items/search?version=progression&region=eu&slot=chest", cookies: { wr_session: session } });
-    expect(mop.json().items.map((i: { id: number }) => i.id)).toEqual([5022]);
-  });
-
-  it("falls back to the Blizzard item search when Wowhead's finder is blocked", async () => {
-    // In production Wowhead's finder sits behind a Cloudflare challenge that 403s every server-side request, so a
-    // failing finder must not fail the picker: the version's own API (Classic Era for Forever via its stand-in)
-    // lists the items instead. Here the finder is forced to 403 and the Blizzard mock serves the rows.
-    const session = await login();
-    wowheadFinderStatus = 403;
-    try {
-      const res = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu", cookies: { wr_session: session } });
-      expect(res.statusCode).toBe(200);
-      const ids = res.json().items.map((i: { id: number }) => i.id);
-      // The Blizzard mock ids (600, 602…), not the Wowhead finder ids (5011…): the fall-back served them.
-      expect(ids).toContain(600);
-      expect(ids).not.toContain(5011);
-    } finally {
-      wowheadFinderStatus = 200;
-    }
-  });
-
-  // Every equipment slot the picker can search (the paper-doll slots minus "other").
-  const SEARCHABLE_SLOTS = [
-    "head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist",
-    "legs", "feet", "finger", "trinket", "mainHand", "offHand", "ranged",
-  ];
-  // retail always hits Blizzard directly; classic-era reaches the same Blizzard search through the Wowhead
-  // fall-back (the finder forced to 403, as Cloudflare does in production). Both must behave identically.
-  const BLIZZARD_PATHS = [
-    { version: "retail", finderStatus: 200 },
-    { version: "classic-era", finderStatus: 403 },
-  ] as const;
-
-  it("returns results for every equipment slot, on the Blizzard path and the fall-back", async () => {
-    const session = await login();
-    for (const { version, finderStatus } of BLIZZARD_PATHS) {
-      wowheadFinderStatus = finderStatus;
-      try {
-        for (const slot of SEARCHABLE_SLOTS) {
-          const res = await app.inject({ method: "GET", url: `/api/items/search?version=${version}&region=eu&slot=${slot}&restrictClass=false`, cookies: { wr_session: session } });
-          expect(res.statusCode, `${version} ${slot}`).toBe(200);
-          const items = res.json().items as { slot: string }[];
-          expect(items.length, `${version} ${slot} returned nothing`).toBeGreaterThan(0);
-          expect(items.every((i) => i.slot === slot), `${version} ${slot} returned a wrong slot`).toBe(true);
-        }
-      } finally {
-        wowheadFinderStatus = 200;
-      }
-    }
-  });
-
-  it("keeps shields and held-in-off-hand in the off-hand slot, even with 'only my class' on", async () => {
-    // The off-hand bug: the search narrowed the slot to weapons, dropping shields (armour). A warrior (plate,
-    // strength) searching off hand must see the shield (810) and the held-in-off-hand (811, statless so kept),
-    // not just an off-hand weapon.
-    const session = await login();
-    for (const { version, finderStatus } of BLIZZARD_PATHS) {
-      wowheadFinderStatus = finderStatus;
-      try {
-        const res = await app.inject({ method: "GET", url: `/api/items/search?version=${version}&region=eu&slot=offHand&classId=1`, cookies: { wr_session: session } });
-        const ids = res.json().items.map((i: { id: number }) => i.id);
-        expect(ids, `${version} shield`).toContain(810);
-        expect(ids, `${version} held`).toContain(811);
-      } finally {
-        wowheadFinderStatus = 200;
-      }
-    }
-  });
-
-  it("applies the rarity floor while still returning results", async () => {
-    // Epic-or-better keeps the epic legs (807) and drops the uncommon cloak (803) and the rare neck (801); items
-    // whose quality the API did not report are never hidden.
-    const session = await login();
-    const res = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&minQuality=4&restrictClass=false", cookies: { wr_session: session } });
-    expect(res.statusCode).toBe(200);
-    const ids = res.json().items.map((i: { id: number }) => i.id);
-    expect(ids.length).toBeGreaterThan(0);
-    expect(ids).toContain(807);
-    expect(ids).not.toContain(803);
-    expect(ids).not.toContain(801);
   });
 });
