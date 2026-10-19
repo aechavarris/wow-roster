@@ -16,9 +16,39 @@ interface Props {
   canEdit: boolean;
   /** API path the whole list is PUT to (character or planned entry). */
   endpoint: string;
+  /** Character/entry class, to preselect the matching imported BiS lists. */
+  classId?: number | null;
+  /** Character/entry spec key, to preselect the matching imported BiS lists. */
+  spec?: string | null;
   /** Item ids the character currently has equipped, to mark each BiS item obtained (✓) or missing (✗). Omit for
    *  planned entries and unsynced characters, where there is no equipment to compare against. */
   equippedItemIds?: number[];
+}
+
+/** A curated BiS set from a third-party source, as served by GET /api/bis-templates. */
+interface BisTemplate {
+  sourceKey: string;
+  sourceName: string;
+  sourceUrl: string;
+  popularity?: number;
+  classId: number;
+  spec: string;
+  phase: number;
+  label: string;
+  items: { slot: string; itemId: number }[];
+}
+interface BisTemplatesResponse {
+  templates: BisTemplate[];
+  sources: { key: string; name: string; url: string; popularity?: number }[];
+}
+/** Wowhead by-id entity, used to resolve an imported item id to a name/icon/quality for the saved list. */
+interface WowheadEntity {
+  name: string;
+  quality?: number;
+  qualityName?: string;
+  itemLevel?: number;
+  reqLevel?: number;
+  icon?: string;
 }
 
 /**
@@ -52,7 +82,7 @@ function sourceSummary(
 }
 
 /** Best-in-slot list with two groupings (slot, zone) and a Wowhead link per item. The list is filled by import. */
-export function BisPanel({ version, bis, canEdit, endpoint, equippedItemIds }: Props) {
+export function BisPanel({ version, bis, canEdit, endpoint, classId, spec, equippedItemIds }: Props) {
   const t = useTranslations("bis");
   const tErrors = useTranslations("errors");
   const locale = useLocale();
@@ -60,6 +90,7 @@ export function BisPanel({ version, bis, canEdit, endpoint, equippedItemIds }: P
   // Wowhead tooltips power the saved list; load the widget once and rescan when the list changes.
   useEffect(() => loadWowheadTooltips(), []);
   const [list, setList] = useState<BisItem[]>(bis);
+  const [importing, setImporting] = useState(false);
   // Which BiS items the character already has equipped. Only compared when the caller passes the equipped ids
   // (a real, synced character); planned entries and unsynced characters show no obtained/missing marker.
   const equipped = equippedItemIds ? new Set(equippedItemIds) : null;
@@ -126,13 +157,20 @@ export function BisPanel({ version, bis, canEdit, endpoint, equippedItemIds }: P
             <p className="mt-1 text-xs font-medium text-muted">{t("obtainedCount", { have: obtainedCount, total: list.length })}</p>
           )}
         </div>
-        <div className="flex rounded-md border border-border text-sm">
-          <button type="button" className={`px-3 py-1 ${mode === "slot" ? "bg-white/10" : ""}`} onClick={() => setMode("slot")}>
-            {t("bySlot")}
-          </button>
-          <button type="button" className={`px-3 py-1 ${mode === "zone" ? "bg-white/10" : ""}`} onClick={() => setMode("zone")}>
-            {t("byZone")}
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border border-border text-sm">
+            <button type="button" className={`px-3 py-1 ${mode === "slot" ? "bg-white/10" : ""}`} onClick={() => setMode("slot")}>
+              {t("bySlot")}
+            </button>
+            <button type="button" className={`px-3 py-1 ${mode === "zone" ? "bg-white/10" : ""}`} onClick={() => setMode("zone")}>
+              {t("byZone")}
+            </button>
+          </div>
+          {canEdit && (
+            <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
+              {t("importButton")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -200,8 +238,202 @@ export function BisPanel({ version, bis, canEdit, endpoint, equippedItemIds }: P
           ))}
         </div>
       )}
+
+      {importing && (
+        <ImportBis
+          version={version}
+          classId={classId ?? null}
+          spec={spec ?? null}
+          onClose={() => setImporting(false)}
+          onImport={(items) => save([...list, ...items].slice(0, 100))}
+        />
+      )}
     </section>
   );
+}
+
+/**
+ * Import a ready-made BiS set from a third-party source (GET /api/bis-templates). Lists the curated builds for the
+ * character's class/spec, each labelled with its source; previewing or importing one resolves its item ids to
+ * names/icons via the Wowhead by-id proxy, then adds the items to the saved list.
+ */
+function ImportBis({
+  version,
+  classId,
+  spec,
+  onClose,
+  onImport,
+}: {
+  version: GameVersion;
+  classId: number | null;
+  spec: string | null;
+  onClose: () => void;
+  onImport: (items: BisItem[]) => void;
+}) {
+  const t = useTranslations("bis");
+  const tErrors = useTranslations("errors");
+  const locale = useLocale();
+  const [data, setData] = useState<BisTemplatesResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ key: string; items: BisItem[] } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => refreshWowheadLinks(), [preview]);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ version: version.id });
+    if (classId != null) params.set("classId", String(classId));
+    if (spec) params.set("spec", spec);
+    fetch(`/api/bis-templates?${params}`, { credentials: "same-origin" })
+      .then(async (res) => {
+        const body = (await res.json().catch(() => ({}))) as BisTemplatesResponse & { error?: string };
+        if (!res.ok) throw new ApiError(res.status, body.error ?? "unknown_error");
+        setData({ templates: body.templates ?? [], sources: body.sources ?? [] });
+      })
+      .catch((err) => setError(err instanceof ApiError && tErrors.has(err.code) ? tErrors(err.code) : tErrors("unknown_error")));
+  }, [version.id, classId, spec, tErrors]);
+
+  // Resolves a template's item ids to saved-list items (name/icon/quality) via the Wowhead by-id proxy.
+  async function resolve(template: BisTemplate): Promise<BisItem[]> {
+    const results = await Promise.all(
+      template.items.map(async ({ slot, itemId }) => {
+        try {
+          const res = await fetch(`/api/wowhead/item/${itemId}?version=${version.id}`, { credentials: "same-origin" });
+          const body = (await res.json().catch(() => ({}))) as { entity?: WowheadEntity };
+          const e = res.ok ? body.entity : undefined;
+          const item: BisItem = {
+            slot,
+            itemId,
+            name: e?.name && e.name.length > 0 ? e.name : `#${itemId}`,
+            quality: e?.qualityName ? e.qualityName.toUpperCase() : undefined,
+            itemLevel: e?.itemLevel,
+            requiredLevel: e?.reqLevel,
+            icon: e?.icon ? `https://wow.zamimg.com/images/wow/icons/large/${e.icon}.jpg` : undefined,
+          };
+          return item;
+        } catch {
+          return { slot, itemId, name: `#${itemId}` } satisfies BisItem;
+        }
+      }),
+    );
+    return results;
+  }
+
+  async function showPreview(template: BisTemplate) {
+    const key = templateKey(template);
+    setBusy(key);
+    setError(null);
+    try {
+      setPreview({ key, items: await resolve(template) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function doImport(template: BisTemplate) {
+    const key = templateKey(template);
+    setBusy(key);
+    setError(null);
+    try {
+      const items = preview?.key === key ? preview.items : await resolve(template);
+      onImport(items);
+      onClose();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const templates = data?.templates ?? [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="card my-8 w-full max-w-2xl space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="heading text-lg">{t("importTitle")}</h3>
+            <p className="text-xs text-muted">{t("importHelp")}</p>
+          </div>
+          <button type="button" className="btn" onClick={onClose}>
+            {t("close")}
+          </button>
+        </div>
+
+        {/* Sources on offer, with attribution links and popularity where the source exposes it. */}
+        {data && data.sources.length > 0 && (
+          <p className="text-xs text-muted">
+            {t("importSources")}:{" "}
+            {data.sources.map((s, i) => (
+              <span key={s.key}>
+                {i > 0 && ", "}
+                <a href={s.url} target="_blank" rel="noreferrer" className="hover:underline">
+                  {s.name}
+                </a>
+                {s.popularity !== undefined && ` (${t("importPopularity", { count: s.popularity })})`}
+              </span>
+            ))}
+          </p>
+        )}
+
+        {error && (
+          <p className="text-sm text-danger" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!data ? (
+          <p className="text-sm text-muted">{t("importLoading")}</p>
+        ) : templates.length === 0 ? (
+          <p className="text-sm text-muted">{t("importEmpty")}</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {templates.map((template) => {
+              const key = templateKey(template);
+              const open = preview?.key === key;
+              return (
+                <li key={key} className="space-y-2 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{template.label}</span>
+                    <span className="text-xs text-muted">{template.sourceName}</span>
+                    <span className="text-xs text-muted">{t("importItemCount", { count: template.items.length })}</span>
+                    <span className="ml-auto flex items-center gap-2">
+                      <button type="button" className="btn text-xs" disabled={busy === key} onClick={() => (open ? setPreview(null) : showPreview(template))}>
+                        {open ? t("importHide") : t("importPreview")}
+                      </button>
+                      <button type="button" className="btn btn-primary text-xs" disabled={busy === key} onClick={() => doImport(template)}>
+                        {busy === key ? t("importBusy") : t("importDo")}
+                      </button>
+                    </span>
+                  </div>
+                  {open && (
+                    <ul className="grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2">
+                      {preview!.items.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 py-0.5 text-sm">
+                          <span className="w-20 shrink-0 text-xs text-muted">{localize(bisSlot(item.slot)?.name ?? {}, locale)}</span>
+                          <a
+                            href={wowheadItemUrl(version, locale, { itemId: item.itemId })}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="truncate hover:underline"
+                            style={{ color: QUALITY_COLORS[item.quality ?? "COMMON"] ?? "inherit" }}
+                          >
+                            {item.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A stable key for a template (source + class + spec + phase + label), to track preview/import state. */
+function templateKey(t: BisTemplate): string {
+  return `${t.sourceKey}:${t.classId}:${t.spec}:${t.phase}:${t.label}`;
 }
 
 /** Compact manual zone override: profile raids and dungeons, then generic sources. */

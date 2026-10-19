@@ -61,6 +61,8 @@ export default async function RosterEntryPage({ params }: PageProps<"/[locale]/g
         bis={entry.bis ?? []}
         canEdit={entry.canEdit}
         endpoint={`/guilds/${id}/roster/${entryId}/bis`}
+        classId={entry.plannedClassId}
+        spec={entry.plannedSpec}
       />
     </div>
   );
