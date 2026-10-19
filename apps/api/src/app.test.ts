@@ -124,6 +124,24 @@ const blizzardRoutes: Record<string, unknown> = {
       { data: { id: 601, name: { en_US: "Band of Fire" }, quality: { type: "EPIC" }, level: 78, required_level: 60, inventory_type: { type: "FINGER" }, item_class: { id: 4 }, item_subclass: { id: 0, name: { en_US: "Miscellaneous" } }, media: { id: 601 } } },
       { data: { id: 700, name: { en_US: "Plate Chest" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "CHEST" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } }, media: { id: 700 } } },
       { data: { id: 701, name: { en_US: "Cloth Chest" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "CHEST" }, item_class: { id: 4 }, item_subclass: { id: 1, name: { en_US: "Cloth" } }, media: { id: 701 } } },
+      // One item per remaining equipment slot, so a per-slot search has something to return. Off hand and ranged
+      // carry both a weapon and an armour piece (a shield / a held-in-off-hand, a bow / a relic) to prove those
+      // slots surface their armour half too.
+      { data: { id: 800, name: { en_US: "Iron Helm" }, quality: { type: "RARE" }, level: 70, required_level: 55, inventory_type: { type: "HEAD" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } } } },
+      { data: { id: 801, name: { en_US: "Jade Choker" }, quality: { type: "RARE" }, level: 68, required_level: 55, inventory_type: { type: "NECK" }, item_class: { id: 4 }, item_subclass: { id: 0, name: { en_US: "Miscellaneous" } } } },
+      { data: { id: 802, name: { en_US: "Iron Pauldrons" }, quality: { type: "RARE" }, level: 70, required_level: 55, inventory_type: { type: "SHOULDER" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } } } },
+      { data: { id: 803, name: { en_US: "Silk Cloak" }, quality: { type: "UNCOMMON" }, level: 65, required_level: 55, inventory_type: { type: "CLOAK" }, item_class: { id: 4 }, item_subclass: { id: 1, name: { en_US: "Cloth" } } } },
+      { data: { id: 804, name: { en_US: "Mail Bracers" }, quality: { type: "UNCOMMON" }, level: 64, required_level: 55, inventory_type: { type: "WRIST" }, item_class: { id: 4 }, item_subclass: { id: 3, name: { en_US: "Mail" } } } },
+      { data: { id: 805, name: { en_US: "Plate Gauntlets" }, quality: { type: "RARE" }, level: 70, required_level: 55, inventory_type: { type: "HAND" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } } } },
+      { data: { id: 806, name: { en_US: "Leather Girdle" }, quality: { type: "UNCOMMON" }, level: 63, required_level: 55, inventory_type: { type: "WAIST" }, item_class: { id: 4 }, item_subclass: { id: 2, name: { en_US: "Leather" } } } },
+      { data: { id: 807, name: { en_US: "Plate Legplates" }, quality: { type: "EPIC" }, level: 78, required_level: 60, inventory_type: { type: "LEGS" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } } } },
+      { data: { id: 808, name: { en_US: "Plate Sabatons" }, quality: { type: "RARE" }, level: 70, required_level: 55, inventory_type: { type: "FEET" }, item_class: { id: 4 }, item_subclass: { id: 4, name: { en_US: "Plate" } } } },
+      { data: { id: 809, name: { en_US: "Idol of Fury" }, quality: { type: "EPIC" }, level: 80, required_level: 60, inventory_type: { type: "TRINKET" }, item_class: { id: 4 }, item_subclass: { id: 0, name: { en_US: "Miscellaneous" } } } },
+      { data: { id: 810, name: { en_US: "Bulwark of the Mountain" }, quality: { type: "EPIC" }, level: 80, required_level: 60, inventory_type: { type: "SHIELD" }, item_class: { id: 4 }, item_subclass: { id: 6, name: { en_US: "Shield" } } } },
+      { data: { id: 811, name: { en_US: "Tome of Arcane Secrets" }, quality: { type: "RARE" }, level: 72, required_level: 58, inventory_type: { type: "HOLDABLE" }, item_class: { id: 4 }, item_subclass: { id: 0, name: { en_US: "Miscellaneous" } } } },
+      { data: { id: 812, name: { en_US: "Parrying Dirk" }, quality: { type: "RARE" }, level: 71, required_level: 58, inventory_type: { type: "WEAPONOFFHAND" }, item_class: { id: 2 }, item_subclass: { id: 15, name: { en_US: "Daggers" } }, preview_item: { stats: [{ type: { type: "AGILITY" } }] } } },
+      { data: { id: 813, name: { en_US: "Hunter's Longbow" }, quality: { type: "EPIC" }, level: 79, required_level: 60, inventory_type: { type: "RANGED" }, item_class: { id: 2 }, item_subclass: { id: 2, name: { en_US: "Bows" } }, preview_item: { stats: [{ type: { type: "AGILITY" } }] } } },
+      { data: { id: 814, name: { en_US: "Libram of Light" }, quality: { type: "RARE" }, level: 70, required_level: 55, inventory_type: { type: "RELIC" }, item_class: { id: 4 }, item_subclass: { id: 7, name: { en_US: "Libram" } } } },
     ],
   },
 };
@@ -1896,5 +1914,66 @@ describe("BiS item search via Wowhead (Classic versions)", () => {
     } finally {
       wowheadFinderStatus = 200;
     }
+  });
+
+  // Every equipment slot the picker can search (the paper-doll slots minus "other").
+  const SEARCHABLE_SLOTS = [
+    "head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist",
+    "legs", "feet", "finger", "trinket", "mainHand", "offHand", "ranged",
+  ];
+  // retail always hits Blizzard directly; classic-era reaches the same Blizzard search through the Wowhead
+  // fall-back (the finder forced to 403, as Cloudflare does in production). Both must behave identically.
+  const BLIZZARD_PATHS = [
+    { version: "retail", finderStatus: 200 },
+    { version: "classic-era", finderStatus: 403 },
+  ] as const;
+
+  it("returns results for every equipment slot, on the Blizzard path and the fall-back", async () => {
+    const session = await login();
+    for (const { version, finderStatus } of BLIZZARD_PATHS) {
+      wowheadFinderStatus = finderStatus;
+      try {
+        for (const slot of SEARCHABLE_SLOTS) {
+          const res = await app.inject({ method: "GET", url: `/api/items/search?version=${version}&region=eu&slot=${slot}&restrictClass=false`, cookies: { wr_session: session } });
+          expect(res.statusCode, `${version} ${slot}`).toBe(200);
+          const items = res.json().items as { slot: string }[];
+          expect(items.length, `${version} ${slot} returned nothing`).toBeGreaterThan(0);
+          expect(items.every((i) => i.slot === slot), `${version} ${slot} returned a wrong slot`).toBe(true);
+        }
+      } finally {
+        wowheadFinderStatus = 200;
+      }
+    }
+  });
+
+  it("keeps shields and held-in-off-hand in the off-hand slot, even with 'only my class' on", async () => {
+    // The off-hand bug: the search narrowed the slot to weapons, dropping shields (armour). A warrior (plate,
+    // strength) searching off hand must see the shield (810) and the held-in-off-hand (811, statless so kept),
+    // not just an off-hand weapon.
+    const session = await login();
+    for (const { version, finderStatus } of BLIZZARD_PATHS) {
+      wowheadFinderStatus = finderStatus;
+      try {
+        const res = await app.inject({ method: "GET", url: `/api/items/search?version=${version}&region=eu&slot=offHand&classId=1`, cookies: { wr_session: session } });
+        const ids = res.json().items.map((i: { id: number }) => i.id);
+        expect(ids, `${version} shield`).toContain(810);
+        expect(ids, `${version} held`).toContain(811);
+      } finally {
+        wowheadFinderStatus = 200;
+      }
+    }
+  });
+
+  it("applies the rarity floor while still returning results", async () => {
+    // Epic-or-better keeps the epic legs (807) and drops the uncommon cloak (803) and the rare neck (801); items
+    // whose quality the API did not report are never hidden.
+    const session = await login();
+    const res = await app.inject({ method: "GET", url: "/api/items/search?version=retail&region=eu&minQuality=4&restrictClass=false", cookies: { wr_session: session } });
+    expect(res.statusCode).toBe(200);
+    const ids = res.json().items.map((i: { id: number }) => i.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids).toContain(807);
+    expect(ids).not.toContain(803);
+    expect(ids).not.toContain(801);
   });
 });

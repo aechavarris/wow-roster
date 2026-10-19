@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SECONDARY_STATS, armorTypeId, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotTypeFilter } from "./items";
+import { SECONDARY_STATS, armorTypeId, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotSearchClasses, slotTypeFilter } from "./items";
 import { resolveProfile } from "./profile";
 
 describe("item type filters", () => {
@@ -10,6 +10,18 @@ describe("item type filters", () => {
     expect(slotTypeFilter("mainHand")?.options.map((o) => o.key)).toContain("sword1h");
     expect(slotTypeFilter("neck")).toBeNull();
     expect(slotTypeFilter("finger")).toBeNull();
+  });
+
+  it("queries both weapon and armour classes for off hand and ranged, one class for the rest", () => {
+    // Off hand and ranged span a weapon and armour (shield/held, relic): both classes must be searched or the
+    // armour half is dropped — the bug that hid shields.
+    expect(slotSearchClasses("offHand")).toEqual([2, 4]);
+    expect(slotSearchClasses("ranged")).toEqual([2, 4]);
+    expect(slotSearchClasses("mainHand")).toEqual([2]);
+    expect(slotSearchClasses("chest")).toEqual([4]);
+    // Neck, back, finger and trinket have no meaningful class filter: an empty list leaves the search unfiltered.
+    expect(slotSearchClasses("neck")).toEqual([]);
+    expect(slotSearchClasses("finger")).toEqual([]);
   });
 
   it("resolves a type key to item_class/item_subclass ids for the slot", () => {
