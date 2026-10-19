@@ -40,15 +40,25 @@ export async function wowheadBisSearch(core: CoreContext, game: GameProfile, q: 
   if (!core.wowhead) throw new Error("wowhead client unavailable");
 
   // Required-level range goes to Wowhead as path facets (its current filter format); everything else — name, slot,
-  // item class/type, quality — is matched on the returned rows. `group-by:slot` makes the finder emit one listview
-  // per slot tab instead of a single popularity-capped list, so off-hand frills (shields, held-in-off-hand) that the
-  // flat page drops are present; the parser reads every array (see parseWowheadListview).
+  // item class/type, quality — is matched on the returned rows.
   const facets: string[] = [];
   if (q.minLevel !== undefined) facets.push(`min-req-level:${q.minLevel}`);
   facets.push(`max-req-level:${q.maxLevel ?? game.maxLevel}`);
-  facets.push("group-by:slot");
 
-  const rows = await core.wowhead.itemsByFacets(facets, game.wowheadDomain, { limit: 1000 });
+  // Prefer the finder grouped by slot (`/group-by:slot`): it emits one listview array per slot tab, so off-hand
+  // frills (shields, held-in-off-hand) that the flat, popularity-capped single-array page drops are present, and the
+  // parser reads every array (see parseWowheadListview). Wowhead can reject that grouped path for a non-browser
+  // client, so fall back to the flat page on an error or an empty result — a working (if thinner) search beats none.
+  const wowhead = core.wowhead;
+  const fetchRows = (grouped: boolean) =>
+    wowhead.itemsByFacets(grouped ? [...facets, "group-by:slot"] : facets, game.wowheadDomain, { limit: 1000 });
+  let rows: Awaited<ReturnType<typeof fetchRows>>;
+  try {
+    rows = await fetchRows(true);
+    if (rows.length === 0) rows = await fetchRows(false);
+  } catch {
+    rows = await fetchRows(false);
+  }
 
   // Resolve the class/type restriction as numeric ids to match on the rows. A user-picked type wins; otherwise, only
   // restrict a real armour slot to the class's armour type. Mixed-class slots (off hand = weapon|shield|held, ranged
