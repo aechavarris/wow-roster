@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BIS_TEMPLATE_SOURCES, enabledTemplateSources, parseWowsimsGearSet, type BisTemplateSource } from "./bisSources";
+import { BIS_TEMPLATE_SOURCES, enabledTemplateSources, parseWowsimsDatabase, parseWowsimsGearSet, type BisTemplateSource } from "./bisSources";
 
 describe("parseWowsimsGearSet", () => {
   it("maps a WoWSims gear array to our slots by position, skipping empty slots", () => {
@@ -43,6 +43,41 @@ describe("parseWowsimsGearSet", () => {
     expect(parseWowsimsGearSet({})).toEqual([]);
     expect(parseWowsimsGearSet({ items: "nope" })).toEqual([]);
     expect(parseWowsimsGearSet({ items: [{ id: 0 }, { id: -5 }, {}] })).toEqual([]);
+  });
+});
+
+describe("parseWowsimsDatabase", () => {
+  const DB = {
+    items: [
+      { id: 16730, sources: [{ drop: { npcId: 10363, zoneId: 1583 } }] },
+      { id: 167, sources: [{ quest: { id: 167, name: "Oh Brother..." } }] },
+      { id: 9999, sources: [{ crafted: { profession: 8, spellId: 2160 } }] },
+      { id: 272480, sources: [{ soldBy: { npcName: "PvP quartermasters" } }] },
+      { id: 55, sources: [{ soldBy: { npcId: 14754, zoneId: 17 } }] },
+      { id: 77, sources: [] }, // no source -> left out
+      { id: 88 }, // malformed -> left out
+    ],
+    zones: [{ id: 1583, name: "Blackwing Lair" }, { id: 17, name: "The Barrens" }],
+    npcs: [{ id: 10363, name: "Broodlord Lashlayer" }, { id: 14754, name: "Kelm Hargunth" }],
+  };
+
+  it("resolves each item's first source to a kind with the zone and detail names", () => {
+    const map = parseWowsimsDatabase(DB);
+    expect(map.get(16730)).toEqual({ kind: "drop", zoneName: "Blackwing Lair", detail: "Broodlord Lashlayer" });
+    expect(map.get(167)).toEqual({ kind: "quest", detail: "Oh Brother..." });
+    expect(map.get(9999)).toEqual({ kind: "crafted", zoneName: undefined, detail: undefined });
+    // A vendor named inline (no npc id) and one resolved from the npc table + its zone.
+    expect(map.get(272480)).toEqual({ kind: "vendor", zoneName: undefined, detail: "PvP quartermasters" });
+    expect(map.get(55)).toEqual({ kind: "vendor", zoneName: "The Barrens", detail: "Kelm Hargunth" });
+    // Items with no (or malformed) source are absent.
+    expect(map.has(77)).toBe(false);
+    expect(map.has(88)).toBe(false);
+  });
+
+  it("returns an empty map for malformed input", () => {
+    expect(parseWowsimsDatabase(null).size).toBe(0);
+    expect(parseWowsimsDatabase({}).size).toBe(0);
+    expect(parseWowsimsDatabase({ items: "nope" }).size).toBe(0);
   });
 });
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BisSource } from "./bis";
 
 /**
  * Configurable catalog of third-party best-in-slot *sources*. The BiS list is no longer filled by searching items
@@ -9,7 +10,8 @@ import { z } from "zod";
  * The first adapter, `wowsims`, reads a WoWSims(-fork) GitHub repo's gear-set JSON (`ui/<spec>/gear_sets/*.gear.json`):
  * `{ "items": [{ "id": 12640, "enchant": 1506 }, …] }`, one entry per equipment slot in WoWSims' fixed slot order,
  * so the slot comes from the array position (there is no slot field). GitHub raw is reachable server-side, unlike
- * Wowhead's finder.
+ * Wowhead's finder. The same repo ships an item *database* (`assets/database/db.json`) with each item's drop/quest/
+ * vendor source and the zone/npc names, which we read to fill each imported item's zone/boss (`parseWowsimsDatabase`).
  */
 
 /** WoWSims' fixed gear-array order (17 slots) mapped to our BiS slot keys. Finger1/2 and Trinket1/2 share a key. */
@@ -34,6 +36,8 @@ export const wowsimsAdapterSchema = z.object({
   owner: z.string().min(1),
   repo: z.string().min(1),
   branch: z.string().min(1).default("main"),
+  /** Repo-relative path to the generated item database read for each item's drop/quest/vendor source. */
+  dbPath: z.string().min(1).default("assets/database/db.json"),
   specs: z
     .array(
       z.object({
@@ -78,7 +82,7 @@ export interface BisTemplate {
   spec: string;
   phase: number;
   label: string;
-  items: { slot: string; itemId: number }[];
+  items: { slot: string; itemId: number; source?: BisSource }[];
 }
 
 /**
@@ -130,7 +134,7 @@ export const BIS_TEMPLATE_SOURCES: BisTemplateSource[] = [
     adapter: "wowsims",
     enabled: true,
     gameVersions: ["forever"],
-    wowsims: { owner: "gunba", repo: "wow-forever-sim", branch: "forever", specs: FOREVER_WOWSIMS_SPECS },
+    wowsims: { owner: "gunba", repo: "wow-forever-sim", branch: "forever", dbPath: "assets/database/db.json", specs: FOREVER_WOWSIMS_SPECS },
   },
   {
     key: "forever-sim-bayov",
@@ -139,7 +143,7 @@ export const BIS_TEMPLATE_SOURCES: BisTemplateSource[] = [
     adapter: "wowsims",
     enabled: true,
     gameVersions: ["forever"],
-    wowsims: { owner: "bayov", repo: "forever-sim", branch: "master", specs: FOREVER_WOWSIMS_SPECS },
+    wowsims: { owner: "bayov", repo: "forever-sim", branch: "master", dbPath: "assets/database/db.json", specs: FOREVER_WOWSIMS_SPECS },
   },
 ];
 
@@ -174,6 +178,61 @@ export function parseWowsimsGearSet(json: unknown): { slot: string; itemId: numb
   for (let i = 0; i < items.length && i < WOWSIMS_GEAR_SLOT_ORDER.length; i++) {
     const id = items[i]?.id;
     if (typeof id === "number" && id > 0) out.push({ slot: WOWSIMS_GEAR_SLOT_ORDER[i]!, itemId: id });
+  }
+  return out;
+}
+
+/**
+ * A single item's source parsed from a WoWSims item database, before it is tied to a version's own raid/dungeon
+ * keys (that match is version-specific, so the consumer in `@wow/core` does it). `zoneName`/`detail` are English
+ * (the only language the database carries); `detail` is the boss, quest or vendor the item comes from.
+ */
+export interface WowsimsItemSource {
+  kind: "drop" | "quest" | "crafted" | "vendor";
+  zoneName?: string;
+  detail?: string;
+}
+
+/** Shape of the fields we read from a WoWSims `assets/database/db.json`; everything else is ignored. */
+interface WowsimsDbJson {
+  items?: { id?: number; sources?: Record<string, { npcId?: number; zoneId?: number; name?: string; npcName?: string } | undefined>[] }[];
+  zones?: { id?: number; name?: string }[];
+  npcs?: { id?: number; name?: string }[];
+}
+
+/** Resolves the first of an item's `sources` entries to a neutral `WowsimsItemSource`, or undefined if unknown. */
+function parseOneSource(
+  src: Record<string, { npcId?: number; zoneId?: number; name?: string; npcName?: string } | undefined>,
+  zoneName: Map<number, string>,
+  npcName: Map<number, string>,
+): WowsimsItemSource | undefined {
+  const drop = src.drop;
+  if (drop) return { kind: "drop", zoneName: drop.zoneId ? zoneName.get(drop.zoneId) : undefined, detail: drop.npcId ? npcName.get(drop.npcId) : undefined };
+  if (src.quest) return { kind: "quest", detail: src.quest.name };
+  if (src.crafted) return { kind: "crafted" };
+  const sold = src.soldBy;
+  if (sold) return { kind: "vendor", zoneName: sold.zoneId ? zoneName.get(sold.zoneId) : undefined, detail: sold.npcName ?? (sold.npcId ? npcName.get(sold.npcId) : undefined) };
+  return undefined;
+}
+
+/**
+ * Builds an `itemId → source` map from a WoWSims item database. The database lists each item's `sources` (drop with
+ * `npcId`/`zoneId`, quest, crafted, or `soldBy`) and separate `zones`/`npcs` name tables; we take the first source
+ * and resolve its ids to names. Items with no known source are left out (their importer falls back to "other").
+ */
+export function parseWowsimsDatabase(json: unknown): Map<number, WowsimsItemSource> {
+  const db = json as WowsimsDbJson | null;
+  const out = new Map<number, WowsimsItemSource>();
+  if (!db || !Array.isArray(db.items)) return out;
+  const zoneName = new Map<number, string>();
+  for (const z of db.zones ?? []) if (typeof z?.id === "number" && z.name) zoneName.set(z.id, z.name);
+  const npcName = new Map<number, string>();
+  for (const n of db.npcs ?? []) if (typeof n?.id === "number" && n.name) npcName.set(n.id, n.name);
+  for (const it of db.items) {
+    if (typeof it?.id !== "number") continue;
+    const first = (it.sources ?? []).find(Boolean);
+    const parsed = first ? parseOneSource(first, zoneName, npcName) : undefined;
+    if (parsed) out.set(it.id, parsed);
   }
   return out;
 }
