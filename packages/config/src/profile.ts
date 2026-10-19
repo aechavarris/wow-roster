@@ -128,12 +128,10 @@ export function withApiStandIns(versions: GameVersions, spec: string | undefined
     return {
       ...target,
       api: { ...source.api, standIn: source.id },
-      // Use the SOURCE's Wowhead domain while standing in. Wowhead's Forever finder is served behind a Cloudflare
-      // challenge that 403s every server-side request, so the BiS picker falls back to the source's (Classic Era)
-      // item API — its item ids live on the source's Wowhead domain, not Forever's, so the tooltips and item links
-      // must point there or they resolve to "item not found". When Forever's own API arrives the stand-in is
-      // removed and the target keeps its own domain again.
-      wowheadDomain: source.wowheadDomain,
+      // The target keeps its OWN Wowhead domain. BiS lists are now imported from third-party sources that use the
+      // target's own item ids (e.g. Forever's), which resolve on the target's Wowhead domain (its by-id &xml page
+      // is not Cloudflare-blocked); only the removed item search used the source's Classic-Era ids. The Blizzard
+      // profile API is still the source's, for syncing the disposable test characters.
       raids: [
         ...target.raids,
         ...source.raids.filter((r) => r.warcraftLogsZone).map((r) => ({ ...r, key: `standin-${r.key}`, enabled: false })),

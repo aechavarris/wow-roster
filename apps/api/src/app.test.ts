@@ -1720,15 +1720,14 @@ describe("BiS item search with an API stand-in (Forever tested with Classic Era 
     await standInApp.close();
   });
 
-  it("reports an available API and the source's Wowhead domain for Forever under the stand-in", async () => {
-    // With the stand-in, Forever reports an API and its config points back at the source version. Its item data
-    // comes from the source (Classic Era), so the Wowhead tooltip/link domain follows the source ("classic"), not
-    // Forever's — otherwise those item ids resolve to "item not found" on wowhead.com/forever.
+  it("reports an available API and keeps Forever's own Wowhead domain under the stand-in", async () => {
+    // With the stand-in, Forever reports an API and its config points back at the source version, but it keeps its
+    // OWN Wowhead domain: imported BiS lists use Forever's own item ids, which resolve on wowhead.com/forever.
     const config = (await standInApp.inject({ method: "GET", url: "/api/config" })).json();
     const forever = (config.versions as { id: string; apiAvailable: boolean; apiStandIn: { id: string } | null; wowheadDomain: string }[]).find((v) => v.id === "forever")!;
     expect(forever.apiAvailable).toBe(true);
     expect(forever.apiStandIn?.id).toBe("classic-era");
-    expect(forever.wowheadDomain).toBe("classic");
+    expect(forever.wowheadDomain).toBe("forever");
   });
 });
 
@@ -1775,7 +1774,10 @@ describe("BiS templates (import sources)", () => {
     expect(all.statusCode).toBe(200);
     expect(all.json().templates).toHaveLength(2);
     // The Forever source is offered with its attribution link (from the default registry).
-    expect(all.json().sources).toEqual([{ key: "forever-sim-gunba", name: "WoW Forever Sim (gunba)", url: "https://github.com/gunba/wow-forever-sim" }]);
+    expect(all.json().sources).toEqual([
+      { key: "forever-sim-gunba", name: "WoW Forever Sim (gunba)", url: "https://github.com/gunba/wow-forever-sim" },
+      { key: "forever-sim-bayov", name: "Forever Sim (bayov)", url: "https://github.com/bayov/forever-sim" },
+    ]);
 
     // Filtering by class (and spec) narrows to that build, keeping the per-slot items.
     const warrior = await app.inject({ method: "GET", url: "/api/bis-templates?version=forever&classId=1&spec=arms", cookies: { wr_session: session } });
