@@ -23,6 +23,8 @@ export interface WowheadSearchQuery {
   slot?: string;
   type?: string;
   classId?: number;
+  /** Minimum item quality id (2 uncommon, 3 rare, 4 epic…); rows below it are dropped, unknown quality kept. */
+  minQuality?: number;
   restrictClass: boolean;
   sort: "level" | "rarity" | "type";
 }
@@ -38,10 +40,13 @@ export async function wowheadBisSearch(core: CoreContext, game: GameProfile, q: 
   if (!core.wowhead) throw new Error("wowhead client unavailable");
 
   // Required-level range goes to Wowhead as path facets (its current filter format); everything else — name, slot,
-  // item class/type — is matched on the returned rows, which the facet page embeds in full for that level range.
+  // item class/type, quality — is matched on the returned rows. `group-by:slot` makes the finder emit one listview
+  // per slot tab instead of a single popularity-capped list, so off-hand frills (shields, held-in-off-hand) that the
+  // flat page drops are present; the parser reads every array (see parseWowheadListview).
   const facets: string[] = [];
   if (q.minLevel !== undefined) facets.push(`min-req-level:${q.minLevel}`);
   facets.push(`max-req-level:${q.maxLevel ?? game.maxLevel}`);
+  facets.push("group-by:slot");
 
   const rows = await core.wowhead.itemsByFacets(facets, game.wowheadDomain, { limit: 1000 });
 
@@ -71,6 +76,8 @@ export async function wowheadBisSearch(core: CoreContext, game: GameProfile, q: 
     .filter((e) => (needle ? e.row.name.toLowerCase().includes(needle) : true))
     .filter((e) => (restrictClassId === undefined ? true : e.row.classId === restrictClassId))
     .filter((e) => (restrictSubclassId === undefined ? true : e.row.subclassId === restrictSubclassId))
+    // Minimum quality: drop items below it, but keep rows whose quality the finder did not report.
+    .filter((e) => (q.minQuality === undefined || e.row.quality === undefined ? true : e.row.quality >= q.minQuality))
     // Required level within the bracket (the finder filter is a coarse pre-narrowing; this is authoritative).
     .filter((e) => {
       const rl = e.row.reqLevel;

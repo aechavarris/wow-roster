@@ -683,6 +683,11 @@
     "typeAll": "Any",
     "secondaryFilter": "Secondary stat",
     "secondaryAll": "Any",
+    "rarityFilter": "Rarity",
+    "rarityAll": "Any",
+    "rarityUncommon": "Uncommon or better",
+    "rarityRare": "Rare or better",
+    "rarityEpic": "Epic or better",
     "onlyMyClass": "Only what my class can use"
   },
   "logs": {

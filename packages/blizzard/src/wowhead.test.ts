@@ -55,6 +55,19 @@ describe("Wowhead listview parsing", () => {
   it("degrades to nothing when the page has no listview array", () => {
     expect(parseWowheadListview("<html>nothing here</html>", "item")).toEqual([]);
   });
+
+  it("reads every listview array (grouped by slot) and de-duplicates by id", () => {
+    // `group-by:slot` splits the finder into one `var listview…` array per slot tab; off-hand shields live in their
+    // own array, which the single-array reader used to miss. A row repeated across arrays is kept once.
+    const grouped = `<script>var listviewitemsmainhand = [` +
+      `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7}` +
+      `];</script>` +
+      `<script>var listviewitemsoffhand = [` +
+      `{"id":5044,"name":"Test Bulwark","quality":3,"level":24,"reqlevel":20,"slot":14,"classs":4,"subclass":6},` +
+      `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7}` +
+      `];</script>`;
+    expect(parseWowheadListview(grouped, "item").map((r) => r.id)).toEqual([5011, 5044]);
+  });
 });
 
 describe("WowheadClient", () => {

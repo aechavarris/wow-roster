@@ -111,6 +111,8 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
         spec: z.string().max(40).optional(),
         /** A secondary stat key (crit, haste…) to require; must be one the version models. */
         secondary: z.string().max(20).optional(),
+        /** Minimum item quality id (2 uncommon, 3 rare, 4 epic…); hides anything below it. */
+        minQuality: z.coerce.number().int().min(0).max(7).optional(),
         // A query string "false" must read as false (z.coerce.boolean turns any non-empty string into true).
         restrictClass: z.string().optional().transform((v) => v !== "false"),
       })
@@ -189,6 +191,10 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     }
     // Keep items whose stats are unknown (not reported by the API) so the filter never hides more than it should.
     if (secondary) rows = rows.filter((r) => !r.item.stats || itemHasSecondary(r.item.stats, secondary));
+    // Minimum quality: drop items below it, keeping any whose quality the API did not report.
+    if (q.minQuality !== undefined) {
+      rows = rows.filter((r) => { const rank = RARITY_ORDER[r.item.quality ?? ""]; return rank === undefined || rank >= q.minQuality!; });
+    }
     rows.sort((a, b) => {
       if (q.sort === "rarity") return (RARITY_ORDER[b.item.quality ?? ""] ?? -1) - (RARITY_ORDER[a.item.quality ?? ""] ?? -1) || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
       if (q.sort === "type") return (a.item.subclass?.en ?? "").localeCompare(b.item.subclass?.en ?? "") || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
