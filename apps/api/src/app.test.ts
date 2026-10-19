@@ -1815,9 +1815,12 @@ describe("BiS item search with an API stand-in (Forever tested with Classic Era 
 
     // With the stand-in, Forever reports an API and its config points back at the source version.
     const config = (await standInApp.inject({ method: "GET", url: "/api/config" })).json();
-    const forever = (config.versions as { id: string; apiAvailable: boolean; apiStandIn: { id: string } | null }[]).find((v) => v.id === "forever")!;
+    const forever = (config.versions as { id: string; apiAvailable: boolean; apiStandIn: { id: string } | null; wowheadDomain: string }[]).find((v) => v.id === "forever")!;
     expect(forever.apiAvailable).toBe(true);
     expect(forever.apiStandIn?.id).toBe("classic-era");
+    // The picker serves the stand-in's (Classic Era) items, so the Wowhead tooltip/link domain follows the source
+    // ("classic"), not Forever's — otherwise those item ids resolve to "item not found" on wowhead.com/forever.
+    expect(forever.wowheadDomain).toBe("classic");
 
     // The picker no longer 409s for Forever; it returns the stand-in API's items.
     const all = await standInApp.inject({
