@@ -58,13 +58,9 @@ export default async function RosterEntryPage({ params }: PageProps<"/[locale]/g
       </section>
       <BisPanel
         version={version}
-        region={entry.region}
         bis={entry.bis ?? []}
         canEdit={entry.canEdit}
         endpoint={`/guilds/${id}/roster/${entryId}/bis`}
-        level={version.maxLevel}
-        classId={entry.plannedClassId}
-        spec={entry.plannedSpec}
       />
     </div>
   );

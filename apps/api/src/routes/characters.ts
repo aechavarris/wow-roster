@@ -1,24 +1,18 @@
-import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotForInventoryType, slotSearchClasses } from "@wow/config";
-import type { PrimaryStat } from "@wow/config";
-import type { CharacterProfile, ItemResult } from "@wow/blizzard";
+import { REGIONS, blizzardSlug } from "@wow/config";
+import type { CharacterProfile } from "@wow/blizzard";
 import {
   announceProgress,
   detectProgressEvents,
   gameVersion,
-  getBisSourceIndex,
-  getIcons,
   getTalentTree,
-  lookupBisSource,
   manualProfessionsAsProfessions,
   nameKey,
   syncCharacter,
-  warmBisSourceIndex,
 } from "@wow/core";
 import { Prisma } from "@wow/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { resolveBisList } from "../bis";
-import { wowheadBisSearch } from "../wowheadSearch";
 import type { AppDeps } from "../deps";
 import { HttpError, forbidden, gameVersionSchema, notFound, unauthorized } from "../errors";
 
@@ -83,154 +77,6 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     return { layout };
   });
 
-  /**
-   * Item search for the BiS picker: matches `q` in the item name and bounds the required level to the
-   * [minLevel, maxLevel] bracket the UI defaults to. Hits the version's Blizzard API, so it needs a login (like
-   * building a talent tree). Each result carries its BiS slot, icon and, when the journal index is warm, its zone.
-   */
-  // Item quality order (worst to best) for the "by rarity" sort.
-  const RARITY_ORDER: Record<string, number> = { POOR: 0, COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 4, LEGENDARY: 5, ARTIFACT: 6, HEIRLOOM: 7 };
-  const MAX_RESULTS = 48;
-
-  app.get("/items/search", async (request) => {
-    if (!request.user) throw unauthorized();
-    const q = z
-      .object({
-        version,
-        region: z.enum(REGIONS),
-        q: z.string().trim().max(60).optional(),
-        minLevel: z.coerce.number().int().min(0).max(999).optional(),
-        maxLevel: z.coerce.number().int().min(0).max(999).optional(),
-        slot: z.enum(bisSlotKeys() as [string, ...string[]]).optional(),
-        sort: z.enum(["level", "rarity", "type"]).default("level"),
-        /** Armour/weapon type key (plate, dagger…) to filter by, scoped to the slot. */
-        type: z.string().max(20).optional(),
-        /** The character's class; with restrictClass, hides armour of other types and off-stat items. */
-        classId: z.coerce.number().int().optional(),
-        /** The character's spec key, to pin the primary stat for hybrid classes (feral agility vs balance intellect). */
-        spec: z.string().max(40).optional(),
-        /** A secondary stat key (crit, haste…) to require; must be one the version models. */
-        secondary: z.string().max(20).optional(),
-        /** Minimum item quality id (2 uncommon, 3 rare, 4 epic…); hides anything below it. */
-        minQuality: z.coerce.number().int().min(0).max(7).optional(),
-        // A query string "false" must read as false (z.coerce.boolean turns any non-empty string into true).
-        restrictClass: z.string().optional().transform((v) => v !== "false"),
-      })
-      .parse(request.query);
-    const game = gameVersion(core, q.version);
-
-    // Classic (and Forever via its Classic stand-in): Blizzard's item API is thin there, so prefer Wowhead's item
-    // finder, which carries level, slot and source. api.available keeps Forever on its stand-in domain (Classic)
-    // rather than its own, and still 409s when no API/stand-in is set. Retail keeps Blizzard's search.
-    // Wowhead's finder now sits behind a Cloudflare challenge that 403s every server-side request (only the by-id
-    // &xml tooltip endpoint is reachable), so when it fails, fall through to the Blizzard item search below rather
-    // than failing the picker — thinner (no Wowhead source/level), but the version's own API still lists items.
-    if (q.version !== "retail" && game.api.available && core.wowhead) {
-      try {
-        return await wowheadBisSearch(core, game, q);
-      } catch (error) {
-        request.log.warn({ err: error, version: q.version }, "wowhead item search failed; falling back to Blizzard");
-      }
-    }
-
-    // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
-    const client = core.blizzard(q.version, q.region);
-
-    // Resolve the Blizzard item_class/item_subclass filter(s) to query. An explicit type wins; otherwise, for an
-    // armour slot, restrict to the class's armour type (retail) so items the class cannot wear are hidden. A slot
-    // with no restriction is narrowed to the item class(es) it spans so the candidate window is not dominated by
-    // higher-item-level gear of other classes — and, crucially, off hand and ranged span two classes (weapon AND
-    // armour), so each is queried for both, or shields and relics (armour) are dropped.
-    let filters: { itemClassId?: number; itemSubclassId?: number }[];
-    const explicitType = q.slot ? itemTypeIds(q.slot, q.type) : null;
-    const classArmorType =
-      q.restrictClass && q.slot && isArmorTypeSlot(q.slot) && q.classId !== undefined
-        ? game.classes.find((c) => c.id === q.classId)?.armorType
-        : undefined;
-    if (explicitType) {
-      filters = [{ itemClassId: explicitType.itemClassId, itemSubclassId: explicitType.itemSubclassId }];
-    } else if (classArmorType) {
-      filters = [{ itemClassId: ITEM_CLASS.armor, itemSubclassId: armorTypeId(classArmorType) }];
-    } else if (q.slot) {
-      const classes = slotSearchClasses(q.slot);
-      filters = classes.length > 0 ? classes.map((itemClassId) => ({ itemClassId })) : [{}];
-    } else {
-      filters = [{}];
-    }
-
-    // The class's primary stat(s): one for a known spec, else the union of the class's specs (feral + balance druid).
-    // Items carrying a different class's primary stat are hidden; statless items (rings, necks) are always kept.
-    let allowedPrimaries: Set<PrimaryStat> | null = null;
-    if (q.restrictClass && q.classId !== undefined) {
-      const specs = game.classes.find((c) => c.id === q.classId)?.specs ?? [];
-      const chosen = q.spec ? specs.find((s) => s.key === q.spec) : undefined;
-      const primaries = (chosen ? [chosen] : specs).map((s) => s.primaryStat).filter((s): s is PrimaryStat => Boolean(s));
-      if (primaries.length > 0) allowedPrimaries = new Set(primaries);
-    }
-    const secondary = q.secondary && game.secondaryStats.includes(q.secondary) ? q.secondary : undefined;
-
-    // Gather a window of candidates (more pages when a slot filter will thin them out, and one pass per class the
-    // slot spans), then filter and sort here: the Blizzard item search cannot filter by our grouped slots nor sort
-    // by rarity/subclass.
-    const pages = q.slot ? 3 : 1;
-    const candidates = new Map<number, ItemResult>();
-    try {
-      for (const filter of filters) {
-        for (let page = 1; page <= pages; page++) {
-          const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, itemClassId: filter.itemClassId, itemSubclassId: filter.itemSubclassId, page, pageSize: 100 });
-          for (const item of result.items) candidates.set(item.id, item);
-          if (page >= result.pageCount) break;
-        }
-      }
-    } catch (error) {
-      // The Blizzard item search can be missing or reject a filter on some Classic namespaces; surface a clean
-      // error the picker can show (errors.item_search_unavailable) instead of a generic 500.
-      request.log.warn({ err: error, version: q.version }, "item search failed");
-      throw new HttpError(502, "item_search_unavailable");
-    }
-
-    let rows = [...candidates.values()].map((i) => ({ item: i, slot: slotForInventoryType(i.inventoryType) }));
-    if (q.slot) rows = rows.filter((r) => r.slot === q.slot);
-    if (allowedPrimaries) {
-      rows = rows.filter((r) => {
-        const have = itemPrimaryStats(r.item.stats ?? []);
-        return have.size === 0 || [...have].some((p) => allowedPrimaries!.has(p));
-      });
-    }
-    // Keep items whose stats are unknown (not reported by the API) so the filter never hides more than it should.
-    if (secondary) rows = rows.filter((r) => !r.item.stats || itemHasSecondary(r.item.stats, secondary));
-    // Minimum quality: drop items below it, keeping any whose quality the API did not report.
-    if (q.minQuality !== undefined) {
-      rows = rows.filter((r) => { const rank = RARITY_ORDER[r.item.quality ?? ""]; return rank === undefined || rank >= q.minQuality!; });
-    }
-    rows.sort((a, b) => {
-      if (q.sort === "rarity") return (RARITY_ORDER[b.item.quality ?? ""] ?? -1) - (RARITY_ORDER[a.item.quality ?? ""] ?? -1) || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
-      if (q.sort === "type") return (a.item.subclass?.en ?? "").localeCompare(b.item.subclass?.en ?? "") || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
-      return (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0);
-    });
-    const truncated = rows.length > MAX_RESULTS;
-    rows = rows.slice(0, MAX_RESULTS);
-
-    const target = { version: q.version, region: q.region };
-    const [icons, index] = await Promise.all([
-      getIcons(core, target, "item", rows.map((r) => r.item.id)).catch(() => new Map<number, string>()),
-      getBisSourceIndex(core, target, { fetchIfMissing: false }),
-    ]);
-    // Warm the zone index in the background so a second search returns sources.
-    if (!index) warmBisSourceIndex(core, target);
-    const items = rows.map(({ item, slot }) => ({
-      id: item.id,
-      name: item.name,
-      slot,
-      subclass: item.subclass ?? null,
-      quality: item.quality ?? null,
-      itemLevel: item.itemLevel ?? null,
-      requiredLevel: item.requiredLevel ?? null,
-      icon: icons.get(item.id) ?? null,
-      source: lookupBisSource(index, item.id) ?? null,
-    }));
-    return { items, truncated };
-  });
 
   /**
    * The owner keeps a best-in-slot wishlist on their character. The whole list is replaced; items without a
