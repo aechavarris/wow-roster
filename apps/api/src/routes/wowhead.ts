@@ -16,32 +16,6 @@ export async function wowheadRoutes(app: FastifyInstance, { core, versions }: Ap
   // A version is only used to choose Wowhead's domain (item ids and data differ per version); default is retail.
   const domainOf = (version?: string) => (version ? gameVersion({ versions }, version).wowheadDomain : "");
 
-  app.get("/wowhead/search", async (request) => {
-    if (!request.user) throw unauthorized();
-    const q = z
-      .object({
-        version: z.string().optional(),
-        q: z.string().trim().min(2).max(60),
-        type: z.enum(WOWHEAD_TYPES as [WowheadType, ...WowheadType[]]).optional(),
-      })
-      .parse(request.query);
-    try {
-      return { results: await wowhead.search(q.q, domainOf(q.version), { type: q.type }) };
-    } catch {
-      throw new HttpError(502, "wowhead_unavailable");
-    }
-  });
-
-  app.get("/wowhead/items", async (request) => {
-    if (!request.user) throw unauthorized();
-    const q = z.object({ version: z.string().optional(), filter: z.string().min(1).max(400) }).parse(request.query);
-    try {
-      return { items: await wowhead.itemsByFilter(q.filter, domainOf(q.version)) };
-    } catch {
-      throw new HttpError(502, "wowhead_unavailable");
-    }
-  });
-
   app.get("/wowhead/:type/:id", async (request) => {
     if (!request.user) throw unauthorized();
     const params = z

@@ -3,7 +3,6 @@
   "label": "WoW Classic progression (Mists of Pandaria)",
   "name": {"en": "Progression (MoP)", "es": "Progresión (MoP)"},
   "maxLevel": 90,
-  "secondaryStats": ["crit", "haste", "mastery", "hit", "expertise", "spirit"],
   "api": {
     "available": true,
     "profileNamespace": "profile-classic-{region}",
