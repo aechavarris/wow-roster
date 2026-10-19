@@ -181,34 +181,41 @@ function splitObjects(arrayText: string): string[] {
 }
 
 /**
- * Rows from a `var listview<type> = [ … ]` array (the search/finder pages). Each object is read field by field
+ * Rows from the `var listview<type> = [ … ]` arrays of a search/finder page. Each object is read field by field
  * because Wowhead mixes unquoted keys (`popularity:88`) into otherwise-JSON objects. Rows without an id or name
  * are skipped, so a markup change loses rows rather than breaking.
+ *
+ * A page can embed several such arrays: the item finder grouped by slot (`/items/…/group-by:slot`) emits one per
+ * slot tab, and surfaces off-hand frills (shields, held-in-off-hand) that the flat, popularity-capped single-array
+ * page drops. So every `var listview… = […]` array is read and concatenated, de-duplicated by id, up to `limit`.
  */
 export function parseWowheadListview(html: string, type: WowheadType, limit = 200): WowheadSearchResult[] {
-  const marker = html.match(/var\s+listview\w+\s*=/);
-  if (!marker) return [];
-  const arrayText = sliceArray(html, marker.index! + marker[0].length);
-  if (!arrayText) return [];
   const results: WowheadSearchResult[] = [];
-  for (const obj of splitObjects(arrayText)) {
-    const id = toInt(obj.match(/"id":(\d+)/)?.[1]);
-    const name = obj.match(/"name":"((?:[^"\\]|\\.)*)"/)?.[1];
-    if (id === undefined || name === undefined) continue;
-    results.push({
-      type,
-      id,
-      name: name.replace(/\\(.)/g, "$1"),
-      quality: toInt(obj.match(/"quality":(\d+)/)?.[1]),
-      itemLevel: toInt(obj.match(/"level":(\d+)/)?.[1]),
-      reqLevel: toInt(obj.match(/"reqlevel":(\d+)/)?.[1]),
-      sourceCodes: codes(obj.match(/"source":\[([0-9,]*)\]/)?.[1]),
-      slotId: toInt(obj.match(/"slot":(\d+)/)?.[1]),
-      classId: toInt(obj.match(/"classs":(\d+)/)?.[1]),
-      subclassId: toInt(obj.match(/"subclass":(\d+)/)?.[1]),
-      icon: obj.match(/"icon":"((?:[^"\\]|\\.)*)"/)?.[1]?.replace(/\\(.)/g, "$1").toLowerCase(),
-    });
-    if (results.length >= limit) break;
+  const seen = new Set<number>();
+  const marker = /var\s+listview\w+\s*=/g;
+  for (let m = marker.exec(html); m; m = marker.exec(html)) {
+    const arrayText = sliceArray(html, m.index + m[0].length);
+    if (!arrayText) continue;
+    for (const obj of splitObjects(arrayText)) {
+      const id = toInt(obj.match(/"id":(\d+)/)?.[1]);
+      const name = obj.match(/"name":"((?:[^"\\]|\\.)*)"/)?.[1];
+      if (id === undefined || name === undefined || seen.has(id)) continue;
+      seen.add(id);
+      results.push({
+        type,
+        id,
+        name: name.replace(/\\(.)/g, "$1"),
+        quality: toInt(obj.match(/"quality":(\d+)/)?.[1]),
+        itemLevel: toInt(obj.match(/"level":(\d+)/)?.[1]),
+        reqLevel: toInt(obj.match(/"reqlevel":(\d+)/)?.[1]),
+        sourceCodes: codes(obj.match(/"source":\[([0-9,]*)\]/)?.[1]),
+        slotId: toInt(obj.match(/"slot":(\d+)/)?.[1]),
+        classId: toInt(obj.match(/"classs":(\d+)/)?.[1]),
+        subclassId: toInt(obj.match(/"subclass":(\d+)/)?.[1]),
+        icon: obj.match(/"icon":"((?:[^"\\]|\\.)*)"/)?.[1]?.replace(/\\(.)/g, "$1").toLowerCase(),
+      });
+      if (results.length >= limit) return results;
+    }
   }
   return results;
 }

@@ -316,6 +316,7 @@ function ItemSearch({
   const [slot, setSlot] = useState("");
   const [type, setType] = useState("");
   const [secondary, setSecondary] = useState("");
+  const [minQuality, setMinQuality] = useState("");
   const [onlyMyClass, setOnlyMyClass] = useState(true);
   // Secondary-stat options the version models (crit, haste…). Only the Blizzard-backed search (retail) can filter by
   // stat; the Wowhead item finder (Classic / Forever) cannot, so the control is hidden there instead of doing nothing.
@@ -344,6 +345,7 @@ function ItemSearch({
       if (slot) params.set("slot", slot);
       if (type) params.set("type", type);
       if (secondary) params.set("secondary", secondary);
+      if (minQuality) params.set("minQuality", minQuality);
       if (classId != null) params.set("classId", String(classId));
       if (spec) params.set("spec", spec);
       if (!onlyMyClass) params.set("restrictClass", "false");
@@ -459,6 +461,17 @@ function ItemSearch({
               </select>
             </div>
           )}
+          <div>
+            <label className="label" htmlFor="bis-rarity">
+              {t("rarityFilter")}
+            </label>
+            <select id="bis-rarity" className="input !w-auto" value={minQuality} onChange={(e) => setMinQuality(e.target.value)}>
+              <option value="">{t("rarityAll")}</option>
+              <option value="2">{t("rarityUncommon")}</option>
+              <option value="3">{t("rarityRare")}</option>
+              <option value="4">{t("rarityEpic")}</option>
+            </select>
+          </div>
           <div>
             <label className="label" htmlFor="bis-sort">
               {t("sortBy")}

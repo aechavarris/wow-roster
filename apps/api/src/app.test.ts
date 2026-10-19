@@ -192,12 +192,16 @@ const core: CoreContext = {
         return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
       if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
         return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
-      // The item finder for any domain, now addressed by path facets (/items/min-req-level:…/max-req-level:…):
-      // a quest sword (mainHand), a cloth chest, an off-hand shield (armour) and a consumable (dropped).
+      // The item finder for any domain, now addressed by path facets (/items/min-req-level:…/max-req-level:…) and
+      // grouped by slot (/group-by:slot), so the page carries one `var listview…` array per slot tab. The parser
+      // reads them all: a weapons array (a quest sword, mainHand) and an armour array (a cloth chest, an off-hand
+      // shield, a consumable dropped) — the shield is the off-hand frill the flat single-array page used to hide.
       if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\/[a-z-]+:/.test(url))
         return new Response(
-          `<script>var listviewitems = [` +
-            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9},` +
+          `<script>var listviewitemsweapons = [` +
+            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9}` +
+            `];</script>` +
+          `<script>var listviewitemsarmor = [` +
             `{"id":5022,"name":"Test Robe","quality":2,"level":18,"reqlevel":15,"slot":5,"classs":4,"subclass":1,"source":[2],popularity:3},` +
             `{"id":5044,"name":"Test Bulwark","quality":3,"level":24,"reqlevel":20,"slot":14,"classs":4,"subclass":6,"icon":"inv_shield_04","source":[2],popularity:7},` +
             `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
@@ -1858,6 +1862,10 @@ describe("BiS item search via Wowhead (Classic versions)", () => {
     // The name filter is applied on our side over the level-bracketed rows.
     const named = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&q=robe", cookies: { wr_session: session } });
     expect(named.json().items.map((i: { id: number }) => i.id)).toEqual([5022]);
+
+    // Minimum quality drops the uncommon robe (q2), keeping the rare blade and shield (q3), item level descending.
+    const rare = await app.inject({ method: "GET", url: "/api/items/search?version=classic-era&region=eu&minQuality=3", cookies: { wr_session: session } });
+    expect(rare.json().items.map((i: { id: number }) => i.id)).toEqual([5011, 5044]);
 
     // MoP also goes through Wowhead (its domain).
     const mop = await app.inject({ method: "GET", url: "/api/items/search?version=progression&region=eu&slot=chest", cookies: { wr_session: session } });

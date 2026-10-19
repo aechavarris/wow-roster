@@ -683,6 +683,11 @@
     "typeAll": "Cualquiera",
     "secondaryFilter": "Estadística secundaria",
     "secondaryAll": "Cualquiera",
+    "rarityFilter": "Rareza",
+    "rarityAll": "Cualquiera",
+    "rarityUncommon": "Infrecuente o mejor",
+    "rarityRare": "Raro o mejor",
+    "rarityEpic": "Épico o mejor",
     "onlyMyClass": "Solo lo que puede usar mi clase"
   },
   "logs": {
