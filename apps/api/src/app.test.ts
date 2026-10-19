@@ -1774,7 +1774,10 @@ describe("BiS templates (import sources)", () => {
     expect(all.statusCode).toBe(200);
     expect(all.json().templates).toHaveLength(2);
     // The Forever source is offered with its attribution link (from the default registry).
-    expect(all.json().sources).toEqual([{ key: "forever-sim-gunba", name: "WoW Forever Sim (gunba)", url: "https://github.com/gunba/wow-forever-sim" }]);
+    expect(all.json().sources).toEqual([
+      { key: "forever-sim-gunba", name: "WoW Forever Sim (gunba)", url: "https://github.com/gunba/wow-forever-sim" },
+      { key: "forever-sim-bayov", name: "Forever Sim (bayov)", url: "https://github.com/bayov/forever-sim" },
+    ]);
 
     // Filtering by class (and spec) narrows to that build, keeping the per-slot items.
     const warrior = await app.inject({ method: "GET", url: "/api/bis-templates?version=forever&classId=1&spec=arms", cookies: { wr_session: session } });
