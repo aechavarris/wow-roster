@@ -4,6 +4,7 @@ export * from "./sync";
 export * from "./roster";
 export * from "./static";
 export * from "./bis";
+export * from "./bisTemplates";
 export * from "./progress";
 export * from "./weekly";
 export * from "./encounterStatistics";

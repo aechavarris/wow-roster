@@ -1751,3 +1751,35 @@ describe("Wowhead proxy (prototype)", () => {
     expect(missing.statusCode).toBe(404);
   });
 });
+
+describe("BiS templates (import sources)", () => {
+  it("serves cached curated BiS templates with their source, filterable by class/spec", async () => {
+    const gunba = { sourceKey: "forever-sim-gunba", sourceName: "WoW Forever Sim (gunba)", sourceUrl: "https://github.com/gunba/wow-forever-sim" };
+    await prisma.staticCache.upsert({
+      where: { key: "forever:bis-templates" },
+      create: {
+        key: "forever:bis-templates",
+        data: [
+          { ...gunba, gameVersion: "forever", classId: 1, spec: "arms", phase: 1, label: "P1 BiS", items: [{ slot: "mainHand", itemId: 12590 }, { slot: "head", itemId: 12640 }] },
+          { ...gunba, gameVersion: "forever", classId: 8, spec: "frost", phase: 1, label: "P1 BiS", items: [{ slot: "mainHand", itemId: 18608 }] },
+        ],
+      },
+      update: {},
+    });
+
+    // Signed-in only.
+    expect((await app.inject({ method: "GET", url: "/api/bis-templates?version=forever" })).statusCode).toBe(401);
+    const session = await login();
+
+    const all = await app.inject({ method: "GET", url: "/api/bis-templates?version=forever", cookies: { wr_session: session } });
+    expect(all.statusCode).toBe(200);
+    expect(all.json().templates).toHaveLength(2);
+    // The Forever source is offered with its attribution link (from the default registry).
+    expect(all.json().sources).toEqual([{ key: "forever-sim-gunba", name: "WoW Forever Sim (gunba)", url: "https://github.com/gunba/wow-forever-sim" }]);
+
+    // Filtering by class (and spec) narrows to that build, keeping the per-slot items.
+    const warrior = await app.inject({ method: "GET", url: "/api/bis-templates?version=forever&classId=1&spec=arms", cookies: { wr_session: session } });
+    expect(warrior.json().templates.map((t: { classId: number }) => t.classId)).toEqual([1]);
+    expect(warrior.json().templates[0].items).toContainEqual({ slot: "head", itemId: 12640 });
+  });
+});
