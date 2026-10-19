@@ -86,6 +86,16 @@ export interface BisTemplate {
  * forks that publish Forever (level 60) gear sets. Specs/sets are filled in over time — a source with no sets for a
  * spec simply yields nothing for it. Operators add sources here (or a future admin UI writes to the same shape).
  */
+/** The gear-set files a WoWSims spec folder typically ships, with their labels and phases. Missing ones are skipped
+ * at ingest, so listing the common set is safe. */
+const WOWSIMS_SETS = (dir: string): WowsimsGearSet[] => [
+  { label: "Pre-raid", phase: 0, path: `ui/${dir}/gear_sets/p0.bis.gear.json` },
+  { label: "P1 BiS", phase: 1, path: `ui/${dir}/gear_sets/phase_1.gear.json` },
+  { label: "P2 BiS", phase: 2, path: `ui/${dir}/gear_sets/phase_2.gear.json` },
+];
+/** One WoWSims spec folder mapped to our class id + spec key. */
+const wowsimsSpec = (classId: number, spec: string, dir: string) => ({ classId, spec, sets: WOWSIMS_SETS(dir) });
+
 export const BIS_TEMPLATE_SOURCES: BisTemplateSource[] = [
   {
     key: "forever-sim-gunba",
@@ -94,7 +104,33 @@ export const BIS_TEMPLATE_SOURCES: BisTemplateSource[] = [
     adapter: "wowsims",
     enabled: true,
     gameVersions: ["forever"],
-    wowsims: { owner: "gunba", repo: "wow-forever-sim", branch: "forever", specs: [] },
+    wowsims: {
+      owner: "gunba",
+      repo: "wow-forever-sim",
+      branch: "forever",
+      // gunba's ui/<spec> folders mapped to our (classId, spec). Single-build classes map to their common DPS spec;
+      // the import browses by class, so other specs still see these. Folders without sets yet simply yield nothing.
+      specs: [
+        wowsimsSpec(1, "fury", "warrior"),
+        wowsimsSpec(1, "protection", "tank_warrior"),
+        wowsimsSpec(2, "retribution", "retribution_paladin"),
+        wowsimsSpec(2, "protection", "protection_paladin"),
+        wowsimsSpec(2, "holy", "holy_paladin"),
+        wowsimsSpec(3, "marksmanship", "hunter"),
+        wowsimsSpec(4, "combat", "rogue"),
+        wowsimsSpec(5, "shadow", "shadow_priest"),
+        wowsimsSpec(5, "holy", "healing_priest"),
+        wowsimsSpec(5, "discipline", "smite_priest"),
+        wowsimsSpec(7, "elemental", "elemental_shaman"),
+        wowsimsSpec(7, "enhancement", "enhancement_shaman"),
+        wowsimsSpec(7, "restoration", "restoration_shaman"),
+        wowsimsSpec(8, "frost", "mage"),
+        wowsimsSpec(9, "destruction", "warlock"),
+        wowsimsSpec(11, "balance", "balance_druid"),
+        wowsimsSpec(11, "feral", "feral_druid"),
+        wowsimsSpec(11, "restoration", "restoration_druid"),
+      ],
+    },
   },
 ];
 

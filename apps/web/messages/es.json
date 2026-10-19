@@ -668,6 +668,7 @@
     "importLoading": "Cargando listas…",
     "importEmpty": "No hay listas disponibles para esta clase/spec todavía.",
     "importItemCount": "{count} objetos",
+    "importYourSpec": "Tu spec",
     "importPreview": "Ver",
     "importHide": "Ocultar",
     "importDo": "Importar",

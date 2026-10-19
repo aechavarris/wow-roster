@@ -174,11 +174,10 @@ describe("withApiStandIns", () => {
     const era = tested.byId.get("classic-era")!;
     expect(forever.api).toMatchObject({ available: true, profileNamespace: era.api.profileNamespace, standIn: "classic-era" });
     expect(forever.api.warcraftLogs).toEqual(era.api.warcraftLogs);
-    // The Wowhead domain IS stood in to the source's: the picker falls back to the source's (Classic Era) item API
-    // because Wowhead's Forever finder is Cloudflare-blocked server-side, so item ids resolve on the source's
-    // Wowhead domain, not Forever's — tooltips and item links must point there.
-    expect(forever.wowheadDomain).toBe("classic");
-    expect(forever.wowheadDomain).toBe(era.wowheadDomain);
+    // The Wowhead domain is NOT stood in: Forever keeps its own, because imported BiS lists use Forever's own item
+    // ids, which resolve on Forever's Wowhead domain (only the removed item search used the source's Classic ids).
+    expect(forever.wowheadDomain).toBe("forever");
+    expect(forever.wowheadDomain).not.toBe(era.wowheadDomain);
     // Forever's own raids stay; Era's log-mapped raids are only there to read kills.
     expect(forever.raids.filter((r) => r.enabled).map((r) => r.key)).toEqual(versions().byId.get("forever")!.raids.filter((r) => r.enabled).map((r) => r.key));
     expect(forever.raids.find((r) => r.key === "standin-naxxramas")).toMatchObject({ enabled: false, warcraftLogsZone: 2006 });

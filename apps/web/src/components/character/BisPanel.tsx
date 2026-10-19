@@ -280,9 +280,10 @@ function ImportBis({
   useEffect(() => refreshWowheadLinks(), [preview]);
 
   useEffect(() => {
+    // Browse by class (not spec): the data is sparse, so show every build for the class and just mark the
+    // character's own spec, rather than hiding everything when there is no exact spec match.
     const params = new URLSearchParams({ version: version.id });
     if (classId != null) params.set("classId", String(classId));
-    if (spec) params.set("spec", spec);
     fetch(`/api/bis-templates?${params}`, { credentials: "same-origin" })
       .then(async (res) => {
         const body = (await res.json().catch(() => ({}))) as BisTemplatesResponse & { error?: string };
@@ -290,7 +291,7 @@ function ImportBis({
         setData({ templates: body.templates ?? [], sources: body.sources ?? [] });
       })
       .catch((err) => setError(err instanceof ApiError && tErrors.has(err.code) ? tErrors(err.code) : tErrors("unknown_error")));
-  }, [version.id, classId, spec, tErrors]);
+  }, [version.id, classId, tErrors]);
 
   // Resolves a template's item ids to saved-list items (name/icon/quality) via the Wowhead by-id proxy.
   async function resolve(template: BisTemplate): Promise<BisItem[]> {
@@ -342,7 +343,10 @@ function ImportBis({
     }
   }
 
-  const templates = data?.templates ?? [];
+  // The character's own spec first, then by phase, so the most relevant builds are on top of a class-wide list.
+  const templates = [...(data?.templates ?? [])].sort(
+    (a, b) => Number(b.spec === spec) - Number(a.spec === spec) || a.phase - b.phase,
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" onClick={onClose}>
@@ -392,6 +396,8 @@ function ImportBis({
                 <li key={key} className="space-y-2 py-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{template.label}</span>
+                    <span className="text-xs text-muted">{template.spec}</span>
+                    {spec && template.spec === spec && <span className="badge border border-success/60 text-success">{t("importYourSpec")}</span>}
                     <span className="text-xs text-muted">{template.sourceName}</span>
                     <span className="text-xs text-muted">{t("importItemCount", { count: template.items.length })}</span>
                     <span className="ml-auto flex items-center gap-2">
