@@ -42,8 +42,6 @@ const publicVersion = (v: GameProfile, all: GameVersions) => ({
   statPanel: v.statPanel,
   buffs: v.buffs,
   professions: v.professions,
-  /** Secondary stats the BiS picker can filter by (crit, haste…); empty where the version has none. */
-  secondaryStats: v.secondaryStats,
   maxPrimaryProfessions: v.maxPrimaryProfessions,
   /** Reputation ladders (standard standings, friendship, renown) for the progress announcement settings. */
   reputation: { standings: v.reputation.standings, friendship: v.reputation.friendship, renown: v.reputation.renown },

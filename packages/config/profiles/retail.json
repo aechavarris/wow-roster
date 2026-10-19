@@ -3,7 +3,6 @@
   "label": "World of Warcraft (retail)",
   "name": {"en": "Retail", "es": "Retail"},
   "maxLevel": 90,
-  "secondaryStats": ["crit", "haste", "mastery", "versatility"],
   "api": {
     "available": true,
     "profileNamespace": "profile-{region}",

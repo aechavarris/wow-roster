@@ -3,7 +3,6 @@
   "label": "WoW Classic Anniversary (The Burning Crusade)",
   "name": {"en": "Anniversary (TBC)", "es": "Anniversary (TBC)"},
   "maxLevel": 70,
-  "secondaryStats": ["hit", "crit", "haste", "expertise"],
   "api": {
     "available": true,
     "profileNamespace": "profile-classicann-{region}",

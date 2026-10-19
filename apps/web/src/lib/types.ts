@@ -41,8 +41,6 @@ export interface GameVersion {
   statPanel: StatSection[];
   buffs: Buff[];
   professions: GameProfession[];
-  /** Secondary stats the BiS picker can filter by (crit, haste…); empty where the version has none. */
-  secondaryStats: string[];
   maxPrimaryProfessions: number;
   /** Reputation ladders: the standard standings plus whether friendship and renown factions exist. */
   reputation: { standings: { key: string; tier: number; name: Localized }[]; friendship: boolean; renown: boolean };
@@ -248,26 +246,6 @@ export interface RosterLog {
 export interface RosterLogsResponse {
   available: boolean;
   logs: RosterLog[];
-}
-
-/** A row from GET /items/search for the BiS item picker. */
-export interface ItemSearchResult {
-  id: number;
-  name: Localized;
-  slot: string;
-  /** Armor/weapon subclass (Plate, Sword…), shown and used for the "by type" sort. */
-  subclass: Localized | null;
-  quality: string | null;
-  itemLevel: number | null;
-  requiredLevel: number | null;
-  icon: string | null;
-  source: BisSource | null;
-}
-
-export interface ItemSearchResponse {
-  items: ItemSearchResult[];
-  /** True when more items matched than were returned; the user should narrow the search. */
-  truncated: boolean;
 }
 
 /** GET /guilds/:id/roster/:entryId — a roster entry's detail for the character/planned details view. */

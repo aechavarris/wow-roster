@@ -271,8 +271,6 @@ export const gameProfileSchema = z.object({
   buffs: z.array(buffSchema).default([]),
   /** Professions that exist in this version; validates manually entered ones where the API has none. */
   professions: z.array(professionSchema).default([]),
-  /** Secondary stats (SECONDARY_STATS keys) the BiS picker can filter by; empty where the version has none. */
-  secondaryStats: z.array(z.string()).default([]),
   /** How many primary professions a character can learn. */
   maxPrimaryProfessions: z.number().int().positive().default(2),
   reputation: reputationSchema.default({ standings: [], friendship: false, renown: false }),
