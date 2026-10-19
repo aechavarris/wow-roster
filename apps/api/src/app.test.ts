@@ -192,16 +192,16 @@ const core: CoreContext = {
         return new Response(`<wowhead><item id="19019"><name><![CDATA[Thunderfury]]></name><level>80</level><quality id="5">Legendary</quality><json><![CDATA["reqlevel":60,"source":[4]]]></json><link>https://www.wowhead.com/classic/item=19019</link></item></wowhead>`);
       if (url.startsWith("https://www.wowhead.com/classic/items?filter=na="))
         return new Response(`<script>var listviewitems = [{"id":19019,"name":"Thunderfury","quality":5,"level":80,"reqlevel":60,"source":[4],popularity:1}];</script>`);
-      // The item finder for any domain, now addressed by path facets (/items/min-req-level:…/max-req-level:…) and
-      // grouped by slot (/group-by:slot), so the page carries one `var listview…` array per slot tab. The parser
-      // reads them all: a weapons array (a quest sword, mainHand) and an armour array (a cloth chest, an off-hand
-      // shield, a consumable dropped) — the shield is the off-hand frill the flat single-array page used to hide.
+      // The item finder for any domain is addressed by path facets (/items/min-req-level:…/max-req-level:…). The
+      // search prefers the slot-grouped page (/group-by:slot) but falls back to the flat page when Wowhead rejects
+      // the grouped path for a non-browser client (a real 404 seen in production), which this mock reproduces.
+      if (url.includes("/group-by:slot")) return new Response("", { status: 404 });
+      // The flat finder page: a quest sword (mainHand), a cloth chest, an off-hand shield (armour) and a consumable
+      // (slot 0 -> dropped), as one listview array.
       if (/^https:\/\/www\.wowhead\.com\/[a-z-]+\/items\/[a-z-]+:/.test(url))
         return new Response(
-          `<script>var listviewitemsweapons = [` +
-            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9}` +
-            `];</script>` +
-          `<script>var listviewitemsarmor = [` +
+          `<script>var listviewitems = [` +
+            `{"id":5011,"name":"Test Blade","quality":3,"level":25,"reqlevel":20,"slot":13,"classs":2,"subclass":7,"icon":"inv_sword_04","source":[4],popularity:9},` +
             `{"id":5022,"name":"Test Robe","quality":2,"level":18,"reqlevel":15,"slot":5,"classs":4,"subclass":1,"source":[2],popularity:3},` +
             `{"id":5044,"name":"Test Bulwark","quality":3,"level":24,"reqlevel":20,"slot":14,"classs":4,"subclass":6,"icon":"inv_shield_04","source":[2],popularity:7},` +
             `{"id":5033,"name":"Healing Potion","quality":1,"level":10,"reqlevel":5,"slot":0,"classs":0,"subclass":8,"source":[5],popularity:1}` +
