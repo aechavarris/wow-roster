@@ -106,6 +106,8 @@ export default async function CharacterPage({ params }: Props) {
         bis={c.bis ?? []}
         canEdit={me.characters?.some((own) => own.id === c.id) ?? false}
         endpoint={`/characters/${c.id}/bis`}
+        classId={c.classId}
+        spec={specKeyById(game, c.classId, c.specId)}
         equippedItemIds={profile?.equipment?.map((e) => e.itemId)}
       />
     </div>
