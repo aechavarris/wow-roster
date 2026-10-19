@@ -1,4 +1,4 @@
-import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotForInventoryType, slotTypeFilter } from "@wow/config";
+import { ITEM_CLASS, REGIONS, armorTypeId, bisSlotKeys, blizzardSlug, isArmorTypeSlot, itemHasSecondary, itemPrimaryStats, itemTypeIds, slotForInventoryType, slotSearchClasses } from "@wow/config";
 import type { PrimaryStat } from "@wow/config";
 import type { CharacterProfile, ItemResult } from "@wow/blizzard";
 import {
@@ -136,24 +136,27 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     // Throws (409) for versions without an API (Forever), so the UI can tell the picker is not available yet.
     const client = core.blizzard(q.version, q.region);
 
-    // Resolve the Blizzard item_class/item_subclass filter: an explicit type wins; otherwise, for an armour slot,
-    // restrict to the class's armour type (retail) so items the class cannot wear are hidden.
-    let itemClassId: number | undefined;
-    let itemSubclassId: number | undefined;
+    // Resolve the Blizzard item_class/item_subclass filter(s) to query. An explicit type wins; otherwise, for an
+    // armour slot, restrict to the class's armour type (retail) so items the class cannot wear are hidden. A slot
+    // with no restriction is narrowed to the item class(es) it spans so the candidate window is not dominated by
+    // higher-item-level gear of other classes — and, crucially, off hand and ranged span two classes (weapon AND
+    // armour), so each is queried for both, or shields and relics (armour) are dropped.
+    let filters: { itemClassId?: number; itemSubclassId?: number }[];
     const explicitType = q.slot ? itemTypeIds(q.slot, q.type) : null;
+    const classArmorType =
+      q.restrictClass && q.slot && isArmorTypeSlot(q.slot) && q.classId !== undefined
+        ? game.classes.find((c) => c.id === q.classId)?.armorType
+        : undefined;
     if (explicitType) {
-      itemClassId = explicitType.itemClassId;
-      itemSubclassId = explicitType.itemSubclassId;
-    } else if (q.restrictClass && q.slot && isArmorTypeSlot(q.slot) && q.classId !== undefined) {
-      const armorType = game.classes.find((c) => c.id === q.classId)?.armorType;
-      if (armorType) {
-        itemClassId = ITEM_CLASS.armor;
-        itemSubclassId = armorTypeId(armorType);
-      }
+      filters = [{ itemClassId: explicitType.itemClassId, itemSubclassId: explicitType.itemSubclassId }];
+    } else if (classArmorType) {
+      filters = [{ itemClassId: ITEM_CLASS.armor, itemSubclassId: armorTypeId(classArmorType) }];
+    } else if (q.slot) {
+      const classes = slotSearchClasses(q.slot);
+      filters = classes.length > 0 ? classes.map((itemClassId) => ({ itemClassId })) : [{}];
+    } else {
+      filters = [{}];
     }
-    // Still unrestricted but a slot is chosen: narrow to that slot's item class (weapon/armour) so the candidate
-    // window is not dominated by higher-item-level gear of other classes, which would hide e.g. the best dagger.
-    if (itemClassId === undefined && q.slot) itemClassId = slotTypeFilter(q.slot)?.itemClassId;
 
     // The class's primary stat(s): one for a known spec, else the union of the class's specs (feral + balance druid).
     // Items carrying a different class's primary stat are hidden; statless items (rings, necks) are always kept.
@@ -166,15 +169,18 @@ export async function characterRoutes(app: FastifyInstance, { prisma, core, vers
     }
     const secondary = q.secondary && game.secondaryStats.includes(q.secondary) ? q.secondary : undefined;
 
-    // Gather a window of candidates (more pages when a slot filter will thin them out), then filter and sort here:
-    // the Blizzard item search cannot filter by our grouped slots nor sort by rarity/subclass.
+    // Gather a window of candidates (more pages when a slot filter will thin them out, and one pass per class the
+    // slot spans), then filter and sort here: the Blizzard item search cannot filter by our grouped slots nor sort
+    // by rarity/subclass.
     const pages = q.slot ? 3 : 1;
     const candidates = new Map<number, ItemResult>();
     try {
-      for (let page = 1; page <= pages; page++) {
-        const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, itemClassId, itemSubclassId, page, pageSize: 100 });
-        for (const item of result.items) candidates.set(item.id, item);
-        if (page >= result.pageCount) break;
+      for (const filter of filters) {
+        for (let page = 1; page <= pages; page++) {
+          const result = await client.searchItems({ query: q.q, minLevel: q.minLevel, maxLevel: q.maxLevel, itemClassId: filter.itemClassId, itemSubclassId: filter.itemSubclassId, page, pageSize: 100 });
+          for (const item of result.items) candidates.set(item.id, item);
+          if (page >= result.pageCount) break;
+        }
       }
     } catch (error) {
       // The Blizzard item search can be missing or reject a filter on some Classic namespaces; surface a clean

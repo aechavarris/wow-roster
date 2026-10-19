@@ -63,6 +63,20 @@ export function slotTypeFilter(slot: string): { itemClassId: number; options: It
   return null;
 }
 
+/**
+ * The item_class ids the Blizzard item search must query to cover a slot, when no explicit type or class-armour
+ * restriction already pins one. Off hand and ranged span two classes — a weapon (one-hander, bow/gun/wand/thrown)
+ * and armour (a shield or held-in-off-hand for the off hand; a relic for ranged) — so each needs both queries, or
+ * the armour half (shields!) is dropped. Single-class slots return their one class; neck/back/finger/trinket have
+ * no meaningful class filter and return an empty list so the search stays unfiltered and the slot filter selects.
+ */
+export function slotSearchClasses(slot: string): number[] {
+  if (ARMOR_TYPE_SLOTS.has(slot)) return [ITEM_CLASS.armor];
+  if (slot === "mainHand") return [ITEM_CLASS.weapon];
+  if (slot === "offHand" || slot === "ranged") return [ITEM_CLASS.weapon, ITEM_CLASS.armor];
+  return [];
+}
+
 /** Resolves a type key (armour or weapon) for a slot to the item_class/item_subclass ids the search filters by. */
 export function itemTypeIds(slot: string, typeKey: string | undefined | null): { itemClassId: number; itemSubclassId: number } | null {
   if (!typeKey) return null;
