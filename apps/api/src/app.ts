@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import type { AppDeps } from "./deps";
 import { HttpError } from "./errors";
 import { authRoutes } from "./routes/auth";
+import { bisTemplateRoutes } from "./routes/bisTemplates";
 import { characterRoutes } from "./routes/characters";
 import { guildRoutes } from "./routes/guilds";
 import { memberRoutes } from "./routes/members";
@@ -67,6 +68,7 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean; rateL
       await guildRoutes(api, deps);
       await memberRoutes(api, deps);
       await characterRoutes(api, deps);
+      await bisTemplateRoutes(api, deps);
       await wowheadRoutes(api, deps);
     },
     { prefix: "/api" },

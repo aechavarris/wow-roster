@@ -12,6 +12,8 @@ const envSchema = z.object({
   WARCRAFTLOGS_CLIENT_SECRET: z.string().default(""),
   PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   API_PORT: z.coerce.number().default(4000),
+  /** Comma-separated BiS source keys to show (overrides each source's default enabled flag). Unset = use defaults. */
+  BIS_SOURCES_ENABLED: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
