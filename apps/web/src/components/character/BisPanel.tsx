@@ -35,7 +35,7 @@ interface BisTemplate {
   spec: string;
   phase: number;
   label: string;
-  items: { slot: string; itemId: number }[];
+  items: { slot: string; itemId: number; source?: BisSource }[];
 }
 interface BisTemplatesResponse {
   templates: BisTemplate[];
@@ -296,7 +296,7 @@ function ImportBis({
   // Resolves a template's item ids to saved-list items (name/icon/quality) via the Wowhead by-id proxy.
   async function resolve(template: BisTemplate): Promise<BisItem[]> {
     const results = await Promise.all(
-      template.items.map(async ({ slot, itemId }) => {
+      template.items.map(async ({ slot, itemId, source }) => {
         try {
           const res = await fetch(`/api/wowhead/item/${itemId}?version=${version.id}`, { credentials: "same-origin" });
           const body = (await res.json().catch(() => ({}))) as { entity?: WowheadEntity };
@@ -309,10 +309,12 @@ function ImportBis({
             itemLevel: e?.itemLevel,
             requiredLevel: e?.reqLevel,
             icon: e?.icon ? `https://wow.zamimg.com/images/wow/icons/large/${e.icon}.jpg` : undefined,
+            // Zone/boss filled from the source's item database at ingest; still editable by hand after import.
+            ...(source ? { source } : {}),
           };
           return item;
         } catch {
-          return { slot, itemId, name: `#${itemId}` } satisfies BisItem;
+          return { slot, itemId, name: `#${itemId}`, ...(source ? { source } : {}) } satisfies BisItem;
         }
       }),
     );
