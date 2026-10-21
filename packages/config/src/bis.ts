@@ -99,6 +99,8 @@ export const bisSourceSchema = z.object({
   zoneName: localizedSchema.optional(),
   /** Boss/encounter the item drops from, when auto-detected from the journal. */
   bossName: localizedSchema.optional(),
+  /** Instance difficulty label, when the source reports one beyond a single normal difficulty (future content). */
+  difficulty: localizedSchema.optional(),
   /** True when set automatically from the Blizzard journal, false/absent when set by hand. */
   auto: z.boolean().optional(),
 });

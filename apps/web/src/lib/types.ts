@@ -203,6 +203,8 @@ export interface BisSource {
   zoneKey?: string;
   zoneName?: Localized;
   bossName?: Localized;
+  /** Instance difficulty label, when the source reports one (future multi-difficulty content). */
+  difficulty?: Localized;
   auto?: boolean;
 }
 

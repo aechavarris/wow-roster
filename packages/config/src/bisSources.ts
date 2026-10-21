@@ -191,23 +191,58 @@ export interface WowsimsItemSource {
   kind: "drop" | "quest" | "crafted" | "vendor";
   zoneName?: string;
   detail?: string;
+  /** Raw WoWSims `DungeonDifficulty` id for a drop (1 = Normal today; higher ids appear if the sim adds them). */
+  difficulty?: number;
 }
+
+/**
+ * Zone names the WoWSims database uses for *raids* (it does not flag raid vs dungeon, so a drop from any other named
+ * instance is treated as a dungeon). Vanilla raids today; extend as the source adds AQ20/40 and Naxxramas. The core
+ * mapper matches the version's own raids/dungeons first, so this only decides drops from instances not in a profile.
+ */
+export const WOWSIMS_RAID_ZONES: readonly string[] = [
+  "Molten Core",
+  "Blackwing Lair",
+  "Onyxia's Lair",
+  "Zul'Gurub",
+  "Ruins of Ahn'Qiraj",
+  "Temple of Ahn'Qiraj",
+  "Ahn'Qiraj Temple",
+  "Naxxramas",
+];
+
+/**
+ * WoWSims `DungeonDifficulty` id → display label. The sim's enum is `Unknown = 0`, `Normal = 1` today, both left
+ * unlabelled (a single normal difficulty needs no tag); add an entry here when the source introduces more (Heroic,
+ * Mythic…), so a drop shows its difficulty. Kept data-driven: a new difficulty is one line, not code.
+ */
+export const WOWSIMS_DIFFICULTY_LABELS: Record<number, Record<string, string>> = {};
+
+/** The display label for a WoWSims difficulty id, or undefined for Normal/Unknown (nothing to show). */
+export const wowsimsDifficultyLabel = (id: number | undefined): Record<string, string> | undefined =>
+  id !== undefined && id > 1 ? WOWSIMS_DIFFICULTY_LABELS[id] : undefined;
 
 /** Shape of the fields we read from a WoWSims `assets/database/db.json`; everything else is ignored. */
 interface WowsimsDbJson {
-  items?: { id?: number; sources?: Record<string, { npcId?: number; zoneId?: number; name?: string; npcName?: string } | undefined>[] }[];
+  items?: { id?: number; sources?: Record<string, { npcId?: number; zoneId?: number; difficulty?: number; name?: string; npcName?: string } | undefined>[] }[];
   zones?: { id?: number; name?: string }[];
   npcs?: { id?: number; name?: string }[];
 }
 
 /** Resolves the first of an item's `sources` entries to a neutral `WowsimsItemSource`, or undefined if unknown. */
 function parseOneSource(
-  src: Record<string, { npcId?: number; zoneId?: number; name?: string; npcName?: string } | undefined>,
+  src: Record<string, { npcId?: number; zoneId?: number; difficulty?: number; name?: string; npcName?: string } | undefined>,
   zoneName: Map<number, string>,
   npcName: Map<number, string>,
 ): WowsimsItemSource | undefined {
   const drop = src.drop;
-  if (drop) return { kind: "drop", zoneName: drop.zoneId ? zoneName.get(drop.zoneId) : undefined, detail: drop.npcId ? npcName.get(drop.npcId) : undefined };
+  if (drop)
+    return {
+      kind: "drop",
+      zoneName: drop.zoneId ? zoneName.get(drop.zoneId) : undefined,
+      detail: drop.npcId ? npcName.get(drop.npcId) : undefined,
+      ...(typeof drop.difficulty === "number" ? { difficulty: drop.difficulty } : {}),
+    };
   if (src.quest) return { kind: "quest", detail: src.quest.name };
   if (src.crafted) return { kind: "crafted" };
   const sold = src.soldBy;

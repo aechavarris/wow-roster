@@ -47,15 +47,26 @@ const SOURCES: BisTemplateSource[] = [
 const DB_URL = "https://raw.githubusercontent.com/acme/forever-sim/forever/assets/database/db.json";
 const GEAR_URL = "https://raw.githubusercontent.com/acme/forever-sim/forever/ui/warrior/gear_sets/phase_1.gear.json";
 
-// A tiny item database: 12640 drops from a boss in a known raid, 18404 is crafted, 777 has no source.
+// A tiny item database covering each case: a drop in a profile raid, in a known raid not in the profile, in a
+// dungeon not in the profile, a crafted item, and one with no source.
 const DB = {
   items: [
-    { id: 12640, sources: [{ drop: { npcId: 11583, zoneId: 2159 } }] },
+    { id: 12640, sources: [{ drop: { npcId: 11583, zoneId: 2159, difficulty: 1 } }] }, // profile raid
+    { id: 500, sources: [{ drop: { npcId: 2000, zoneId: 3000, difficulty: 1 } }] }, // known raid, not in profile
+    { id: 600, sources: [{ drop: { npcId: 3000, zoneId: 4000, difficulty: 1 } }] }, // dungeon, not in profile
     { id: 18404, sources: [{ crafted: { profession: 8, spellId: 1 } }] },
     { id: 777, sources: [] },
   ],
-  zones: [{ id: 2159, name: "Barrow Deeps" }],
-  npcs: [{ id: 11583, name: "Lord Victor Nefarius" }],
+  zones: [
+    { id: 2159, name: "Barrow Deeps" },
+    { id: 3000, name: "Molten Core" },
+    { id: 4000, name: "Scholomance" },
+  ],
+  npcs: [
+    { id: 11583, name: "Lord Victor Nefarius" },
+    { id: 2000, name: "Ragnaros" },
+    { id: 3000, name: "Darkmaster Gandling" },
+  ],
 };
 
 /** Routes the db.json and gear-set URLs; anything else is a 404. */
@@ -68,9 +79,9 @@ const routeFetch = (gear: unknown, db: unknown = DB) =>
   }) as unknown as typeof globalThis.fetch;
 
 describe("ingestBisTemplates", () => {
-  it("builds slot-mapped templates and fills each item's zone/boss from the source database", async () => {
+  it("builds slot-mapped templates and shows each item's origin, registered in the profile or not", async () => {
     const { ctx } = fakeCtx();
-    const fetch = routeFetch({ items: [{ id: 12640 }, { id: 18404 }] });
+    const fetch = routeFetch({ items: [{ id: 12640 }, { id: 500 }, { id: 600 }, { id: 18404 }] });
 
     const templates = await ingestBisTemplates(ctx, "forever", { fetch, sources: SOURCES });
     expect(templates).toHaveLength(1);
@@ -83,11 +94,17 @@ describe("ingestBisTemplates", () => {
       phase: 1,
       label: "P1 BiS",
       items: [
-        // A drop whose zone names a profile raid becomes that raid, with the boss as the detail.
+        // A drop whose zone names a profile raid is tied to that key, with the boss as the detail.
         { slot: "head", itemId: 12640, source: { type: "raid", zoneKey: "barrow-deeps", bossName: { en: "Lord Victor Nefarius" }, auto: true } },
-        { slot: "neck", itemId: 18404, source: { type: "crafted", auto: true } },
+        // A known raid not in the profile: typed raid, instance name kept as free text (no key).
+        { slot: "neck", itemId: 500, source: { type: "raid", zoneName: { en: "Molten Core" }, bossName: { en: "Ragnaros" }, auto: true } },
+        // Any other named instance is a dungeon, instance name kept.
+        { slot: "shoulder", itemId: 600, source: { type: "dungeon", zoneName: { en: "Scholomance" }, bossName: { en: "Darkmaster Gandling" }, auto: true } },
+        { slot: "back", itemId: 18404, source: { type: "crafted", auto: true } },
       ],
     });
+    // Normal difficulty (1) is not tagged, so no difficulty field is set.
+    expect(templates[0]!.items[0]!.source).not.toHaveProperty("difficulty");
   });
 
   it("leaves items unsourced when the item has no known source", async () => {

@@ -2,6 +2,8 @@ import {
   enabledTemplateSources,
   parseWowsimsDatabase,
   parseWowsimsGearSet,
+  wowsimsDifficultyLabel,
+  WOWSIMS_RAID_ZONES,
   type BisSource,
   type BisTemplate,
   type BisTemplateSource,
@@ -46,24 +48,33 @@ export interface IngestOptions {
 }
 
 /**
- * A version-specific mapper from a WoWSims item source to our `BisSource`: a drop whose zone names one of the
- * version's raids/dungeons becomes a `raid`/`dungeon` tied to that key, otherwise a free-text `world` drop; quest,
- * crafted and vendor pass through. Every result is `auto` (filled on import, still editable by hand).
+ * A version-specific mapper from a WoWSims item source to our `BisSource`. The origin is always shown, registered in
+ * the profile or not: a drop keeps its instance name and boss even when that instance is not (yet) in the version's
+ * profile. A drop maps to the version's own raid/dungeon key when its zone matches one; otherwise it is a `raid` when
+ * the zone is a known raid (`WOWSIMS_RAID_ZONES`) and a `dungeon` for any other named instance, with the instance name
+ * kept as free text; a drop with no zone at all stays a `world` drop. Quest, crafted and vendor pass through. Every
+ * result is `auto` (filled on import, still editable by hand).
  */
 function bisSourceMapper(profile: GameProfile): (ws: WowsimsItemSource) => BisSource {
   const norm = (s: string) => s.trim().toLowerCase();
   const raids = new Map(profile.raids.map((r) => [norm(r.name.en ?? ""), r.key] as const));
   const dungeons = new Map(profile.dungeons.map((d) => [norm(d.name.en ?? ""), d.key] as const));
+  const knownRaids = new Set(WOWSIMS_RAID_ZONES.map(norm));
   const loc = (s: string | undefined) => (s ? { en: s } : undefined);
   return (ws) => {
     const detail = loc(ws.detail);
+    const difficulty = ws.kind === "drop" ? wowsimsDifficultyLabel(ws.difficulty) : undefined;
+    const extra = { ...(detail ? { bossName: detail } : {}), ...(difficulty ? { difficulty } : {}), auto: true as const };
     if (ws.kind === "drop") {
       const zone = ws.zoneName ? norm(ws.zoneName) : "";
       const raidKey = raids.get(zone);
-      if (raidKey) return { type: "raid", zoneKey: raidKey, ...(detail ? { bossName: detail } : {}), auto: true };
+      if (raidKey) return { type: "raid", zoneKey: raidKey, ...extra };
       const dungeonKey = dungeons.get(zone);
-      if (dungeonKey) return { type: "dungeon", zoneKey: dungeonKey, ...(detail ? { bossName: detail } : {}), auto: true };
-      return { type: "world", ...(loc(ws.zoneName) ? { zoneName: loc(ws.zoneName) } : {}), ...(detail ? { bossName: detail } : {}), auto: true };
+      if (dungeonKey) return { type: "dungeon", zoneKey: dungeonKey, ...extra };
+      // Not in the profile: still show where it drops. A known raid name is a raid; any other named instance is a
+      // dungeon; a drop with no zone at all is the only true "world" case.
+      if (ws.zoneName) return { type: knownRaids.has(zone) ? "raid" : "dungeon", zoneName: loc(ws.zoneName), ...extra };
+      return { type: "world", ...extra };
     }
     if (ws.kind === "quest") return { type: "quest", ...(detail ? { bossName: detail } : {}), auto: true };
     if (ws.kind === "crafted") return { type: "crafted", auto: true };
