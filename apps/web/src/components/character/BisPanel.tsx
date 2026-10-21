@@ -245,7 +245,12 @@ export function BisPanel({ version, bis, canEdit, endpoint, classId, spec, equip
           classId={classId ?? null}
           spec={spec ?? null}
           onClose={() => setImporting(false)}
-          onImport={(items) => save([...list, ...items].slice(0, 100))}
+          // Importing a curated build replaces the list (so re-importing refreshes the sources, instead of stacking
+          // duplicate slots). Confirm first when the list is not empty, so a hand-made list is not wiped by accident.
+          onImport={(items) => {
+            if (list.length > 0 && !window.confirm(t("importReplace"))) return;
+            save(items.slice(0, 100));
+          }}
         />
       )}
     </section>
