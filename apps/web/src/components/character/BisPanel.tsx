@@ -77,8 +77,11 @@ function sourceSummary(
   if (!source) return null;
   const zone = sourceZoneName(version, source, locale);
   const detail = source.bossName ? tr(source.bossName, locale) : null;
+  const difficulty = source.difficulty ? tr(source.difficulty, locale) : null;
   const where = zone ?? t(`sourceType.${source.type}`);
-  return detail ? `${where} · ${detail}` : where;
+  const base = detail ? `${where} · ${detail}` : where;
+  // The difficulty tag (future multi-difficulty content) comes after the boss, e.g. "Hyjal · Archimonde (Heroic)".
+  return difficulty ? `${base} (${difficulty})` : base;
 }
 
 /** Best-in-slot list with two groupings (slot, zone) and a Wowhead link per item. The list is filled by import. */
@@ -453,8 +456,12 @@ function templateKey(t: BisTemplate): string {
 function ZoneSelect({ version, value, onChange }: { version: GameVersion; value: BisSource | undefined; onChange: (s: BisSource | undefined) => void }) {
   const t = useTranslations("bis");
   const locale = useLocale();
-  const current = value?.zoneKey ?? (value ? `type:${value.type}` : "");
   const generic: BisSource["type"][] = ["quest", "vendor", "crafted", "pvp", "world", "other"];
+  // An imported origin not in the profile (a drop with a zone name but no profile key) is shown as its own option, so
+  // the picker shows where the item really comes from — e.g. "Scholomance" — instead of the generic type. Selecting
+  // it is a no-op (keeps the imported source); the other options still let the user reassign it by hand.
+  const imported = value && !value.zoneKey && value.zoneName ? tr(value.zoneName, locale) : null;
+  const current = value?.zoneKey ?? (imported ? "imported" : value ? `type:${value.type}` : "");
 
   return (
     <select
@@ -462,6 +469,7 @@ function ZoneSelect({ version, value, onChange }: { version: GameVersion; value:
       value={current}
       onChange={(e) => {
         const v = e.target.value;
+        if (v === "imported") return;
         if (!v) return onChange(undefined);
         if (v.startsWith("type:")) return onChange({ type: v.slice(5) as BisSource["type"] });
         const raid = version.raids.find((r) => r.key === v);
@@ -472,6 +480,7 @@ function ZoneSelect({ version, value, onChange }: { version: GameVersion; value:
       aria-label={t("zoneLabel")}
     >
       <option value="">{t("unassigned")}</option>
+      {imported && <option value="imported">{imported}</option>}
       {version.raids.map((r) => (
         <option key={`r-${r.key}`} value={r.key}>
           {localize(r.name, locale)}

@@ -49,7 +49,7 @@ describe("parseWowsimsGearSet", () => {
 describe("parseWowsimsDatabase", () => {
   const DB = {
     items: [
-      { id: 16730, sources: [{ drop: { npcId: 10363, zoneId: 1583 } }] },
+      { id: 16730, sources: [{ drop: { npcId: 10363, zoneId: 1583, difficulty: 2 } }] },
       { id: 167, sources: [{ quest: { id: 167, name: "Oh Brother..." } }] },
       { id: 9999, sources: [{ crafted: { profession: 8, spellId: 2160 } }] },
       { id: 272480, sources: [{ soldBy: { npcName: "PvP quartermasters" } }] },
@@ -63,7 +63,7 @@ describe("parseWowsimsDatabase", () => {
 
   it("resolves each item's first source to a kind with the zone and detail names", () => {
     const map = parseWowsimsDatabase(DB);
-    expect(map.get(16730)).toEqual({ kind: "drop", zoneName: "Blackwing Lair", detail: "Broodlord Lashlayer" });
+    expect(map.get(16730)).toEqual({ kind: "drop", zoneName: "Blackwing Lair", detail: "Broodlord Lashlayer", difficulty: 2 });
     expect(map.get(167)).toEqual({ kind: "quest", detail: "Oh Brother..." });
     expect(map.get(9999)).toEqual({ kind: "crafted", zoneName: undefined, detail: undefined });
     // A vendor named inline (no npc id) and one resolved from the npc table + its zone.
