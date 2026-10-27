@@ -549,7 +549,16 @@
     "requirementDone": "Completado",
     "requirementMissing": "Pendiente",
     "requirementsLegend": "Los requisitos no salen en la API: cada jugador los marca en la ficha de su personaje.",
-    "fromWarcraftLogs": "Las raids salen de los logs recientes subidos a {host}: solo cuentan los jefes de raids registradas en Warcraft Logs."
+    "fromWarcraftLogs": "Las raids salen de los logs recientes subidos a {host}: solo cuentan los jefes de raids registradas en Warcraft Logs.",
+    "difficulty": "Dificultad",
+    "noBossKills": "Nadie del roster tiene muertes registradas en esta instancia.",
+    "bossesKilled": "Jefes",
+    "bossKillsTitle": "{boss}: {count} muertes · última {last}",
+    "view": "Vista",
+    "viewSummary": "Resumen",
+    "viewBosses": "Por jefe",
+    "raid": "Banda",
+    "dungeon": "Mazmorra"
   },
   "weekly": {
     "title": "Auditoría semanal",

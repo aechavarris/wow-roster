@@ -549,7 +549,16 @@
     "requirementDone": "Done",
     "requirementMissing": "Missing",
     "requirementsLegend": "Requirements are not in the API: each player ticks them on their character's sheet.",
-    "fromWarcraftLogs": "Raids come from the recent logs uploaded to {host}: only bosses of raids logged on Warcraft Logs count."
+    "fromWarcraftLogs": "Raids come from the recent logs uploaded to {host}: only bosses of raids logged on Warcraft Logs count.",
+    "difficulty": "Difficulty",
+    "noBossKills": "Nobody in the roster has recorded kills in this instance.",
+    "bossesKilled": "Bosses",
+    "bossKillsTitle": "{boss}: {count} kills · last {last}",
+    "view": "View",
+    "viewSummary": "Summary",
+    "viewBosses": "Per boss",
+    "raid": "Raid",
+    "dungeon": "Dungeon"
   },
   "weekly": {
     "title": "Weekly audit",

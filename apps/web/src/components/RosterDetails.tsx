@@ -5,6 +5,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { classColor, GAME_QUALITY_COLORS, specName, wowheadItemUrl } from "@/lib/game";
 import { tr } from "@/lib/text";
+import { BossKillsTable } from "./BossKillsTable";
 import { ItemTooltip } from "./character/ItemTooltip";
 import { Card, CardGrid, DetailRow, ExpandAllButton, ExpandProvider, Facts, LG, MD, SM, Table, Td, Th, useExpandedRows, XL } from "./ui/CharacterTable";
 import { GameTooltip } from "./ui/GameTooltip";
@@ -631,6 +632,7 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
     return [...byId.entries()].sort((a, b) => b[0] - a[0]);
   }, [all, locale]);
   const [expansion, setExpansion] = useState<number | undefined>(expansions[0]?.[0]);
+  const [view, setView] = useState<"summary" | "bosses">("summary");
   const instances = useMemo(() => {
     const seen = new Map<number | string, InstanceProgress>();
     for (const i of all.filter((i) => i.expansionId === expansion)) seen.set(i.id ?? tr(i.name, "en"), i);
@@ -642,22 +644,41 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
   }
   return (
     <div>
-      {/* Raids read from Warcraft Logs have no expansion to choose. */}
-      {expansions.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-          <label className="text-sm" htmlFor={`${kind}-expansion`}>{t("expansion")}</label>
-          <select
-            id={`${kind}-expansion`}
-            className="input w-auto max-w-full"
-            value={expansion ?? ""}
-            onChange={(e) => setExpansion(Number(e.target.value))}
-          >
-            {expansions.map(([id, name]) => (
-              <option key={id} value={id}>{name}</option>
-            ))}
-          </select>
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+        <div role="radiogroup" aria-label={t("view")} className="flex gap-1">
+          {(["summary", "bosses"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={view === v}
+              onClick={() => setView(v)}
+              className={`btn px-2 py-1 text-xs ${view === v ? "border-accent text-accent" : ""}`}
+            >
+              {t(v === "summary" ? "viewSummary" : "viewBosses")}
+            </button>
+          ))}
         </div>
-      )}
+        {/* Raids read from Warcraft Logs have no expansion to choose. */}
+        {expansions.length > 0 && (
+          <>
+            <label className="text-sm" htmlFor={`${kind}-expansion`}>{t("expansion")}</label>
+            <select
+              id={`${kind}-expansion`}
+              className="input w-auto max-w-full"
+              value={expansion ?? ""}
+              onChange={(e) => setExpansion(Number(e.target.value))}
+            >
+              {expansions.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
+      {view === "bosses" ? (
+        <BossKillsTable key={`${kind}-${expansion}`} version={version} rows={rows} instances={instances} kind={kind} />
+      ) : (
       <Table
         head={
           <>
@@ -718,6 +739,7 @@ function InstanceTable({ version, rows, kind }: { version: GameVersion; rows: De
           );
         })}
       </Table>
+      )}
     </div>
   );
 }
